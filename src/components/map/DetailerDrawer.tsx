@@ -9,6 +9,7 @@ interface DetailerDrawerProps {
     businessName: string;
     rating: number;
     reviewCount: number;
+    distance?: number;
     coin: {
       name: string;
       iconColor: string;
@@ -27,9 +28,10 @@ interface DetailerDrawerProps {
     }>;
   };
   onClose: () => void;
+  onBookService: () => void;
 }
 
-export function DetailerDrawer({ detailer, onClose }: DetailerDrawerProps) {
+export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDrawerProps) {
   return (
     <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl border-t border-gray-200 p-4 z-40 max-h-[60vh] overflow-y-auto shadow-xl">
       {/* Header */}
@@ -37,6 +39,9 @@ export function DetailerDrawer({ detailer, onClose }: DetailerDrawerProps) {
         <div className="flex-1">
           <h3 className="text-lg font-bold text-gray-900">{detailer.businessName}</h3>
           <p className="text-gray-600">{detailer.name}</p>
+          {detailer.distance && (
+            <p className="text-sm text-teal-600 font-medium">{detailer.distance.toFixed(1)} miles away</p>
+          )}
         </div>
         <button 
           onClick={onClose}
@@ -98,7 +103,10 @@ export function DetailerDrawer({ detailer, onClose }: DetailerDrawerProps) {
 
       {/* Action Buttons */}
       <div className="flex gap-3 pt-2">
-        <button className="flex-1 bg-teal-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-teal-600 transition-colors">
+        <button 
+          onClick={onBookService}
+          className="flex-1 bg-teal-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-teal-600 transition-colors"
+        >
           Book Service
         </button>
         <button className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">

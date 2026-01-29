@@ -13,6 +13,8 @@ import {
 import type { FeatureCollection, Feature, Point } from 'geojson';
 import { MapControls } from './MapControls';
 import { DetailerDrawer } from './DetailerDrawer';
+import { BookingSlider } from './BookingSlider';
+import { DetailerListView } from './DetailerListView';
 
 interface TumaroMapProps {
   className?: string;
@@ -33,11 +35,58 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
   // UI state
   const [selectedDetailerId, setSelectedDetailerId] = useState<string | null>(null);
   const [isLocationPermissionDenied, setIsLocationPermissionDenied] = useState(false);
+  const [showBookingSlider, setShowBookingSlider] = useState(false);
+  const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
 
-  // Get selected detailer data
+  // Calculate distance between two coordinates using Haversine formula
+  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 3959; // Earth's radius in miles
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLng/2) * Math.sin(dLng/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+
+  // Get selected detailer data with distance
   const selectedDetailer = selectedDetailerId && detailers 
-    ? detailers.features.find(f => f.properties?.id === selectedDetailerId)?.properties
+    ? (() => {
+        const feature = detailers.features.find(f => f.properties?.id === selectedDetailerId);
+        if (!feature || !customerLocation) return feature?.properties || null;
+        
+        const [lng, lat] = feature.geometry.coordinates;
+        const distance = calculateDistance(customerLocation[1], customerLocation[0], lat, lng);
+        
+        return {
+          ...feature.properties,
+          distance
+        };
+      })()
     : null;
+
+  // Transform detailer data for list view
+  const detailersForList = detailers && customerLocation ? 
+    detailers.features
+      .filter(f => f.properties && f.geometry.type === 'Point')
+      .map(feature => {
+        const [lng, lat] = feature.geometry.coordinates;
+        const distance = calculateDistance(customerLocation[1], customerLocation[0], lat, lng);
+        
+        // Only include detailers within 25 miles
+        if (distance > 25) return null;
+        
+        return {
+          ...feature.properties,
+          distance,
+          estimatedArrival: `${Math.round(distance * 2 + 10)}-${Math.round(distance * 2 + 20)} min`,
+          isAvailable: Math.random() > 0.3 // Random availability for demo
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.distance - b.distance)
+    : [];
 
   // Fetch detailers from API
   const fetchDetailers = useCallback(async () => {
@@ -426,10 +475,52 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
     }
   };
 
+  const handleBookingSliderOpen = () => {
+    setShowBookingSlider(true);
+    setSelectedDetailerId(null); // Close drawer when opening booking slider
+  };
+
   return (
     <div className={`relative h-full ${className}`}>
-      {/* Only render map once we have a location-based viewport */}
-      {isMapInitialized && (
+      {/* View Toggle */}
+      <div className="absolute top-4 left-4 z-30 flex bg-white rounded-lg shadow-lg overflow-hidden">
+        <button
+          onClick={() => setViewMode('map')}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            viewMode === 'map'
+              ? 'bg-teal-500 text-white'
+              : 'bg-white text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          Map View
+        </button>
+        <button
+          onClick={() => setViewMode('list')}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            viewMode === 'list'
+              ? 'bg-teal-500 text-white'
+              : 'bg-white text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          List View ({detailersForList.length})
+        </button>
+      </div>
+
+      {/* List View */}
+      {viewMode === 'list' ? (
+        <DetailerListView
+          detailers={detailersForList}
+          onDetailerSelect={(detailer) => {
+            setSelectedDetailerId(detailer.id);
+            setViewMode('map'); // Switch back to map view
+          }}
+          onBookService={handleBookingSliderOpen}
+          userLocation={customerLocation}
+        />
+      ) : (
+        <>
+          {/* Only render map once we have a location-based viewport */}
+          {isMapInitialized && (
         <Map
           ref={mapRef}
           {...viewState}
@@ -487,10 +578,11 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
       />
 
       {/* Detailer Selection Drawer */}
-      {selectedDetailer && (
+      {selectedDetailer && !showBookingSlider && (
         <DetailerDrawer
           detailer={selectedDetailer}
           onClose={() => setSelectedDetailerId(null)}
+          onBookService={handleBookingSliderOpen}
         />
       )}
 
@@ -503,6 +595,17 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
             <p className="mt-1 text-xs text-gray-400">Please allow location access for the best experience</p>
           </div>
         </div>
+      )}
+        </>
+      )}
+
+      {/* Booking Slider */}
+      {showBookingSlider && selectedDetailer && (
+        <BookingSlider
+          detailer={selectedDetailer}
+          onClose={() => setShowBookingSlider(false)}
+          userLocation={customerLocation}
+        />
       )}
 
     </div>
