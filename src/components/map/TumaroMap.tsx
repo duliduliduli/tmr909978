@@ -18,19 +18,13 @@ interface TumaroMapProps {
   className?: string;
 }
 
-// Default viewport (Seattle for testing)
-const DEFAULT_VIEWPORT = {
-  longitude: -122.3321,
-  latitude: 47.6062,
-  zoom: 12
-};
-
 export function TumaroMap({ className = '' }: TumaroMapProps) {
   const mapRef = useRef<MapRef>(null);
   
-  // Map state
-  const [viewState, setViewState] = useState<Partial<ViewState>>(DEFAULT_VIEWPORT);
+  // Map state - NO default viewport, wait for user location
+  const [viewState, setViewState] = useState<Partial<ViewState>>({});
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isMapInitialized, setIsMapInitialized] = useState(false);
   
   // Data state
   const [detailers, setDetailers] = useState<FeatureCollection<Point> | null>(null);
@@ -57,11 +51,18 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
     }
   }, []);
 
-  // High-accuracy GPS location request
+  // High-accuracy GPS location request with immediate map initialization
   const requestLocation = useCallback(() => {
     if (!('geolocation' in navigator)) {
       const fallback: [number, number] = [-122.3321, 47.6062]; // Seattle
       setCustomerLocation(fallback);
+      // Initialize map immediately with fallback location
+      setViewState({
+        longitude: fallback[0],
+        latitude: fallback[1],
+        zoom: 12
+      });
+      setIsMapInitialized(true);
       return;
     }
 
@@ -73,10 +74,19 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
         const coords: [number, number] = [longitude, latitude];
         setCustomerLocation(coords);
         
-        if (mapRef.current) {
+        // Initialize map immediately with user's actual location
+        if (!isMapInitialized) {
+          setViewState({
+            longitude: coords[0],
+            latitude: coords[1],
+            zoom: 16 // High zoom for precise location
+          });
+          setIsMapInitialized(true);
+        } else if (mapRef.current) {
+          // If map already initialized, fly to location
           mapRef.current.flyTo({
             center: coords,
-            zoom: 16, // Higher zoom for meter-level precision
+            zoom: 16,
             duration: 2000
           });
         }
@@ -88,7 +98,15 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
         setCustomerLocation(fallback);
         setIsLocationPermissionDenied(true);
         
-        if (mapRef.current) {
+        // Initialize map with fallback if not already initialized
+        if (!isMapInitialized) {
+          setViewState({
+            longitude: fallback[0],
+            latitude: fallback[1],
+            zoom: 12
+          });
+          setIsMapInitialized(true);
+        } else if (mapRef.current) {
           mapRef.current.flyTo({
             center: fallback,
             zoom: 12,
@@ -102,7 +120,7 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
         maximumAge: 0              // No cached location
       }
     );
-  }, []);
+  }, [isMapInitialized]);
 
   // Scramble location (demo feature)
   const scrambleLocation = useCallback(() => {
@@ -179,11 +197,17 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
     }
   }, []);
 
-  // Initialize on mount
+  // Initialize on mount - request location FIRST, then fetch detailers
   useEffect(() => {
-    fetchDetailers();
+    // Request location immediately on component mount
     requestLocation();
-  }, [fetchDetailers, requestLocation]);
+    // Fetch detailers after a brief delay to let location load
+    const timer = setTimeout(() => {
+      fetchDetailers();
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   // 🌟 ANIMATED PULSATING DETAILER LAYERS
   const detailerPulse1Layer: LayerProps = {
@@ -404,19 +428,21 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
 
   return (
     <div className={`relative h-full ${className}`}>
-      <Map
-        ref={mapRef}
-        {...viewState}
-        onMove={evt => setViewState(evt.viewState)}
-        onLoad={() => setIsLoaded(true)}
-        mapStyle={process.env.NEXT_PUBLIC_MAPBOX_STYLE}
-        mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
-        onClick={handleMapClick}
-        interactiveLayerIds={['clusters', 'unclustered-point']}
-        cursor="default"
-        style={{ width: '100%', height: '100%' }}
-        attributionControl={false}
-      >
+      {/* Only render map once we have a location-based viewport */}
+      {isMapInitialized && (
+        <Map
+          ref={mapRef}
+          {...viewState}
+          onMove={evt => setViewState(evt.viewState)}
+          onLoad={() => setIsLoaded(true)}
+          mapStyle={process.env.NEXT_PUBLIC_MAPBOX_STYLE}
+          mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
+          onClick={handleMapClick}
+          interactiveLayerIds={['clusters', 'unclustered-point']}
+          cursor="default"
+          style={{ width: '100%', height: '100%' }}
+          attributionControl={false}
+        >
         {/* Detailers source with animated pulsating layers */}
         {detailers && (
           <Source 
@@ -447,7 +473,8 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
             <Layer {...customerPuckLayer} />
           </Source>
         )}
-      </Map>
+        </Map>
+      )}
 
       {/* Custom Controls */}
       <MapControls
@@ -467,12 +494,13 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
         />
       )}
 
-      {/* Loading indicator */}
-      {!isLoaded && (
+      {/* Loading indicator - show until map is initialized with location */}
+      {!isMapInitialized && (
         <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-400 mx-auto"></div>
-            <p className="mt-2 text-gray-300">Loading map...</p>
+            <p className="mt-2 text-gray-300">Getting your location...</p>
+            <p className="mt-1 text-xs text-gray-400">Please allow location access for the best experience</p>
           </div>
         </div>
       )}

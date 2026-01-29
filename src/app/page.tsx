@@ -92,6 +92,56 @@ export default function HomePage() {
               <li>• Seeded demo data - always looks alive!</li>
             </ul>
           </div>
+
+          {/* NEW: Enterprise Booking System */}
+          <div className="mt-12 bg-white rounded-2xl p-8 shadow-lg border border-gray-200">
+            <div className="text-center mb-6">
+              <div className="h-12 w-12 bg-gradient-to-r from-teal-500 to-blue-500 rounded-xl mb-4 mx-auto flex items-center justify-center">
+                <span className="text-white text-xl">🚀</span>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Enterprise Booking System</h3>
+              <p className="text-gray-600">Production-ready booking platform with Stripe Connect, real-time scheduling, and state machine workflows</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <div className="text-2xl font-bold text-teal-600 mb-1">14</div>
+                <div className="text-sm text-gray-600">Booking States</div>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600 mb-1">8.5%</div>
+                <div className="text-sm text-gray-600">Platform Fee</div>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <div className="text-2xl font-bold text-purple-600 mb-1">100%</div>
+                <div className="text-sm text-gray-600">TypeScript</div>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-6 mb-6">
+              <h4 className="font-semibold text-gray-900 mb-3">✅ System Components</h4>
+              <div className="grid grid-cols-2 gap-2 text-sm text-gray-700">
+                <div>• State Machine with Validation</div>
+                <div>• Stripe Connect Marketplace</div>
+                <div>• Smart Conflict Prevention</div>
+                <div>• Real-time Notifications</div>
+                <div>• GPS Service Area Validation</div>
+                <div>• Comprehensive Analytics</div>
+                <div>• Webhook Event Processing</div>
+                <div>• Mobile-responsive UI</div>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <a 
+                href="/test-booking"
+                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-teal-500 to-blue-500 text-white font-medium rounded-lg hover:from-teal-600 hover:to-blue-600 transition-all transform hover:scale-105"
+              >
+                🧪 Test Booking System
+              </a>
+              <p className="text-xs text-gray-500 mt-2">Experience the full enterprise booking workflow</p>
+            </div>
+          </div>
         </div>
       </main>
     </div>
