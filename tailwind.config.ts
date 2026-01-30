@@ -8,25 +8,36 @@ const config: Config = {
     ],
     theme: {
         extend: {
+            colors: {
+                brand: {
+                    950: '#020617', // Very dark background
+                    900: '#0f172a', // Main background
+                    800: '#1e293b', // Cards / Secondary
+                    700: '#334155', // Borders
+                    600: '#475569', // Muted text
+                    500: '#64748b',
+                    400: '#94a3b8',
+                    300: '#cbd5e1',
+                    200: '#e2e8f0',
+                    100: '#f1f5f9',
+                    50: '#f8fafc',
+                },
+                accent: {
+                    DEFAULT: '#38bdf8', // Sky 400 - Primary Action
+                    hover: '#0ea5e9',   // Sky 500
+                    600: '#0284c7',     // Sky 600
+                    700: '#0369a1',     // Sky 700
+                    glow: 'rgba(56, 189, 248, 0.5)',
+                }
+            },
+            fontFamily: {
+                sans: ['var(--font-inter)', 'sans-serif'],
+            },
             backgroundImage: {
                 "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
                 "gradient-conic":
                     "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
             },
-            colors: {
-                teal: {
-                    50: '#f0fdfa',
-                    100: '#ccfbf1',
-                    200: '#99f6e4',
-                    300: '#5eead4',
-                    400: '#2dd4bf',
-                    500: '#14b8a6',
-                    600: '#0d9488',
-                    700: '#0f766e',
-                    800: '#115e59',
-                    900: '#134e4a',
-                }
-            }
         },
     },
     plugins: [],

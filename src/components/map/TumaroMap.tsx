@@ -7,7 +7,7 @@ import {
   Layer, 
   type MapRef, 
   type ViewState,
-  type MapLayerMouseEvent as MapEvent,
+  type MapMouseEvent as MapEvent,
   type LayerProps 
 } from 'react-map-gl/mapbox';
 import type { FeatureCollection, Feature, Point } from 'geojson';

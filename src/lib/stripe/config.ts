@@ -10,7 +10,7 @@ if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
 
 // Initialize Stripe with API version
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-12-18.acacia',
+  apiVersion: '2026-01-28.clover',
   typescript: true
 });
 
@@ -42,14 +42,14 @@ export const PLATFORM_CONFIG = {
 
 // Payment configuration
 export const PAYMENT_CONFIG = {
-  currency: 'usd',
+  currency: 'usd' as const,
   automatic_payment_methods: {
     enabled: true,
-    allow_redirects: 'never'
+    allow_redirects: 'never' as const
   },
-  capture_method: 'automatic',
-  confirmation_method: 'automatic',
-  setup_future_usage: 'off_session' // For repeat customers
+  capture_method: 'automatic' as const,
+  confirmation_method: 'automatic' as const,
+  setup_future_usage: 'off_session' as const // For repeat customers
 };
 
 // Supported countries for Stripe Connect

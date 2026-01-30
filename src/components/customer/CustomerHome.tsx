@@ -1,131 +1,165 @@
 "use client";
 
-import { mockDetailers } from "@/lib/mockData";
-import { Star, Clock, MapPin } from "lucide-react";
+import Link from "next/link";
+import { ChevronRight, MapPin, Calendar, Star, Zap, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 
 export function CustomerHome() {
-  const featuredDetailers = mockDetailers.slice(0, 3);
-  
-  // Filter for detailers with promotions
-  const detailersWithPromotions = mockDetailers
-    .filter(d => d.promotions.length > 0)
-    .slice(0, 2);
+  const recentBookings = [
+    {
+      id: "1",
+      service: "Premium Wash & Wax",
+      detailer: "Alex Johnson",
+      date: "Dec 15, 2023",
+      status: "completed",
+      rating: 5,
+    },
+    {
+      id: "2", 
+      service: "Interior Deep Clean",
+      detailer: "Maria Garcia",
+      date: "Nov 28, 2023",
+      status: "completed",
+      rating: 5,
+    },
+  ];
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { 
-      opacity: 1,
-      transition: { 
-        staggerChildren: 0.2 
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: { duration: 0.5 }
-    }
-  };
+  const quickActions = [
+    {
+      title: "Book New Service",
+      description: "Find and book a detailer near you",
+      icon: Calendar,
+      href: "/customer/map",
+      color: "bg-accent-DEFAULT",
+    },
+    {
+      title: "Find Detailers",
+      description: "Explore detailers in your area",
+      icon: MapPin,
+      href: "/customer/map",
+      color: "bg-blue-600",
+    },
+    {
+      title: "Quick Clean",
+      description: "Get a basic wash in 30 minutes",
+      icon: Zap,
+      href: "/customer/map?service=quick",
+      color: "bg-purple-600",
+    },
+  ];
 
   return (
-    <motion.div 
-      className="space-y-8"
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: "-100px" }}
-      variants={containerVariants}
-    >
-      {/* Hero Section */}
-      <motion.div 
-        variants={itemVariants}
-        className="bg-gradient-to-r from-teal-500 to-teal-600 rounded-2xl p-8 text-white text-center shadow-lg"
-      >
-        <h1 className="text-3xl sm:text-4xl font-bold mb-4">
-          Tumaro — Book it today. Done by Tumaro.
-        </h1>
-        <button className="bg-white text-teal-600 px-8 py-3 rounded-lg font-bold hover:bg-gray-50 transition-colors transform hover:scale-105 shadow-md">
-          Book Now
-        </button>
-      </motion.div>
+    <div className="p-6 space-y-8">
+      {/* Welcome Section */}
+      <div className="text-center space-y-2">
+        <h1 className="text-3xl font-bold text-white">Welcome back!</h1>
+        <p className="text-brand-400">Ready to give your car some love?</p>
+      </div>
 
-      {/* Promotions Section - Moved to top */}
-      <motion.div variants={itemVariants}>
-        <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <span>🔥</span> Today's Promotions
-        </h2>
-        <div className="space-y-4">
-          {detailersWithPromotions.map((detailer) => (
-            <motion.div 
-              key={detailer.id} 
-              whileHover={{ scale: 1.02 }}
-              className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-xl p-5 border border-orange-200 shadow-sm"
+      {/* Quick Actions */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold text-white">Quick Actions</h2>
+        <div className="grid grid-cols-1 gap-4">
+          {quickActions.map((action, index) => (
+            <motion.div
+              key={action.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
             >
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">{detailer.businessName}</h3>
-                  <p className="text-sm text-orange-700 font-bold mb-1">{detailer.promotions[0]?.title}</p>
-                  <p className="text-sm text-gray-600">{detailer.promotions[0]?.description}</p>
+              <Link
+                href={action.href}
+                className="block p-6 rounded-2xl bg-brand-900/50 border border-brand-800 hover:bg-brand-800/80 transition-all duration-300 group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`h-12 w-12 rounded-xl ${action.color} flex items-center justify-center text-white group-hover:scale-110 transition-transform`}>
+                    <action.icon className="h-6 w-6" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-white group-hover:text-accent-DEFAULT transition-colors">
+                      {action.title}
+                    </h3>
+                    <p className="text-sm text-brand-400 mt-1">{action.description}</p>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-brand-600 group-hover:text-accent-DEFAULT group-hover:translate-x-1 transition-all" />
                 </div>
-                <div className="bg-orange-500 text-white px-3 py-1 rounded-lg text-sm font-bold shadow-sm">
-                  {detailer.promotions[0]?.discount}% OFF
-                </div>
-              </div>
+              </Link>
             </motion.div>
           ))}
         </div>
-      </motion.div>
+      </div>
 
-      {/* Featured Businesses Section - Renamed and moved bottom */}
-      <motion.div variants={itemVariants}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-900">Featured Businesses</h2>
-          <button className="text-teal-600 text-sm font-medium hover:text-teal-700">View All</button>
+      {/* Recent Bookings */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-white">Recent Services</h2>
+          <Link
+            href="/customer/bookings"
+            className="text-accent-DEFAULT text-sm font-medium hover:text-accent-hover transition-colors"
+          >
+            View All
+          </Link>
         </div>
-        <div className="space-y-4">
-          {featuredDetailers.map((detailer) => (
-            <motion.div 
-              key={detailer.id} 
-              whileHover={{ y: -5 }}
-              className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-all"
+
+        {recentBookings.length > 0 ? (
+          <div className="space-y-3">
+            {recentBookings.map((booking, index) => (
+              <motion.div
+                key={booking.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="p-4 rounded-xl bg-brand-900/50 border border-brand-800"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <h3 className="font-medium text-white">{booking.service}</h3>
+                    <p className="text-sm text-brand-400">{booking.detailer}</p>
+                    <p className="text-xs text-brand-500">{booking.date}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      {[...Array(booking.rating)].map((_, i) => (
+                        <Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                      ))}
+                    </div>
+                    <span className="px-2 py-1 rounded-full bg-green-500/20 text-green-400 text-xs">
+                      {booking.status}
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 space-y-3">
+            <div className="h-16 w-16 rounded-full bg-brand-800 flex items-center justify-center mx-auto">
+              <Clock className="h-8 w-8 text-brand-600" />
+            </div>
+            <p className="text-brand-400">No recent bookings</p>
+            <Link
+              href="/customer/map"
+              className="inline-flex items-center gap-2 text-accent-DEFAULT font-medium hover:text-accent-hover transition-colors"
             >
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h3 className="font-semibold text-gray-900 text-lg">{detailer.businessName}</h3>
-                  <p className="text-sm text-gray-600">{detailer.name}</p>
-                </div>
-                <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-md">
-                  <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                  <span className="text-sm font-medium">{detailer.rating}</span>
-                  <span className="text-xs text-gray-500">({detailer.reviewCount})</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="flex items-center gap-1 text-sm text-gray-600">
-                  <MapPin className="h-4 w-4 text-gray-400" />
-                  <span>Mobile Service</span>
-                </div>
-                <div className="flex items-center gap-1 text-sm text-gray-600">
-                  <Clock className="h-4 w-4 text-gray-400" />
-                  <span>{detailer.hours}</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between border-t border-gray-100 pt-4">
-                <div className="text-sm">
-                  <span className="text-gray-500">Starting at</span>
-                  <span className="font-bold text-gray-900 ml-1 text-lg">${detailer.services[0]?.price}</span>
-                </div>
-                <button className="bg-teal-500 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-teal-600 transition-colors shadow-sm">
-                  Book Service
-                </button>
-              </div>
-            </motion.div>
-          ))}
+              Book your first service
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+          </div>
+        )}
+      </div>
+
+      {/* Status Card */}
+      <div className="p-6 rounded-2xl bg-gradient-to-br from-accent-DEFAULT/20 to-blue-600/20 border border-accent-DEFAULT/30">
+        <div className="flex items-center gap-4">
+          <div className="h-12 w-12 rounded-full bg-accent-DEFAULT flex items-center justify-center">
+            <Star className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-white">Premium Member</h3>
+            <p className="text-sm text-accent-100">Enjoy exclusive benefits and priority booking</p>
+          </div>
         </div>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 }

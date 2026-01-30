@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Map, Wallet, User, HelpCircle } from "lucide-react";
+import { Home, Map, Wallet, User, HelpCircle, ChevronRight } from "lucide-react";
 import { useAppStore } from "@/lib/store";
+import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
   { key: "home", label: "Home", icon: Home, href: "/home" },
@@ -27,7 +28,6 @@ export function AppShell({ children, title }: { children: React.ReactNode; title
   function switchRole(nextRole: "customer" | "detailer") {
     setRole(nextRole);
     const nextBase = nextRole === "detailer" ? "/detailer" : "/customer";
-    // preserve tab (home/map/wallet/account/help) if possible
     const tab = pathname.split("/").slice(-1)[0] || "home";
     router.push(`${nextBase}/${tab}`);
   }
@@ -35,44 +35,60 @@ export function AppShell({ children, title }: { children: React.ReactNode; title
   const isActive = (tabHref: string) => pathname.includes(tabHref);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-brand-950 text-brand-50 font-sans">
       {/* Desktop sidebar */}
       <div className="hidden lg:flex">
-        <aside className="fixed left-0 top-0 h-screen w-72 bg-white/80 backdrop-blur border-r border-gray-200">
-          <div className="h-16 px-5 flex items-center gap-3 border-b border-gray-200">
-            <div className="h-9 w-9 rounded-xl bg-teal-500" />
-            <div className="font-bold text-gray-900">Mobile Detailer</div>
+        <aside className="fixed left-0 top-0 h-screen w-72 bg-brand-900 border-r border-brand-800 shadow-2xl z-20">
+          <div className="h-20 px-6 flex items-center gap-4 border-b border-brand-800/50">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-accent-DEFAULT to-blue-600 shadow-lg shadow-accent/20 flex items-center justify-center">
+              <span className="text-white font-bold text-xl">M</span>
+            </div>
+            <div className="font-bold text-lg tracking-tight text-white">Mobile Detailer</div>
           </div>
 
-          <nav className="p-3">
+          <nav className="p-4 space-y-2 mt-4">
             {navItems.map((it) => {
               const Icon = it.icon;
               const href = `${base}${it.href}`;
               const active = isActive(it.href.split("/").pop() || "");
+
               return (
                 <Link
                   key={it.key}
                   href={href}
-                  className={cx(
-                    "flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors",
-                    active ? "bg-teal-50 text-teal-700" : "text-gray-700 hover:bg-gray-100"
-                  )}
+                  className="relative group block"
                 >
-                  <Icon className={cx("h-5 w-5", active && "text-teal-600")} />
-                  {it.label}
+                  {active && (
+                    <motion.div
+                      layoutId="activeTab"
+                      className="absolute inset-0 bg-brand-800 rounded-xl"
+                      initial={false}
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    />
+                  )}
+                  <div className={cx(
+                    "relative flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors z-10",
+                    active ? "text-accent-DEFAULT" : "text-brand-400 group-hover:text-brand-200"
+                  )}>
+                    <Icon className={cx("h-5 w-5", active && "text-accent-DEFAULT")} />
+                    <span>{it.label}</span>
+                    {active && <motion.div layoutId="activeGlow" className="absolute right-3 w-1.5 h-1.5 rounded-full bg-accent-DEFAULT shadow-[0_0_8px_rgba(56,189,248,0.8)]" />}
+                  </div>
                 </Link>
               );
             })}
           </nav>
 
-          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
-            <div className="text-xs text-gray-500 mb-2">Mode</div>
-            <div className="flex gap-2">
+          <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-brand-800/50 bg-brand-900">
+            <div className="text-xs uppercase tracking-wider text-brand-500 font-semibold mb-3">Switch Mode</div>
+            <div className="flex bg-brand-950 p-1 rounded-xl border border-brand-800">
               <button
                 onClick={() => switchRole("customer")}
                 className={cx(
-                  "flex-1 rounded-lg px-3 py-2 text-sm border transition-colors",
-                  role === "customer" ? "bg-teal-500 text-white border-teal-500" : "bg-white border-gray-300 hover:bg-gray-50"
+                  "flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-300",
+                  role === "customer"
+                    ? "bg-brand-800 text-white shadow-lg shadow-black/20"
+                    : "text-brand-500 hover:text-brand-300"
                 )}
               >
                 Customer
@@ -80,8 +96,10 @@ export function AppShell({ children, title }: { children: React.ReactNode; title
               <button
                 onClick={() => switchRole("detailer")}
                 className={cx(
-                  "flex-1 rounded-lg px-3 py-2 text-sm border transition-colors",
-                  role === "detailer" ? "bg-teal-500 text-white border-teal-500" : "bg-white border-gray-300 hover:bg-gray-50"
+                  "flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-300",
+                  role === "detailer"
+                    ? "bg-brand-800 text-white shadow-lg shadow-black/20"
+                    : "text-brand-500 hover:text-brand-300"
                 )}
               >
                 Detailer
@@ -90,46 +108,81 @@ export function AppShell({ children, title }: { children: React.ReactNode; title
           </div>
         </aside>
 
-        <main className="ml-72 w-full">
-          <header className="sticky top-0 z-10 h-16 px-6 flex items-center justify-between bg-white/80 backdrop-blur border-b border-gray-200">
-            <div className="text-lg font-semibold text-gray-900">{title}</div>
-            <div className="flex items-center gap-3">
-              <div className="px-3 py-1 rounded-full bg-gray-100 text-sm text-gray-700">Profile</div>
-              <div className="px-2 py-1 rounded bg-teal-100 text-teal-700 text-xs font-medium">
-                {role === "customer" ? "Customer" : "Detailer"}
+        <main className="ml-72 w-full min-h-screen bg-brand-950 relative">
+          {/* Header */}
+          <header className="sticky top-0 z-10 h-20 px-8 flex items-center justify-between bg-brand-950/80 backdrop-blur-md border-b border-brand-800/50">
+            <h1 className="text-2xl font-bold text-white tracking-tight">{title}</h1>
+            <div className="flex items-center gap-4">
+              <div className="bg-brand-900 border border-brand-800 rounded-full px-4 py-1.5 flex items-center gap-2">
+                <div className={cx(
+                  "w-2 h-2 rounded-full",
+                  role === "customer" ? "bg-accent-DEFAULT shadow-[0_0_8px_rgba(56,189,248,0.5)]" : "bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]"
+                )} />
+                <span className="text-xs font-semibold text-brand-300 uppercase tracking-wide">
+                  {role === "customer" ? "Customer Mode" : "Detailer Mode"}
+                </span>
+              </div>
+              <div className="h-10 w-10 rounded-full bg-brand-800 border border-brand-700 flex items-center justify-center text-brand-300 hover:border-brand-600 transition-colors cursor-pointer">
+                <User className="h-5 w-5" />
               </div>
             </div>
           </header>
-          <div className="p-6 max-w-7xl mx-auto">{children}</div>
+
+          <div className="p-8 max-w-7xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              {children}
+            </motion.div>
+          </div>
         </main>
       </div>
 
       {/* Mobile layout */}
-      <div className="lg:hidden">
-        <header className="sticky top-0 z-10 h-14 px-4 flex items-center justify-between bg-white/80 backdrop-blur border-b border-gray-200">
-          <div className="font-semibold text-gray-900">{title}</div>
+      <div className="lg:hidden flex flex-col min-h-screen">
+        <header className="sticky top-0 z-20 h-16 px-4 flex items-center justify-between bg-brand-950/90 backdrop-blur-md border-b border-brand-800">
+          <div className="font-bold text-lg text-white">{title}</div>
           <button
             onClick={() => switchRole(role === "customer" ? "detailer" : "customer")}
-            className="text-sm px-3 py-1 rounded-full bg-teal-50 text-teal-700 border border-teal-100"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-900 border border-brand-800 text-xs font-medium text-brand-300"
           >
+            <div className={cx("w-2 h-2 rounded-full", role === 'customer' ? 'bg-accent-DEFAULT' : 'bg-purple-500')} />
             {role === "customer" ? "Customer" : "Detailer"}
           </button>
         </header>
 
-        <div className="p-4 pb-24">{children}</div>
+        <div className="flex-1 p-4 pb-24 overflow-y-auto">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            {children}
+          </motion.div>
+        </div>
 
-        <nav className="fixed bottom-0 left-0 right-0 h-20 bg-white/90 backdrop-blur border-t border-gray-200 z-50">
-          <div className="grid grid-cols-5 h-full">
+        <nav className="fixed bottom-0 left-0 right-0 h-20 bg-brand-900/90 backdrop-blur-lg border-t border-brand-800 z-50 pb-safe">
+          <div className="grid grid-cols-5 h-full relative">
             {navItems.map((it) => {
               const Icon = it.icon;
               const href = `${base}${it.href}`;
               const active = isActive(it.href.split("/").pop() || "");
+
               return (
-                <Link key={it.key} href={href} className="flex flex-col items-center justify-center gap-1">
-                  <Icon className={cx("h-5 w-5", active ? "text-teal-600" : "text-gray-500")} />
-                  <div className={cx("text-[11px]", active ? "text-teal-700 font-medium" : "text-gray-600")}>
+                <Link key={it.key} href={href} className="relative flex flex-col items-center justify-center gap-1 h-full">
+                  {active && (
+                    <motion.div
+                      layoutId="mobileActiveTab"
+                      className="absolute inset-x-2 top-2 bottom-2 bg-brand-800 rounded-xl -z-10"
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    />
+                  )}
+                  <Icon className={cx("h-6 w-6 transition-colors", active ? "text-accent-DEFAULT" : "text-brand-500")} />
+                  <span className={cx("text-[10px] font-medium transition-colors", active ? "text-brand-100" : "text-brand-600")}>
                     {it.label}
-                  </div>
+                  </span>
                 </Link>
               );
             })}

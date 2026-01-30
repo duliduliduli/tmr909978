@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import { mockDetailers } from "@/lib/mockData";
-import { Star, Phone, Clock, X, MapPin, Shuffle } from "lucide-react";
+import { Star, Phone, Clock, X, MapPin, Shuffle, Search, Navigation } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Mapbox access token - in production, use environment variables
 const MAPBOX_TOKEN = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw';
@@ -62,7 +63,7 @@ export function CustomerMap() {
     const randomLat = 34.0522 + (Math.random() - 0.5) * 0.2; // ±0.1 degrees around LA
     const randomLng = -118.2437 + (Math.random() - 0.5) * 0.2;
     const newLocation: [number, number] = [randomLng, randomLat];
-    
+
     setUserLocation(newLocation);
     if (map.current) {
       map.current.flyTo({
@@ -78,10 +79,10 @@ export function CustomerMap() {
     if (!mapContainer.current) return;
 
     mapboxgl.accessToken = MAPBOX_TOKEN;
-    
+
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
+      style: 'mapbox://styles/mapbox/dark-v11', // Dark mode map style
       center: [-118.2437, 34.0522], // Los Angeles
       zoom: 12,
       pitch: 0,
@@ -115,12 +116,20 @@ export function CustomerMap() {
     mockDetailers.forEach((detailer) => {
       const el = document.createElement('div');
       el.className = 'marker';
-      el.style.backgroundImage = 'url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJDOC4xMzQwMSAyIDUgNS4xMzQwMSA1IDlDNSAxNC4yNSAxMiAyMiAxMiAyMkMxMiAyMiAxOSAxNC4yNSAxOSA5QzE5IDUuMTM0MDEgMTUuODY2IDIgMTIgMloiIGZpbGw9IiMxNEI4QTYiIHN0cm9rZT0iI0ZGRkZGRiIgc3Ryb2tlLXdpZHRoPSIyIi8+CjxjaXJjbGUgY3g9IjEyIiBjeT0iOSIgcj0iMyIgZmlsbD0iI0ZGRkZGRiIvPgo8L3N2Zz4K)';
-      el.style.width = '24px';
-      el.style.height = '24px';
-      el.style.backgroundSize = '100%';
+      // Custom SVG marker for dark mode
+      el.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#38bdf8" stroke="white" stroke-width="2" width="32" height="32">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+          <circle cx="12" cy="9" r="2.5" fill="white"/>
+        </svg>
+      `;
+      el.style.width = '32px';
+      el.style.height = '32px';
       el.style.cursor = 'pointer';
-      el.addEventListener('click', () => setSelectedDetailer(detailer.id));
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setSelectedDetailer(detailer.id);
+      });
 
       const marker = new mapboxgl.Marker(el)
         .setLngLat([detailer.location.lng, detailer.location.lat])
@@ -137,12 +146,7 @@ export function CustomerMap() {
     // Create user location marker
     const userEl = document.createElement('div');
     userEl.className = 'user-marker';
-    userEl.style.backgroundColor = '#3B82F6';
-    userEl.style.border = '3px solid white';
-    userEl.style.borderRadius = '50%';
-    userEl.style.width = '16px';
-    userEl.style.height = '16px';
-    userEl.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.3)';
+    userEl.innerHTML = '<div style="width: 16px; height: 16px; background-color: #3b82f6; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.4);"></div>';
 
     new mapboxgl.Marker(userEl)
       .setLngLat(userLocation)
@@ -150,117 +154,140 @@ export function CustomerMap() {
   }, [userLocation]);
 
   return (
-    <div className="relative h-[calc(100vh-8rem)] bg-gray-100 rounded-xl overflow-hidden">
+    <div className="relative h-[calc(100vh-8rem)] bg-brand-900 rounded-3xl overflow-hidden border border-brand-800 shadow-2xl">
       {/* Mapbox GL CSS */}
       <style jsx global>{`
         @import url('https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css');
-        .marker {
-          display: block;
-          border: none;
-          border-radius: 50%;
-          cursor: pointer;
+        .mapboxgl-ctrl-group {
+            background-color: #1e293b !important; /* brand-800 */
+            border: 1px solid #334155 !important;
+        }
+        .mapboxgl-ctrl-icon {
+            filter: invert(1);
         }
       `}</style>
 
       {/* Loading overlay */}
-      {isLoading && (
-        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Loading map...</p>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-brand-950/80 backdrop-blur-sm flex items-center justify-center z-50"
+          >
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-accent-DEFAULT mx-auto mb-4"></div>
+              <p className="text-brand-300 font-medium tracking-wide">Initializing Map...</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Map container */}
       <div ref={mapContainer} className="absolute inset-0" />
 
       {/* Top Controls */}
-      <div className="absolute top-4 right-4 z-30 flex flex-col gap-2">
+      <div className="absolute top-6 right-6 z-30 flex flex-col gap-3">
         {/* Find My Location Button */}
-        <button 
+        <button
           onClick={getCurrentLocation}
-          className="bg-white p-3 rounded-lg shadow-lg hover:bg-gray-50 transition-colors group"
+          className="bg-brand-800/90 backdrop-blur border border-brand-700 p-3 rounded-xl shadow-lg hover:bg-brand-700 transition-colors group text-brand-300 hover:text-white"
           title="Find my location"
         >
-          <MapPin className="h-5 w-5 text-gray-600 group-hover:text-teal-600" />
+          <Navigation className="h-5 w-5" />
         </button>
-        
+
         {/* Location Scrambler Button */}
-        <button 
+        <button
           onClick={scrambleLocation}
-          className="bg-white p-3 rounded-lg shadow-lg hover:bg-gray-50 transition-colors group"
+          className="bg-brand-800/90 backdrop-blur border border-brand-700 p-3 rounded-xl shadow-lg hover:bg-brand-700 transition-colors group text-brand-300 hover:text-white"
           title="Scramble location (demo)"
         >
-          <Shuffle className="h-5 w-5 text-gray-600 group-hover:text-purple-600" />
+          <Shuffle className="h-5 w-5" />
         </button>
       </div>
 
       {/* Search Bar */}
-      <div className="absolute top-4 left-4 right-24 z-30">
-        <div className="bg-white rounded-lg shadow-lg">
+      <div className="absolute top-6 left-6 right-20 z-30 max-w-md">
+        <div className="bg-brand-800/90 backdrop-blur border border-brand-700 rounded-xl shadow-lg flex items-center px-4">
+          <Search className="h-5 w-5 text-brand-400" />
           <input
             type="text"
             placeholder="Search area or service..."
-            className="w-full px-4 py-3 rounded-lg border-0 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            className="w-full bg-transparent border-0 px-4 py-3.5 text-white placeholder-brand-500 focus:outline-none focus:ring-0"
           />
         </div>
       </div>
 
       {/* Bottom Sheet */}
-      {selected && (
-        <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl border-t border-gray-200 p-4 z-30 max-h-[60%] overflow-y-auto">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">{selected.businessName}</h3>
-              <p className="text-gray-600">{selected.name}</p>
-            </div>
-            <button 
-              onClick={() => setSelectedDetailer(null)}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <X className="h-5 w-5 text-gray-500" />
-            </button>
-          </div>
+      <AnimatePresence>
+        {selected && (
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="absolute bottom-0 left-0 right-0 max-h-[70%] z-40 p-4"
+          >
+            <div className="bg-brand-900/95 backdrop-blur-xl border border-brand-700 rounded-3xl shadow-2xl overflow-hidden">
+              {/* Handle bar */}
+              <div className="h-1.5 w-12 bg-brand-700 rounded-full mx-auto mt-3 mb-2" />
 
-          <div className="flex items-center gap-4 mb-4">
-            <div className="flex items-center gap-1">
-              <Star className="h-4 w-4 text-yellow-400 fill-current" />
-              <span className="font-medium">{selected.rating}</span>
-              <span className="text-sm text-gray-500">({selected.reviewCount} reviews)</span>
-            </div>
-            <div className="flex items-center gap-1 text-sm text-gray-600">
-              <Clock className="h-4 w-4" />
-              <span>{selected.hours}</span>
-            </div>
-          </div>
-
-          <div className="space-y-3 mb-6">
-            <h4 className="font-semibold text-gray-900">Popular Services</h4>
-            {selected.services.slice(0, 3).map((service) => (
-              <div key={service.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                <div>
-                  <div className="font-medium text-gray-900">{service.name}</div>
-                  <div className="text-sm text-gray-600">{service.description}</div>
-                  <div className="text-xs text-gray-500">{service.duration} min</div>
+              <div className="p-6 pt-2 overflow-y-auto max-h-[60vh]">
+                <div className="flex items-start justify-between mb-6">
+                  <div>
+                    <h3 className="text-2xl font-bold text-white mb-1">{selected.businessName}</h3>
+                    <p className="text-brand-400 font-medium">{selected.name}</p>
+                  </div>
+                  <button
+                    onClick={() => setSelectedDetailer(null)}
+                    className="p-2 bg-brand-800 rounded-full hover:bg-brand-700 transition-colors text-brand-400 hover:text-white"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
-                <div className="text-right">
-                  <div className="font-bold text-teal-600">${service.price}</div>
+
+                <div className="flex items-center gap-6 mb-6">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-400/10 rounded-lg border border-yellow-400/20">
+                    <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                    <span className="font-bold text-yellow-100">{selected.rating}</span>
+                    <span className="text-xs text-brand-400 ml-1">({selected.reviewCount})</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-sm text-brand-300">
+                    <Clock className="h-4 w-4 text-brand-400" />
+                    <span>{selected.hours}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-4 mb-8">
+                  <h4 className="font-semibold text-white text-sm uppercase tracking-wider">Popular Services</h4>
+                  {selected.services.slice(0, 3).map((service) => (
+                    <div key={service.id} className="flex items-center justify-between p-4 rounded-xl bg-brand-800/50 border border-brand-700/50 hover:border-brand-600 transition-colors group cursor-pointer">
+                      <div>
+                        <div className="font-bold text-white group-hover:text-accent-DEFAULT transition-colors">{service.name}</div>
+                        <div className="text-sm text-brand-400 mt-0.5">{service.description}</div>
+                        <div className="text-xs text-brand-500 mt-1">{service.duration} min</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-accent-DEFAULT text-lg">${service.price}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex gap-4">
+                  <button className="flex-1 bg-accent-DEFAULT text-white py-4 px-6 rounded-xl font-bold hover:bg-accent-hover transition-all transform hover:scale-[1.02] shadow-lg shadow-accent/20">
+                    Book Now
+                  </button>
+                  <button className="flex items-center justify-center w-14 h-14 bg-brand-800 border border-brand-700 rounded-xl hover:bg-brand-700 transition-colors text-brand-300 hover:text-white">
+                    <Phone className="h-6 w-6" />
+                  </button>
                 </div>
               </div>
-            ))}
-          </div>
-
-          <div className="flex gap-3">
-            <button className="flex-1 bg-teal-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-teal-600 transition-colors">
-              Book Service
-            </button>
-            <button className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
-              <Phone className="h-5 w-5 text-gray-600" />
-            </button>
-          </div>
-        </div>
-      )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
