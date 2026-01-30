@@ -70,6 +70,10 @@ model CustomerProfile {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
+  // Relationships
+  coinBalances    CustomerCoinBalance[]
+  coinTransactions CoinTransaction[]
+  
   @@map("customer_profiles")
 }
 
@@ -119,6 +123,7 @@ model ProviderProfile {
   services          Service[]
   availabilityRules AvailabilityRule[]
   bookings          Booking[]
+  businessCoin      BusinessCoin?
   
   @@map("provider_profiles")
 }
@@ -258,6 +263,11 @@ model Booking {
   stripeTransferId      String?    
   paymentMethod         String?    // last4 of card, etc.
   
+  // Coin redemption
+  coinsRedeemed         Int?       // Number of coins redeemed
+  coinDiscount          Float?     // Dollar amount discounted via coins
+  coinId                String?    // Which business coin was used
+  
   // Service details
   vehicleInfo        Json?         // Vehicle details (make, model, etc.)
   specialInstructions String?
@@ -288,6 +298,7 @@ model Booking {
   // Relationships
   events  BookingEvent[]
   review  Review?
+  coinTransactions CoinTransaction[]
   
   @@map("bookings")
 }
@@ -463,6 +474,127 @@ enum DiscountType {
   PERCENTAGE
   FIXED_AMOUNT  
   FREE_SERVICE
+}
+
+// ===== BUSINESS LOYALTY COINS =====
+
+model BusinessCoin {
+  id                String @id @default(cuid())
+  providerId        String
+  provider          ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  
+  // Coin branding
+  name              String          // e.g., "Alex's AutoCoins"
+  displayName       String          // e.g., "AutoCoins"
+  description       String?
+  iconUrl           String?         // Uploaded coin image
+  primaryColor      String @default("#3B82F6")
+  
+  // Earning settings
+  earnRate          Float @default(1.0)   // Coins per dollar spent
+  minimumEarnAmount Float @default(0.0)   // Min $ to earn coins
+  
+  // Redemption settings
+  redemptionValue   Float @default(0.01)  // Dollar value per coin
+  minimumRedemption Int @default(100)     // Min coins to redeem
+  maxRedemptionPerBooking Float?          // Max $ discount per booking
+  
+  // Status
+  isActive          Boolean @default(true)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relationships
+  customerBalances  CustomerCoinBalance[]
+  transactions      CoinTransaction[]
+  promotions        CoinPromotion[]
+  
+  @@unique([providerId])
+  @@map("business_coins")
+}
+
+model CustomerCoinBalance {
+  id           String @id @default(cuid())
+  customerId   String
+  customer     CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  coinId       String
+  coin         BusinessCoin @relation(fields: [coinId], references: [id], onDelete: Cascade)
+  
+  balance      Int @default(0)     // Current coin balance
+  totalEarned  Int @default(0)     // Lifetime coins earned
+  totalRedeemed Int @default(0)    // Lifetime coins redeemed
+  
+  lastEarnedAt   DateTime?
+  lastRedeemedAt DateTime?
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@unique([customerId, coinId])
+  @@map("customer_coin_balances")
+}
+
+model CoinTransaction {
+  id          String @id @default(cuid())
+  coinId      String
+  coin        BusinessCoin @relation(fields: [coinId], references: [id], onDelete: Cascade)
+  customerId  String
+  customer    CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  bookingId   String?
+  booking     Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  
+  type        CoinTransactionType
+  amount      Int                    // Positive for earned, negative for redeemed
+  description String?                // e.g., "Earned from Premium Wash"
+  
+  // Metadata
+  dollarAmount  Float?               // Associated transaction value
+  previousBalance Int               // Balance before this transaction
+  newBalance     Int                // Balance after this transaction
+  
+  createdAt   DateTime @default(now())
+  
+  @@map("coin_transactions")
+}
+
+model CoinPromotion {
+  id              String @id @default(cuid())
+  coinId          String
+  coin            BusinessCoin @relation(fields: [coinId], references: [id], onDelete: Cascade)
+  
+  // Promotion details
+  title           String
+  description     String?
+  requiredCoins   Int              // Coins needed to redeem
+  discountAmount  Float            // Dollar discount amount
+  
+  // Usage limits
+  maxRedemptions  Int?             // Total redemption limit
+  usedCount       Int @default(0)
+  maxPerCustomer  Int? @default(1) // Per customer limit
+  
+  // Validity
+  validFrom       DateTime
+  validUntil      DateTime?
+  isActive        Boolean @default(true)
+  
+  // Conditions
+  minOrderAmount  Float?           // Min booking value
+  applicableServices String[]      // Service restrictions
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("coin_promotions")
+}
+
+enum CoinTransactionType {
+  EARNED
+  REDEEMED
+  EXPIRED
+  BONUS
+  ADJUSTMENT
 }
 
 // ===== ANALYTICS & REPORTING =====

@@ -1,12 +1,70 @@
 "use client";
 
-import { useState } from "react";
-import { CreditCard, Plus, History, Gift, Coins, ChevronRight } from "lucide-react";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { CreditCard, Plus, History, Gift, Coins, ChevronRight, Star, Building } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+
+interface CoinBalance {
+  id: string;
+  coinId: string;
+  balance: number;
+  totalEarned: number;
+  totalRedeemed: number;
+  dollarValue: string;
+  lastEarnedAt: string | null;
+  lastRedeemedAt: string | null;
+  coin: {
+    id: string;
+    name: string;
+    displayName: string;
+    description: string | null;
+    iconUrl: string | null;
+    primaryColor: string;
+    redemptionValue: number;
+    minimumRedemption: number;
+    provider: {
+      businessName: string;
+      providerName: string;
+    };
+  };
+}
+
+interface CoinBalanceResponse {
+  balances: CoinBalance[];
+  totalCoins: number;
+  totalValue: string;
+  businessCount: number;
+}
 
 export function CustomerWallet() {
   const [balance] = useState(125.50);
-  const [coins] = useState(2450);
+  const [coinBalances, setCoinBalances] = useState<CoinBalance[]>([]);
+  const [totalCoinValue, setTotalCoinValue] = useState("0.00");
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedCoin, setSelectedCoin] = useState<CoinBalance | null>(null);
+
+  // Mock customer ID - in real app, get from auth context
+  const customerId = "customer_123";
+
+  useEffect(() => {
+    fetchCoinBalances();
+  }, []);
+
+  const fetchCoinBalances = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/coins/balance?customerId=${customerId}`);
+      if (response.ok) {
+        const data: CoinBalanceResponse = await response.json();
+        setCoinBalances(data.balances);
+        setTotalCoinValue(data.totalValue);
+      }
+    } catch (error) {
+      console.error('Error fetching coin balances:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const transactions = [
     {
@@ -19,11 +77,12 @@ export function CustomerWallet() {
     },
     {
       id: "2",
-      type: "refund",
-      description: "Service Cancellation",
-      amount: +35.00,
-      date: "Dec 10, 2023",
+      type: "coins",
+      description: "Earned 65 AutoCoins from Alex's Detail Shop",
+      amount: +65,
+      date: "Dec 15, 2023",
       status: "completed",
+      coinType: true,
     },
     {
       id: "3",
@@ -56,24 +115,28 @@ export function CustomerWallet() {
       description: "Top up your wallet balance",
       icon: Plus,
       color: "bg-green-600",
+      action: () => console.log("Add money"),
     },
     {
       title: "Payment Methods",
       description: "Manage cards and payment options",
       icon: CreditCard,
       color: "bg-blue-600",
+      action: () => console.log("Payment methods"),
     },
     {
       title: "Transaction History",
       description: "View all payment history",
       icon: History,
       color: "bg-purple-600",
+      action: () => console.log("Transaction history"),
     },
     {
       title: "Redeem Coins",
       description: "Use coins for discounts",
       icon: Gift,
       color: "bg-accent-DEFAULT",
+      action: () => console.log("Redeem coins"),
     },
   ];
 
@@ -96,12 +159,15 @@ export function CustomerWallet() {
               <CreditCard className="h-6 w-6" />
             </div>
           </div>
-          <button className="w-full py-2 px-4 bg-white/20 hover:bg-white/30 rounded-xl font-medium transition-colors">
+          <button 
+            className="w-full py-2 px-4 bg-white/20 hover:bg-white/30 rounded-xl font-medium transition-colors"
+            onClick={quickActions[0].action}
+          >
             Add Money
           </button>
         </motion.div>
 
-        {/* Coin Balance */}
+        {/* Total Coin Value */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -110,18 +176,109 @@ export function CustomerWallet() {
         >
           <div className="flex items-start justify-between mb-4">
             <div>
-              <p className="text-brand-400 text-sm">Tumaro Coins</p>
-              <p className="text-3xl font-bold text-white">{coins.toLocaleString()}</p>
-              <p className="text-xs text-brand-500 mt-1">≈ ${(coins * 0.01).toFixed(2)} value</p>
+              <p className="text-brand-400 text-sm">Total Coin Value</p>
+              <p className="text-3xl font-bold text-white">${totalCoinValue}</p>
+              <p className="text-xs text-brand-500 mt-1">From {coinBalances.length} business{coinBalances.length !== 1 ? 'es' : ''}</p>
             </div>
             <div className="h-12 w-12 rounded-full bg-yellow-500/20 flex items-center justify-center">
               <Coins className="h-6 w-6 text-yellow-400" />
             </div>
           </div>
-          <button className="w-full py-2 px-4 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-xl font-medium transition-colors">
-            Redeem Coins
+          <button 
+            className="w-full py-2 px-4 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-xl font-medium transition-colors"
+            onClick={quickActions[3].action}
+          >
+            View All Coins
           </button>
         </motion.div>
+      </div>
+
+      {/* My Business Coins */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-white">My Business Coins</h2>
+          {coinBalances.length > 3 && (
+            <button className="text-accent-DEFAULT text-sm font-medium hover:text-accent-hover transition-colors">
+              View All
+            </button>
+          )}
+        </div>
+
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="p-4 rounded-xl bg-brand-900/50 border border-brand-800 animate-pulse">
+                <div className="h-4 bg-brand-800 rounded w-3/4 mb-2"></div>
+                <div className="h-6 bg-brand-800 rounded w-1/2 mb-2"></div>
+                <div className="h-3 bg-brand-800 rounded w-full"></div>
+              </div>
+            ))}
+          </div>
+        ) : coinBalances.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {coinBalances.slice(0, 6).map((coinBalance, index) => (
+              <motion.div
+                key={coinBalance.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.1 }}
+                className="p-4 rounded-xl bg-brand-900/50 border border-brand-800 hover:bg-brand-800/50 transition-all duration-300 cursor-pointer group"
+                onClick={() => setSelectedCoin(coinBalance)}
+                style={{ borderColor: coinBalance.coin.primaryColor + '40' }}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    {coinBalance.coin.iconUrl ? (
+                      <img 
+                        src={coinBalance.coin.iconUrl} 
+                        alt={coinBalance.coin.displayName}
+                        className="h-10 w-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div 
+                        className="h-10 w-10 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: coinBalance.coin.primaryColor + '20' }}
+                      >
+                        <Building className="h-5 w-5" style={{ color: coinBalance.coin.primaryColor }} />
+                      </div>
+                    )}
+                    <div>
+                      <h3 className="font-semibold text-white text-sm group-hover:text-accent-DEFAULT transition-colors">
+                        {coinBalance.coin.displayName}
+                      </h3>
+                      <p className="text-xs text-brand-500">{coinBalance.coin.provider.businessName}</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-brand-600 group-hover:text-accent-DEFAULT group-hover:translate-x-1 transition-all" />
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-brand-400 text-sm">Balance:</span>
+                    <span className="text-white font-semibold">{coinBalance.balance} coins</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-brand-400 text-sm">Value:</span>
+                    <span className="text-accent-DEFAULT font-semibold">${coinBalance.dollarValue}</span>
+                  </div>
+                  {coinBalance.balance >= coinBalance.coin.minimumRedemption && (
+                    <div className="mt-2 px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full text-center">
+                      Ready to redeem
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 space-y-3">
+            <div className="h-16 w-16 rounded-full bg-brand-800 flex items-center justify-center mx-auto">
+              <Coins className="h-8 w-8 text-brand-600" />
+            </div>
+            <p className="text-brand-400">No business coins yet</p>
+            <p className="text-sm text-brand-500">Complete your first booking to start earning coins!</p>
+          </div>
+        )}
       </div>
 
       {/* Quick Actions */}
@@ -135,6 +292,7 @@ export function CustomerWallet() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: index * 0.1 }}
               className="p-4 rounded-xl bg-brand-900/50 border border-brand-800 hover:bg-brand-800/80 transition-all duration-300 group text-left"
+              onClick={action.action}
             >
               <div className={`h-10 w-10 rounded-lg ${action.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
                 <action.icon className="h-5 w-5 text-white" />
@@ -199,21 +357,35 @@ export function CustomerWallet() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              className="p-4 rounded-xl bg-brand-900/50 border border-brand-800"
+              className="p-4 rounded-xl bg-brand-900/50 border border-brand-800 flex items-center justify-between"
             >
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-white font-medium">{transaction.description}</p>
+              <div className="flex items-center gap-3">
+                <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
+                  transaction.coinType ? 'bg-yellow-500/20' : 'bg-brand-800'
+                }`}>
+                  {transaction.coinType ? (
+                    <Coins className="h-5 w-5 text-yellow-400" />
+                  ) : (
+                    <CreditCard className="h-5 w-5 text-brand-400" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-white font-medium text-sm">{transaction.description}</p>
                   <p className="text-xs text-brand-500">{transaction.date}</p>
                 </div>
-                <div className="text-right">
-                  <p className={`font-semibold ${transaction.amount > 0 ? 'text-green-400' : 'text-white'}`}>
-                    {transaction.amount > 0 ? '+' : ''}${Math.abs(transaction.amount).toFixed(2)}
-                  </p>
-                  <span className="px-2 py-1 rounded-full bg-green-500/20 text-green-400 text-xs">
-                    {transaction.status}
-                  </span>
-                </div>
+              </div>
+              <div className="text-right">
+                <p className={`font-semibold text-sm ${
+                  transaction.amount > 0 
+                    ? transaction.coinType ? 'text-yellow-400' : 'text-green-400'
+                    : 'text-white'
+                }`}>
+                  {transaction.amount > 0 ? '+' : ''}
+                  {transaction.coinType ? `${Math.abs(transaction.amount)} coins` : `$${Math.abs(transaction.amount).toFixed(2)}`}
+                </p>
+                <span className="px-2 py-1 rounded-full bg-green-500/20 text-green-400 text-xs">
+                  {transaction.status}
+                </span>
               </div>
             </motion.div>
           ))}
@@ -223,6 +395,68 @@ export function CustomerWallet() {
           View All Transactions
         </button>
       </div>
+
+      {/* Coin Detail Modal/Sheet (you can implement this later) */}
+      <AnimatePresence>
+        {selectedCoin && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50"
+            onClick={() => setSelectedCoin(null)}
+          >
+            <motion.div
+              initial={{ y: "100%", opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "100%", opacity: 0 }}
+              className="bg-brand-950 rounded-t-2xl sm:rounded-2xl p-6 w-full sm:max-w-md mx-4 mb-0 sm:mb-4"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-white">{selectedCoin.coin.displayName}</h3>
+                <button 
+                  onClick={() => setSelectedCoin(null)}
+                  className="text-brand-400 hover:text-white transition-colors"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="text-center">
+                  <p className="text-3xl font-bold text-white">{selectedCoin.balance}</p>
+                  <p className="text-brand-400">Available Coins</p>
+                  <p className="text-accent-DEFAULT font-semibold">${selectedCoin.dollarValue} value</p>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 text-center">
+                  <div>
+                    <p className="text-xl font-semibold text-white">{selectedCoin.totalEarned}</p>
+                    <p className="text-xs text-brand-500">Total Earned</p>
+                  </div>
+                  <div>
+                    <p className="text-xl font-semibold text-white">{selectedCoin.totalRedeemed}</p>
+                    <p className="text-xs text-brand-500">Total Redeemed</p>
+                  </div>
+                </div>
+                
+                <div className="pt-4">
+                  <p className="text-sm text-brand-400 mb-2">From: {selectedCoin.coin.provider.businessName}</p>
+                  <p className="text-xs text-brand-500">Minimum redemption: {selectedCoin.coin.minimumRedemption} coins</p>
+                  <p className="text-xs text-brand-500">Coin value: ${selectedCoin.coin.redemptionValue.toFixed(3)} each</p>
+                </div>
+                
+                {selectedCoin.balance >= selectedCoin.coin.minimumRedemption && (
+                  <button className="w-full py-3 bg-accent-DEFAULT hover:bg-accent-hover text-white rounded-xl font-semibold transition-colors">
+                    Redeem Coins
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

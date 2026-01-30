@@ -16,9 +16,9 @@ export default function HomePage() {
           <div className="flex h-20 items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-accent-DEFAULT to-blue-600 shadow-lg shadow-accent/20 flex items-center justify-center">
-                <span className="text-white font-bold text-xl">M</span>
+                <span className="text-white font-bold text-xl">T</span>
               </div>
-              <h1 className="text-xl font-bold text-white tracking-tight">Mobile Detailer</h1>
+              <h1 className="text-xl font-bold text-white tracking-tight">TUMARO</h1>
             </div>
             <div className="flex items-center space-x-6">
               <Link
@@ -48,14 +48,14 @@ export default function HomePage() {
             </div>
 
             <h1 className="text-5xl font-bold tracking-tight text-white sm:text-7xl mb-8 leading-tight">
-              Premium Car Detailing <br />
+              Tumaro - <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-DEFAULT to-blue-500">
-                On Your Schedule
+                Mobile services made easy
               </span>
             </h1>
 
             <p className="mx-auto max-w-2xl text-lg text-brand-400 mb-10 leading-relaxed">
-              Experience the future of car care. Instant booking, real-time tracking, and professional detailers who come to you.
+              Helping mobile businesses keep customers close while helping customers earn on their loyalty
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -63,14 +63,14 @@ export default function HomePage() {
                 href="/customer/home"
                 className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white text-brand-950 font-bold text-lg shadow-xl shadow-white/10 hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"
               >
-                Book a Detail
+                Customer Portal
                 <ChevronRight className="h-5 w-5" />
               </Link>
               <Link
                 href="/detailer/home"
                 className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-brand-900 border border-brand-700 text-white font-semibold text-lg hover:bg-brand-800 transition-all duration-300 flex items-center justify-center"
               >
-                Become a Detailer
+                Business Portal
               </Link>
             </div>
           </div>
