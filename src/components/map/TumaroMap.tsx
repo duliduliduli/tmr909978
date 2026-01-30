@@ -35,7 +35,6 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
   // UI state
   const [selectedDetailerId, setSelectedDetailerId] = useState<string | null>(null);
   const [isLocationPermissionDenied, setIsLocationPermissionDenied] = useState(false);
-  const [showBookingSlider, setShowBookingSlider] = useState(false);
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
 
   // Calculate distance between two coordinates using Haversine formula
@@ -475,10 +474,6 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
     }
   };
 
-  const handleBookingSliderOpen = () => {
-    setShowBookingSlider(true);
-    setSelectedDetailerId(null); // Close drawer when opening booking slider
-  };
 
   return (
     <div className={`relative h-full ${className}`}>
@@ -514,7 +509,7 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
             setSelectedDetailerId(detailer.id);
             setViewMode('map'); // Switch back to map view
           }}
-          onBookService={handleBookingSliderOpen}
+          onBookService={() => {}}
           userLocation={customerLocation}
         />
       ) : (
@@ -578,11 +573,11 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
       />
 
       {/* Detailer Selection Drawer */}
-      {selectedDetailer && !showBookingSlider && (
+      {selectedDetailer && (
         <DetailerDrawer
           detailer={selectedDetailer}
           onClose={() => setSelectedDetailerId(null)}
-          onBookService={handleBookingSliderOpen}
+          onBookService={() => {}} // Not needed anymore as booking is integrated
         />
       )}
 
@@ -597,15 +592,6 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
         </div>
       )}
         </>
-      )}
-
-      {/* Booking Slider */}
-      {showBookingSlider && selectedDetailer && (
-        <BookingSlider
-          detailer={selectedDetailer}
-          onClose={() => setShowBookingSlider(false)}
-          userLocation={customerLocation}
-        />
       )}
 
     </div>
