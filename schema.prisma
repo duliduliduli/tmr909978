@@ -73,6 +73,7 @@ model CustomerProfile {
   // Relationships
   coinBalances    CustomerCoinBalance[]
   coinTransactions CoinTransaction[]
+  savedAddresses  SavedAddress[]
   
   @@map("customer_profiles")
 }
@@ -625,4 +626,29 @@ model BookingAnalytics {
   
   @@unique([date])
   @@map("booking_analytics")
+}
+
+// ===== SAVED ADDRESSES =====
+
+model SavedAddress {
+  id          String @id @default(cuid())
+  customerId  String
+  customer    CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  
+  // Address info
+  label       String          // "Home", "Work", or custom label
+  address     String          // Full address string
+  latitude    Float
+  longitude   Float
+  city        String?
+  state       String?
+  postalCode  String?
+  
+  // Order for display
+  sortOrder   Int @default(0)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("saved_addresses")
 }

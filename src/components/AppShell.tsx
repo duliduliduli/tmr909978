@@ -153,11 +153,12 @@ export function AppShell({ children, title }: { children: React.ReactNode; title
           </button>
         </header>
 
-        <div className="flex-1 p-4 pb-24 overflow-y-auto">
+        <div className="h-[calc(100vh-9rem)] overflow-hidden">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
+            className="h-full"
           >
             {children}
           </motion.div>

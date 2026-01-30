@@ -9,6 +9,7 @@ interface MapControlsProps {
   onScrambleLocation: () => void;
   hasUserLocation: boolean;
   isLocationDenied: boolean;
+  isLocationShuffled: boolean;
 }
 
 export function MapControls({ 
@@ -17,7 +18,8 @@ export function MapControls({
   onCenterOnUser,
   onScrambleLocation,
   hasUserLocation, 
-  isLocationDenied 
+  isLocationDenied,
+  isLocationShuffled
 }: MapControlsProps) {
   return (
     <div className="absolute bottom-6 right-4 z-30 flex flex-col gap-2">
@@ -67,13 +69,21 @@ export function MapControls({
           onClick={onScrambleLocation}
           disabled={!hasUserLocation}
           className={`flex items-center justify-center w-12 h-12 transition-colors ${
-            hasUserLocation
-              ? 'hover:bg-gray-50 text-purple-600'
-              : 'text-gray-400 cursor-not-allowed'
+            !hasUserLocation
+              ? 'text-gray-400 cursor-not-allowed'
+              : isLocationShuffled
+              ? 'bg-purple-100 hover:bg-purple-200 text-purple-700'
+              : 'hover:bg-gray-50 text-purple-600'
           }`}
-          title={hasUserLocation ? 'Scramble location (demo)' : 'Need location first'}
+          title={
+            !hasUserLocation 
+              ? 'Need location first' 
+              : isLocationShuffled 
+              ? 'Return to original location' 
+              : 'Shuffle location (demo)'
+          }
         >
-          <Shuffle className="h-5 w-5" />
+          <Shuffle className={`h-5 w-5 transition-transform ${isLocationShuffled ? 'rotate-180' : ''}`} />
         </button>
       </div>
     </div>

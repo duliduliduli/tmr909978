@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CreditCard, Plus, History, Gift, Coins, ChevronRight, Star, Building } from "lucide-react";
+import { CreditCard, Plus, History, Gift, Coins, ChevronRight, ChevronLeft, Star, Building, Trash2, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface CoinBalance {
@@ -37,14 +37,14 @@ interface CoinBalanceResponse {
 }
 
 export function CustomerWallet() {
-  const [balance] = useState(125.50);
   const [coinBalances, setCoinBalances] = useState<CoinBalance[]>([]);
   const [totalCoinValue, setTotalCoinValue] = useState("0.00");
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCoin, setSelectedCoin] = useState<CoinBalance | null>(null);
+  const [currentView, setCurrentView] = useState<'main' | 'payment-methods' | 'transaction-history'>('main');
 
   // Mock customer ID - in real app, get from auth context
-  const customerId = "customer_123";
+  const customerId = "cust_1";
 
   useEffect(() => {
     fetchCoinBalances();
@@ -111,25 +111,18 @@ export function CustomerWallet() {
 
   const quickActions = [
     {
-      title: "Add Money",
-      description: "Top up your wallet balance",
-      icon: Plus,
-      color: "bg-green-600",
-      action: () => console.log("Add money"),
-    },
-    {
       title: "Payment Methods",
       description: "Manage cards and payment options",
       icon: CreditCard,
       color: "bg-blue-600",
-      action: () => console.log("Payment methods"),
+      action: () => setCurrentView("payment-methods"),
     },
     {
       title: "Transaction History",
-      description: "View all payment history",
+      description: "View all coin transactions",
       icon: History,
       color: "bg-purple-600",
-      action: () => console.log("Transaction history"),
+      action: () => setCurrentView("transaction-history"),
     },
     {
       title: "Redeem Coins",
@@ -140,58 +133,206 @@ export function CustomerWallet() {
     },
   ];
 
+  // Payment Methods View
+  const renderPaymentMethodsView = () => (
+    <div className="p-6 space-y-6">
+      {/* Back Button */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => setCurrentView('main')}
+          className="p-2 hover:bg-brand-800 rounded-lg transition-colors"
+        >
+          <ChevronLeft className="h-5 w-5 text-brand-400" />
+        </button>
+        <h1 className="text-2xl font-bold text-white">Payment Methods</h1>
+      </div>
+
+      {/* Existing Payment Methods */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold text-white">Saved Cards</h2>
+        <div className="space-y-3">
+          {paymentMethods.map((method, index) => (
+            <motion.div
+              key={method.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="p-4 rounded-xl bg-brand-900/50 border border-brand-800 flex items-center justify-between"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-brand-800 flex items-center justify-center">
+                  <CreditCard className="h-5 w-5 text-brand-400" />
+                </div>
+                <div>
+                  <p className="text-white font-medium">•••• {method.last4}</p>
+                  <p className="text-xs text-brand-500 capitalize">{method.type}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {method.isDefault && (
+                  <span className="px-2 py-1 rounded-full bg-accent-DEFAULT/20 text-accent-DEFAULT text-xs">
+                    Default
+                  </span>
+                )}
+                <button className="p-2 hover:bg-brand-700 rounded-lg transition-colors">
+                  <Trash2 className="h-4 w-4 text-red-400 hover:text-red-300 transition-colors" />
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      {/* Add New Card Section */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold text-white">Add New Card</h2>
+        <div className="p-4 rounded-xl bg-brand-900/50 border border-brand-800">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-brand-200 mb-2">Card Number</label>
+              <input
+                type="text"
+                placeholder="1234 5678 9012 3456"
+                className="w-full px-4 py-3 bg-brand-800 border border-brand-700 rounded-lg text-white placeholder-brand-500 focus:outline-none focus:ring-2 focus:ring-accent-DEFAULT"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-brand-200 mb-2">Expiry Date</label>
+                <input
+                  type="text"
+                  placeholder="MM/YY"
+                  className="w-full px-4 py-3 bg-brand-800 border border-brand-700 rounded-lg text-white placeholder-brand-500 focus:outline-none focus:ring-2 focus:ring-accent-DEFAULT"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-brand-200 mb-2">CVV</label>
+                <input
+                  type="text"
+                  placeholder="123"
+                  className="w-full px-4 py-3 bg-brand-800 border border-brand-700 rounded-lg text-white placeholder-brand-500 focus:outline-none focus:ring-2 focus:ring-accent-DEFAULT"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-brand-200 mb-2">Name on Card</label>
+              <input
+                type="text"
+                placeholder="John Smith"
+                className="w-full px-4 py-3 bg-brand-800 border border-brand-700 rounded-lg text-white placeholder-brand-500 focus:outline-none focus:ring-2 focus:ring-accent-DEFAULT"
+              />
+            </div>
+            <button className="w-full px-4 py-3 bg-accent-DEFAULT hover:bg-accent-hover text-white rounded-lg transition-colors font-medium">
+              Add Card
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Transaction History View
+  const renderTransactionHistoryView = () => (
+    <div className="p-6 space-y-6">
+      {/* Back Button */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => setCurrentView('main')}
+          className="p-2 hover:bg-brand-800 rounded-lg transition-colors"
+        >
+          <ChevronLeft className="h-5 w-5 text-brand-400" />
+        </button>
+        <h1 className="text-2xl font-bold text-white">Transaction History</h1>
+      </div>
+
+      {/* Filter Options */}
+      <div className="flex gap-2">
+        <button className="px-4 py-2 bg-accent-DEFAULT text-white rounded-lg text-sm font-medium">
+          All
+        </button>
+        <button className="px-4 py-2 bg-brand-800 text-brand-300 hover:bg-brand-700 rounded-lg text-sm font-medium transition-colors">
+          Coins Earned
+        </button>
+        <button className="px-4 py-2 bg-brand-800 text-brand-300 hover:bg-brand-700 rounded-lg text-sm font-medium transition-colors">
+          Coins Redeemed
+        </button>
+      </div>
+
+      {/* Transaction List */}
+      <div className="space-y-3">
+        {transactions.map((transaction, index) => (
+          <motion.div
+            key={transaction.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.05 }}
+            className="p-4 rounded-xl bg-brand-900/50 border border-brand-800"
+          >
+            <div className="flex items-center gap-3">
+              <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
+                transaction.coinType ? 'bg-yellow-500/20' : 'bg-brand-800'
+              }`}>
+                {transaction.coinType ? (
+                  <Coins className="h-5 w-5 text-yellow-400" />
+                ) : (
+                  <CreditCard className="h-5 w-5 text-brand-400" />
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="text-white font-medium text-sm">{transaction.description}</p>
+                <p className="text-xs text-brand-500">{transaction.date}</p>
+              </div>
+              <div className="text-right">
+                <p className={`font-semibold text-sm ${
+                  transaction.amount > 0 
+                    ? transaction.coinType ? 'text-yellow-400' : 'text-green-400'
+                    : 'text-white'
+                }`}>
+                  {transaction.amount > 0 ? '+' : ''}
+                  {transaction.coinType ? `${Math.abs(transaction.amount)} coins` : `$${Math.abs(transaction.amount).toFixed(2)}`}
+                </p>
+                <span className="px-2 py-1 rounded-full bg-green-500/20 text-green-400 text-xs">
+                  {transaction.status}
+                </span>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // Main view
+  if (currentView === 'payment-methods') {
+    return renderPaymentMethodsView();
+  }
+
+  if (currentView === 'transaction-history') {
+    return renderTransactionHistoryView();
+  }
+
   return (
     <div className="p-6 space-y-8">
-      {/* Balance Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Wallet Balance */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-6 rounded-2xl bg-gradient-to-br from-accent-DEFAULT to-blue-600 text-white"
-        >
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <p className="text-accent-100 text-sm">Wallet Balance</p>
-              <p className="text-3xl font-bold">${balance.toFixed(2)}</p>
-            </div>
-            <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
-              <CreditCard className="h-6 w-6" />
-            </div>
+      {/* Coin Summary Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="p-6 rounded-2xl bg-gradient-to-br from-yellow-500 to-amber-600 text-white"
+      >
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <p className="text-yellow-100 text-sm">Total Reward Coins</p>
+            <p className="text-3xl font-bold">${totalCoinValue}</p>
+            <p className="text-xs text-yellow-200 mt-1">From {coinBalances.length} business{coinBalances.length !== 1 ? 'es' : ''}</p>
           </div>
-          <button 
-            className="w-full py-2 px-4 bg-white/20 hover:bg-white/30 rounded-xl font-medium transition-colors"
-            onClick={quickActions[0].action}
-          >
-            Add Money
-          </button>
-        </motion.div>
-
-        {/* Total Coin Value */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="p-6 rounded-2xl bg-brand-900/50 border border-brand-800"
-        >
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <p className="text-brand-400 text-sm">Total Coin Value</p>
-              <p className="text-3xl font-bold text-white">${totalCoinValue}</p>
-              <p className="text-xs text-brand-500 mt-1">From {coinBalances.length} business{coinBalances.length !== 1 ? 'es' : ''}</p>
-            </div>
-            <div className="h-12 w-12 rounded-full bg-yellow-500/20 flex items-center justify-center">
-              <Coins className="h-6 w-6 text-yellow-400" />
-            </div>
+          <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
+            <Coins className="h-6 w-6" />
           </div>
-          <button 
-            className="w-full py-2 px-4 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-xl font-medium transition-colors"
-            onClick={quickActions[3].action}
-          >
-            View All Coins
-          </button>
-        </motion.div>
-      </div>
+        </div>
+        <p className="text-yellow-100 text-sm">
+          Use your coins during booking for instant discounts!
+        </p>
+      </motion.div>
 
       {/* My Business Coins */}
       <div className="space-y-4">
@@ -284,7 +425,7 @@ export function CustomerWallet() {
       {/* Quick Actions */}
       <div className="space-y-4">
         <h2 className="text-xl font-semibold text-white">Quick Actions</h2>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {quickActions.map((action, index) => (
             <motion.button
               key={action.title}
@@ -304,96 +445,6 @@ export function CustomerWallet() {
             </motion.button>
           ))}
         </div>
-      </div>
-
-      {/* Payment Methods */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-white">Payment Methods</h2>
-          <button className="text-accent-DEFAULT text-sm font-medium hover:text-accent-hover transition-colors">
-            Add New
-          </button>
-        </div>
-
-        <div className="space-y-3">
-          {paymentMethods.map((method, index) => (
-            <motion.div
-              key={method.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="p-4 rounded-xl bg-brand-900/50 border border-brand-800 flex items-center justify-between"
-            >
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-brand-800 flex items-center justify-center">
-                  <CreditCard className="h-5 w-5 text-brand-400" />
-                </div>
-                <div>
-                  <p className="text-white font-medium">•••• {method.last4}</p>
-                  <p className="text-xs text-brand-500 capitalize">{method.type}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {method.isDefault && (
-                  <span className="px-2 py-1 rounded-full bg-accent-DEFAULT/20 text-accent-DEFAULT text-xs">
-                    Default
-                  </span>
-                )}
-                <ChevronRight className="h-4 w-4 text-brand-600" />
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      {/* Recent Transactions */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-white">Recent Transactions</h2>
-        
-        <div className="space-y-3">
-          {transactions.map((transaction, index) => (
-            <motion.div
-              key={transaction.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className="p-4 rounded-xl bg-brand-900/50 border border-brand-800 flex items-center justify-between"
-            >
-              <div className="flex items-center gap-3">
-                <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                  transaction.coinType ? 'bg-yellow-500/20' : 'bg-brand-800'
-                }`}>
-                  {transaction.coinType ? (
-                    <Coins className="h-5 w-5 text-yellow-400" />
-                  ) : (
-                    <CreditCard className="h-5 w-5 text-brand-400" />
-                  )}
-                </div>
-                <div>
-                  <p className="text-white font-medium text-sm">{transaction.description}</p>
-                  <p className="text-xs text-brand-500">{transaction.date}</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className={`font-semibold text-sm ${
-                  transaction.amount > 0 
-                    ? transaction.coinType ? 'text-yellow-400' : 'text-green-400'
-                    : 'text-white'
-                }`}>
-                  {transaction.amount > 0 ? '+' : ''}
-                  {transaction.coinType ? `${Math.abs(transaction.amount)} coins` : `$${Math.abs(transaction.amount).toFixed(2)}`}
-                </p>
-                <span className="px-2 py-1 rounded-full bg-green-500/20 text-green-400 text-xs">
-                  {transaction.status}
-                </span>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        <button className="w-full py-3 text-accent-DEFAULT font-medium hover:text-accent-hover transition-colors">
-          View All Transactions
-        </button>
       </div>
 
       {/* Coin Detail Modal/Sheet (you can implement this later) */}

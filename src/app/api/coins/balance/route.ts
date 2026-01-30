@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { mockCoinBalances } from '@/lib/mockData';
 
 // GET /api/coins/balance?customerId=xxx - Get customer's coin balances
 export async function GET(request: NextRequest) {
@@ -16,65 +14,26 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get all coin balances for this customer
-    const coinBalances = await prisma.customerCoinBalance.findMany({
-      where: { customerId },
-      include: {
-        coin: {
-          include: {
-            provider: {
-              select: {
-                businessName: true,
-                user: {
-                  select: {
-                    firstName: true,
-                    lastName: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-      orderBy: { balance: 'desc' },
-    });
+    // Use mock data for demo
+    if (customerId === 'cust_1') {
+      const totalValue = mockCoinBalances.reduce((sum, balance) => {
+        return sum + parseFloat(balance.dollarValue);
+      }, 0);
 
-    // Format the response
-    const formattedBalances = coinBalances.map(balance => ({
-      id: balance.id,
-      coinId: balance.coinId,
-      balance: balance.balance,
-      totalEarned: balance.totalEarned,
-      totalRedeemed: balance.totalRedeemed,
-      dollarValue: (balance.balance * balance.coin.redemptionValue).toFixed(2),
-      lastEarnedAt: balance.lastEarnedAt,
-      lastRedeemedAt: balance.lastRedeemedAt,
-      coin: {
-        id: balance.coin.id,
-        name: balance.coin.name,
-        displayName: balance.coin.displayName,
-        description: balance.coin.description,
-        iconUrl: balance.coin.iconUrl,
-        primaryColor: balance.coin.primaryColor,
-        redemptionValue: balance.coin.redemptionValue,
-        minimumRedemption: balance.coin.minimumRedemption,
-        provider: {
-          businessName: balance.coin.provider.businessName,
-          providerName: `${balance.coin.provider.user.firstName} ${balance.coin.provider.user.lastName}`,
-        },
-      },
-    }));
+      return NextResponse.json({
+        balances: mockCoinBalances,
+        totalCoins: mockCoinBalances.reduce((sum, balance) => sum + balance.balance, 0),
+        totalValue: totalValue.toFixed(2),
+        businessCount: mockCoinBalances.length
+      });
+    }
 
-    const totalValue = formattedBalances.reduce(
-      (sum, balance) => sum + parseFloat(balance.dollarValue),
-      0
-    );
-
+    // Return empty balances for other customers
     return NextResponse.json({
-      balances: formattedBalances,
-      totalCoins: formattedBalances.reduce((sum, b) => sum + b.balance, 0),
-      totalValue: totalValue.toFixed(2),
-      businessCount: formattedBalances.length,
+      balances: [],
+      totalCoins: 0,
+      totalValue: "0.00",
+      businessCount: 0
     });
 
   } catch (error) {
@@ -83,8 +42,6 @@ export async function GET(request: NextRequest) {
       { error: 'Failed to fetch coin balances' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
 

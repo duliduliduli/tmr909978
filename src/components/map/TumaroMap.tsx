@@ -31,11 +31,13 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
   // Data state
   const [detailers, setDetailers] = useState<FeatureCollection<Point> | null>(null);
   const [customerLocation, setCustomerLocation] = useState<[number, number] | null>(null);
+  const [originalLocation, setOriginalLocation] = useState<[number, number] | null>(null);
   
   // UI state
   const [selectedDetailerId, setSelectedDetailerId] = useState<string | null>(null);
   const [isLocationPermissionDenied, setIsLocationPermissionDenied] = useState(false);
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
+  const [isLocationShuffled, setIsLocationShuffled] = useState(false);
 
   // Calculate distance between two coordinates using Haversine formula
   const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
@@ -102,7 +104,7 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
   // High-accuracy GPS location request with immediate map initialization
   const requestLocation = useCallback(() => {
     if (!('geolocation' in navigator)) {
-      const fallback: [number, number] = [-122.3321, 47.6062]; // Seattle
+      const fallback: [number, number] = [-118.2437, 34.0522]; // Los Angeles
       setCustomerLocation(fallback);
       // Initialize map immediately with fallback location
       setViewState({
@@ -121,6 +123,10 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
         
         const coords: [number, number] = [longitude, latitude];
         setCustomerLocation(coords);
+        // Store original location if this is the first time setting it
+        if (!originalLocation) {
+          setOriginalLocation(coords);
+        }
         
         // Initialize map immediately with user's actual location
         if (!isMapInitialized) {
@@ -142,8 +148,12 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
       },
       (error) => {
         console.error('Geolocation error:', error.message);
-        const fallback: [number, number] = [-122.3321, 47.6062]; // Seattle
+        const fallback: [number, number] = [-118.2437, 34.0522]; // Los Angeles
         setCustomerLocation(fallback);
+        // Store original location if this is the first time setting it
+        if (!originalLocation) {
+          setOriginalLocation(fallback);
+        }
         setIsLocationPermissionDenied(true);
         
         // Initialize map with fallback if not already initialized
@@ -170,29 +180,44 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
     );
   }, [isMapInitialized]);
 
-  // Scramble location (demo feature)
-  const scrambleLocation = useCallback(() => {
-    if (!customerLocation) return;
+  // Toggle scramble location
+  const toggleScrambleLocation = useCallback(() => {
+    if (!customerLocation || !originalLocation) return;
     
-    // Add random offset of 100-400 meters
-    const latOffset = (Math.random() - 0.5) * 0.007; // ~400m at latitude
-    const lngOffset = (Math.random() - 0.5) * 0.007;
-    
-    const scrambledLocation: [number, number] = [
-      customerLocation[0] + lngOffset,
-      customerLocation[1] + latOffset
-    ];
-    
-    setCustomerLocation(scrambledLocation);
-    
-    if (mapRef.current) {
-      mapRef.current.flyTo({
-        center: scrambledLocation,
-        zoom: 16,
-        duration: 1500
-      });
+    if (isLocationShuffled) {
+      // Return to original location
+      setCustomerLocation(originalLocation);
+      setIsLocationShuffled(false);
+      
+      if (mapRef.current) {
+        mapRef.current.flyTo({
+          center: originalLocation,
+          zoom: 16,
+          duration: 1500
+        });
+      }
+    } else {
+      // Scramble to new random location
+      const latOffset = (Math.random() - 0.5) * 0.007; // ~400m at latitude
+      const lngOffset = (Math.random() - 0.5) * 0.007;
+      
+      const scrambledLocation: [number, number] = [
+        originalLocation[0] + lngOffset,
+        originalLocation[1] + latOffset
+      ];
+      
+      setCustomerLocation(scrambledLocation);
+      setIsLocationShuffled(true);
+      
+      if (mapRef.current) {
+        mapRef.current.flyTo({
+          center: scrambledLocation,
+          zoom: 16,
+          duration: 1500
+        });
+      }
     }
-  }, [customerLocation]);
+  }, [customerLocation, originalLocation, isLocationShuffled]);
 
   // Center map on user location
   const centerOnUser = useCallback(() => {
@@ -257,75 +282,16 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
     return () => clearTimeout(timer);
   }, []);
 
-  // 🌟 ANIMATED PULSATING DETAILER LAYERS
-  const detailerPulse1Layer: LayerProps = {
-    id: 'detailer-pulse-1',
+  // Simple static detailer layers (animation removed to fix errors)
+  const detailerBackgroundLayer: LayerProps = {
+    id: 'detailer-background',
     type: 'circle',
     source: 'detailers',
     filter: ['!', ['has', 'point_count']],
     paint: {
-      'circle-radius': 30,
+      'circle-radius': 25,
       'circle-color': '#14B8A6',
-      'circle-opacity': [
-        'interpolate',
-        ['linear'],
-        ['%', ['get-time'], 2000], // 2 second cycle
-        0, 0.6,
-        1000, 0.2,
-        2000, 0.6
-      ]
-    }
-  };
-
-  const detailerPulse2Layer: LayerProps = {
-    id: 'detailer-pulse-2', 
-    type: 'circle',
-    source: 'detailers',
-    filter: ['!', ['has', 'point_count']],
-    paint: {
-      'circle-radius': [
-        'interpolate',
-        ['linear'],
-        ['%', ['get-time'], 2000],
-        0, 20,
-        1000, 40,
-        2000, 20
-      ],
-      'circle-color': '#14B8A6',
-      'circle-opacity': [
-        'interpolate',
-        ['linear'],
-        ['%', ['get-time'], 2000],
-        0, 0.4,
-        1000, 0.1,
-        2000, 0.4
-      ]
-    }
-  };
-
-  const detailerPulse3Layer: LayerProps = {
-    id: 'detailer-pulse-3',
-    type: 'circle', 
-    source: 'detailers',
-    filter: ['!', ['has', 'point_count']],
-    paint: {
-      'circle-radius': [
-        'interpolate',
-        ['linear'],
-        ['%', ['get-time'], 1500], // Different timing
-        0, 15,
-        750, 35,
-        1500, 15
-      ],
-      'circle-color': '#14B8A6',
-      'circle-opacity': [
-        'interpolate', 
-        ['linear'],
-        ['%', ['get-time'], 1500],
-        0, 0.5,
-        750, 0.1,
-        1500, 0.5
-      ]
+      'circle-opacity': 0.2
     }
   };
 
@@ -410,54 +376,15 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
     }]
   } : null;
 
-  // 🌟 ANIMATED CUSTOMER LOCATION PULSING LAYERS
-  const customerPulse1Layer: LayerProps = {
-    id: 'customer-pulse-1',
+  // Simple static customer location layers (animation removed to fix errors)
+  const customerBackgroundLayer: LayerProps = {
+    id: 'customer-background',
     type: 'circle',
     source: 'customer-location',
     paint: {
       'circle-color': '#14B8A6',
-      'circle-radius': [
-        'interpolate',
-        ['linear'],
-        ['%', ['get-time'], 2500], // 2.5 second cycle
-        0, 25,
-        1250, 50,
-        2500, 25
-      ],
-      'circle-opacity': [
-        'interpolate',
-        ['linear'],
-        ['%', ['get-time'], 2500],
-        0, 0.5,
-        1250, 0.1,
-        2500, 0.5
-      ]
-    }
-  };
-
-  const customerPulse2Layer: LayerProps = {
-    id: 'customer-pulse-2',
-    type: 'circle',
-    source: 'customer-location',
-    paint: {
-      'circle-color': '#14B8A6',
-      'circle-radius': [
-        'interpolate',
-        ['linear'],
-        ['%', ['get-time'], 3000], // Different cycle timing
-        0, 20,
-        1500, 40,
-        3000, 20
-      ],
-      'circle-opacity': [
-        'interpolate',
-        ['linear'],
-        ['%', ['get-time'], 3000],
-        0, 0.4,
-        1500, 0.05,
-        3000, 0.4
-      ]
+      'circle-radius': 30,
+      'circle-opacity': 0.3
     }
   };
 
@@ -476,7 +403,7 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
 
 
   return (
-    <div className={`relative h-full ${className}`}>
+    <div className={`relative h-full w-full ${className}`}>
       {/* View Toggle */}
       <div className="absolute top-4 left-4 z-30 flex bg-white rounded-lg shadow-lg overflow-hidden">
         <button
@@ -539,10 +466,8 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
             clusterMaxZoom={14}
             clusterRadius={50}
           >
-            {/* Animated pulsating layers */}
-            <Layer {...detailerPulse1Layer} />
-            <Layer {...detailerPulse2Layer} />
-            <Layer {...detailerPulse3Layer} />
+            {/* Background and point layers */}
+            <Layer {...detailerBackgroundLayer} />
             <Layer {...unclusteredPointLayer} />
             
             {/* Enhanced cluster layers */}
@@ -551,11 +476,10 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
           </Source>
         )}
 
-        {/* Customer location with animated pulsing */}
+        {/* Customer location */}
         {customerLocationSource && (
           <Source id="customer-location" type="geojson" data={customerLocationSource}>
-            <Layer {...customerPulse1Layer} />
-            <Layer {...customerPulse2Layer} />
+            <Layer {...customerBackgroundLayer} />
             <Layer {...customerPuckLayer} />
           </Source>
         )}
@@ -567,9 +491,10 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
         onZoomIn={() => mapRef.current?.zoomIn()}
         onZoomOut={() => mapRef.current?.zoomOut()}
         onCenterOnUser={centerOnUser}
-        onScrambleLocation={scrambleLocation}
+        onScrambleLocation={toggleScrambleLocation}
         hasUserLocation={!!customerLocation}
         isLocationDenied={isLocationPermissionDenied}
+        isLocationShuffled={isLocationShuffled}
       />
 
       {/* Detailer Selection Drawer */}
