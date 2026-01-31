@@ -23,7 +23,6 @@ const DEFAULT_VIEWPORT = {
 export function TumaroMap({ className = '' }: TumaroMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
   const customerMarkerRef = useRef<mapboxgl.Marker | null>(null);
   
   // Global store for location persistence
@@ -75,6 +74,46 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
     map.current.on('load', () => {
       console.log('🗺️ Map loaded successfully');
       setIsLoaded(true);
+      
+      // Remove traffic colors and set roads to gray shades
+      const mapInstance = map.current;
+      if (mapInstance) {
+        // Override road colors to use gray instead of traffic colors
+        try {
+          // Primary roads (highways) - dark gray
+          if (mapInstance.getLayer('road-primary')) {
+            mapInstance.setPaintProperty('road-primary', 'line-color', '#4a5568');
+          }
+          if (mapInstance.getLayer('road-secondary-tertiary')) {
+            mapInstance.setPaintProperty('road-secondary-tertiary', 'line-color', '#6b7280');
+          }
+          if (mapInstance.getLayer('road-street')) {
+            mapInstance.setPaintProperty('road-street', 'line-color', '#9ca3af');
+          }
+          if (mapInstance.getLayer('road-minor')) {
+            mapInstance.setPaintProperty('road-minor', 'line-color', '#d1d5db');
+          }
+          
+          // Remove traffic layers if they exist
+          const trafficLayers = [
+            'traffic-primary',
+            'traffic-secondary', 
+            'traffic-tertiary',
+            'traffic-local',
+            'traffic-congestion'
+          ];
+          
+          trafficLayers.forEach(layerId => {
+            if (mapInstance.getLayer(layerId)) {
+              mapInstance.removeLayer(layerId);
+            }
+          });
+          
+          console.log('🎨 Road colors updated to gray shades (no traffic colors)');
+        } catch (error) {
+          console.log('ℹ️ Some road layers not found (normal for custom styles)');
+        }
+      }
       
       // Set max bounds to prevent showing empty areas (Los Angeles region)
       const bounds = new mapboxgl.LngLatBounds(
@@ -286,39 +325,130 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
   }, [userLocation, requestLocation]);
 
 
-  // Add markers when detailers data changes
+  // Add GPU layers when detailers data changes (ClawdBot requirement: GPU layers, not DOM markers)
   useEffect(() => {
-    if (!map.current || !detailers) return;
+    if (!map.current || !detailers || !isLoaded) return;
     
-    // Clear existing markers
-    markersRef.current.forEach(marker => marker.remove());
-    markersRef.current = [];
+    const mapInstance = map.current;
     
-    // Add detailer markers
-    detailers.features.forEach(feature => {
-      const [lng, lat] = feature.geometry.coordinates;
-      
-      const el = document.createElement('div');
-      el.className = 'detailer-marker';
-      el.style.backgroundColor = '#14B8A6';
-      el.style.width = '20px';
-      el.style.height = '20px';
-      el.style.borderRadius = '50%';
-      el.style.border = '3px solid white';
-      el.style.cursor = 'pointer';
-      el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-      
-      el.addEventListener('click', () => {
-        setSelectedDetailerId(feature.properties?.id);
-      });
-      
-      const marker = new mapboxgl.Marker(el)
-        .setLngLat([lng, lat])
-        .addTo(map.current!);
-        
-      markersRef.current.push(marker);
+    // Remove existing source and layers if they exist
+    if (mapInstance.getSource('detailers')) {
+      if (mapInstance.getLayer('detailers-layer')) {
+        mapInstance.removeLayer('detailers-layer');
+      }
+      mapInstance.removeSource('detailers');
+    }
+    
+    // Add GeoJSON source with detailers data
+    mapInstance.addSource('detailers', {
+      type: 'geojson',
+      data: detailers,
+      cluster: true,
+      clusterMaxZoom: 14,
+      clusterRadius: 50
     });
-  }, [detailers]);
+    
+    // Add circle layer for individual detailers
+    mapInstance.addLayer({
+      id: 'detailers-layer',
+      type: 'circle',
+      source: 'detailers',
+      filter: ['!', ['has', 'point_count']],
+      paint: {
+        'circle-color': '#14B8A6',
+        'circle-radius': 8,
+        'circle-stroke-width': 2,
+        'circle-stroke-color': '#ffffff',
+        'circle-opacity': 0.9
+      }
+    });
+    
+    // Add cluster circles
+    mapInstance.addLayer({
+      id: 'clusters',
+      type: 'circle',
+      source: 'detailers',
+      filter: ['has', 'point_count'],
+      paint: {
+        'circle-color': [
+          'step',
+          ['get', 'point_count'],
+          '#14B8A6',
+          10, '#059669',
+          20, '#047857'
+        ],
+        'circle-radius': [
+          'step',
+          ['get', 'point_count'],
+          15, 10,
+          20, 20,
+          30, 25
+        ],
+        'circle-stroke-width': 2,
+        'circle-stroke-color': '#ffffff'
+      }
+    });
+    
+    // Add cluster count labels
+    mapInstance.addLayer({
+      id: 'cluster-count',
+      type: 'symbol',
+      source: 'detailers',
+      filter: ['has', 'point_count'],
+      layout: {
+        'text-field': '{point_count_abbreviated}',
+        'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+        'text-size': 12
+      },
+      paint: {
+        'text-color': '#ffffff'
+      }
+    });
+    
+    // Handle clicks on detailer points
+    mapInstance.on('click', 'detailers-layer', (e) => {
+      const features = e.features;
+      if (features && features.length > 0) {
+        const detailerId = features[0].properties?.id;
+        setSelectedDetailerId(detailerId);
+      }
+    });
+    
+    // Handle clicks on clusters
+    mapInstance.on('click', 'clusters', (e) => {
+      const features = mapInstance.queryRenderedFeatures(e.point, {
+        layers: ['clusters']
+      });
+      const clusterId = features[0].properties?.cluster_id;
+      const source = mapInstance.getSource('detailers') as mapboxgl.GeoJSONSource;
+      
+      source.getClusterExpansionZoom(clusterId, (err, zoom) => {
+        if (err) return;
+        mapInstance.easeTo({
+          center: (features[0].geometry as any).coordinates,
+          zoom: zoom
+        });
+      });
+    });
+    
+    // Change cursor on hover
+    mapInstance.on('mouseenter', 'detailers-layer', () => {
+      mapInstance.getCanvas().style.cursor = 'pointer';
+    });
+    
+    mapInstance.on('mouseleave', 'detailers-layer', () => {
+      mapInstance.getCanvas().style.cursor = '';
+    });
+    
+    mapInstance.on('mouseenter', 'clusters', () => {
+      mapInstance.getCanvas().style.cursor = 'pointer';
+    });
+    
+    mapInstance.on('mouseleave', 'clusters', () => {
+      mapInstance.getCanvas().style.cursor = '';
+    });
+    
+  }, [detailers, isLoaded]);
   
   // Add customer location marker
   useEffect(() => {

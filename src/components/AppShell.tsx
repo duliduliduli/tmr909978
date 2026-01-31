@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Home, Map, Wallet, User, HelpCircle, ChevronRight, Calendar } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
+import { AccountDropdown } from "@/components/auth/AccountDropdown";
 
 const navItems = [
   { key: "home", label: "Home", icon: Home, href: "/home" },
@@ -107,6 +108,12 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
                 Detailer
               </button>
             </div>
+            <button
+              onClick={() => useAppStore.getState().switchToTestAccount()}
+              className="mt-2 w-full text-xs bg-green-500/20 text-green-400 border border-green-500/30 rounded-lg px-3 py-1.5 hover:bg-green-500/30 transition-colors"
+            >
+              Switch Test Account
+            </button>
           </div>
         </aside>
 

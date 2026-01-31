@@ -1,0 +1,317 @@
+Got it. You don’t need “better prompting.” You need **a Clawdbot contract + operating system** that forces small, safe, testable changes and respects the **two-sided product** (Customer vs Detailer) with **appointments + routing + coins + booking**.
+
+Below are **ready-to-copy Clawdbot parameters** for Tumaro: a “Project Constitution”, scope, permissions, file blast-radius rules, verification gates, and a sprint/task format that prevents wandering.
+
+---
+
+## 1) Tumaro Clawdbot “Project Constitution” (paste as the agent’s ROOT / SYSTEM prompt)
+
+```txt
+You are Clawdbot, a code-change agent working ONLY on the Tumaro repo.
+
+PRIMARY GOAL:
+Ship production-grade features for a dual-sided marketplace:
+- Customer app: discovery, booking, appointments, wallet, account.
+- Detailer app: business tools (services, availability, promotions/coins), booking ops, route/day plan, messaging, finances.
+
+NON-NEGOTIABLE RULES:
+1) No dependency changes, no framework upgrades, no refactors unless explicitly requested.
+2) No destructive commands or broad rewrites:
+   - Forbidden unless explicitly approved: rm -rf, deleting folders, format-entire-repo, mass renames, "cleanup passes".
+3) Always work in small diffs:
+   - Max 3 files changed per task. If more is needed, STOP and ask for approval with a file list.
+4) Always propose a plan BEFORE edits:
+   - (a) What you’ll change
+   - (b) Which files
+   - (c) Why
+   - (d) Risks + rollback
+5) Always end with verification steps:
+   - commands to run
+   - what “success” looks like
+   - how to rollback
+
+SCOPE / ALLOWED PATHS ONLY:
+- src/app/**
+- src/components/**
+- src/lib/**
+- prisma/**
+- scripts/**
+Do NOT touch:
+- .git/**, .github/**
+- package-lock.json / pnpm-lock.yaml
+- deployment configs
+- env files / secrets
+
+DEFINITION OF DONE (must satisfy for each task):
+- TypeScript passes: npm run type-check
+- Lint passes: npm run lint
+- App boots: npm run dev (no runtime errors)
+- Key pages load:
+  /customer/map
+  /customer/appointments
+  /detailer/dashboard
+  /detailer/appointments
+  /detailer/map
+
+PRODUCT SOURCE OF TRUTH:
+Treat TUMARO_SPEC.md as the source of truth. If unclear or conflicting, STOP and ask.
+
+SECURITY / PRIVACY:
+- Never log secrets.
+- Never store payment data outside Stripe.
+- Customer precise address is private and only visible after booking is confirmed (when implemented).
+- Location features must respect “scramble/obfuscation” requirements for providers when enabled.
+
+OUTPUT REQUIREMENTS:
+- Provide minimal unified diffs.
+- Provide commands to verify.
+- Provide next recommended task.
+STOP after completing the task.
+```
+
+---
+
+## 2) Put this file in your repo so the agent can’t hallucinate the product
+
+Create `TUMARO_SPEC.md` in repo root (or `docs/TUMARO_SPEC.md`) and tell Clawdbot it’s law.
+
+### Minimal spec content (copy/paste)
+
+```md
+# Tumaro Spec (Source of Truth)
+
+## Product
+Tumaro is a privacy-first, map-based booking platform for mobile services.
+We start with mobile detailers but architecture supports other mobile services later.
+
+## Roles
+### Customer
+- Can browse providers on map
+- Can view provider profile + portfolio + ratings
+- Can book appointments
+- Has Appointments tab:
+  - Upcoming appointments
+  - Past appointments (historical)
+- Can message provider for a booking
+- Can leave reviews ONLY after completion
+- Has wallet/coins, account settings
+
+### Detailer (Business)
+- Has more functions than customer:
+  - Services + pricing + durations
+  - Availability rules + time off
+  - Booking operations (start/complete/cancel/no-show)
+  - Portfolio photos + profile visibility
+  - Coins program (create/configure coin, earning/redemption, promotions)
+  - “Day plan”: schedule + route for the day from confirmed appointments
+  - Earnings/finances dashboard
+  - Messaging to clients (1:1 now, mass messaging later)
+
+## App Routes (WebApp)
+Customer:
+- /customer/home
+- /customer/map
+- /customer/appointments
+- /customer/wallet
+- /customer/account
+- /customer/help
+
+Detailer:
+- /detailer/dashboard
+- /detailer/map
+- /detailer/appointments
+- /detailer/wallet (coins + payouts)
+- /detailer/account (business settings)
+- /detailer/help
+
+## Map Requirements
+- Mapbox (not MapLibre)
+- Must snap/center to customer location (high accuracy)
+- Custom styled map (no “Google maps feel”)
+- Custom zoom controls + “center on me” button
+- Show detailers as GPU-rendered layers (not DOM markers)
+- Provider location privacy: optional obfuscation bubble
+- Later: route ETA + route line between appointments
+
+## Booking Requirements (MVP)
+- Upfront pay to confirm booking (Stripe)
+- Booking states + audit trail
+- Prevent double-booking
+- Customer can cancel within policy windows
+- Provider no-show/cancel creates strikes
+
+## Tech Stack Locked
+- Next.js App Router + TypeScript + Tailwind + shadcn/ui
+- Prisma + PostgreSQL
+- Stripe + Stripe Connect
+- Mapbox GL / react-map-gl
+
+## No-Gos
+- No random package installs
+- No “rewrite entire architecture”
+- No mixing map providers
+```
+
+---
+
+## 3) Clawdbot “Parameters” you should enforce (practical knobs)
+
+These are the knobs you want to run every task through:
+
+### A) Blast radius
+
+* `max_files_changed: 3`
+* `max_new_files: 2`
+* `no_dependency_changes: true`
+* `no_framework_upgrade: true`
+
+### B) Execution gates
+
+* Must include these in every completion:
+
+  * `npm run type-check`
+  * `npm run lint`
+  * `npm run dev` + user opens key routes
+
+### C) Mandatory outputs (structured)
+
+Every task response must include:
+
+1. **Plan**
+2. **Files**
+3. **Diff**
+4. **Verify commands**
+5. **Expected behavior**
+6. **Rollback steps**
+7. **Next task suggestion**
+
+### D) Forbidden actions
+
+* deleting directories
+* mass renames
+* changing route structure without explicit instruction
+* touching auth/payments logic without tests
+* implementing map with raster OSM tiles (you want Mapbox vector style)
+
+---
+
+## 4) The best “Task Prompt Template” for Tumaro (use every time)
+
+```txt
+TASK NAME: <short>
+GOAL: <one sentence>
+SCOPE: Only touch: <list folders/files>
+DO NOT: (deps, upgrades, refactors, etc)
+CONTEXT: <paste any relevant code or folder tree>
+ACCEPTANCE TESTS:
+1)
+2)
+3)
+DELIVERABLE:
+- unified diff
+- verify commands
+STOP AFTER DONE.
+```
+
+---
+
+## 5) A Tumaro-specific Sprint Backlog that matches your vision (and keeps the agent sane)
+
+This is the order that avoids chaos:
+
+### Sprint 0 — Routing + shells + tabs
+
+* Ensure `/customer/*` and `/detailer/*` always render
+* AppShell tabs include **Appointments** for customer
+* Detailer shell has “Dashboard, Appointments, Map, Wallet/Coins, Account”
+
+### Sprint 1 — Auth + role separation
+
+* One user table, role = CUSTOMER/DETAILER
+* Separate profile tables
+* Prevent cross-role actions (detailers can’t review)
+
+### Sprint 2 — Map done correctly (Mapbox)
+
+* Snap to user location + center button
+* GPU layers for providers (GeoJSON source + circle/symbol layers)
+* Provider obfuscation option
+* No MapLibre. No DOM markers.
+
+### Sprint 3 — Booking v1 (no routing yet)
+
+* Booking creation, availability check, appointments list (upcoming/past)
+* Status transitions + event log
+
+### Sprint 4 — Detailer day plan + routing
+
+* Build “Today’s route” from confirmed bookings
+* Show route polyline + stop list
+* Morning briefing panel: jobs + projected earnings
+
+### Sprint 5 — Messaging + photos + reviews
+
+* Portfolio storage (S3/R2 later; start with schema + upload stub)
+* Messaging 1:1 tied to booking
+* Reviews post-completion only
+
+---
+
+## 6) The exact “Clawdbot Initial Task” I’d run next (because it unblocks everything)
+
+You said: “no more decisions. make it happen now.”
+
+Start with Mapbox map correctness first (your current init code is messy and StrictMode fights you). Here’s the task prompt:
+
+```txt
+TASK NAME: Customer map reliability + controls + snap-to-location (Mapbox)
+GOAL: Make /customer/map load reliably, snap to user location, show zoom buttons + “center on me”, and render detailers as GPU layers.
+SCOPE: Only touch src/app/customer/map/**, src/components/map/**, src/lib/map/**
+DO NOT: Add dependencies. Do not use MapLibre. Do not refactor unrelated code.
+CONTEXT:
+- We already have mapbox-gl and react-map-gl installed.
+- No address search needed.
+- Must show all detailers (GeoJSON source) + click opens provider card (placeholder ok).
+ACCEPTANCE TESTS:
+1) npm run dev starts with no console errors
+2) /customer/map centers on user location within 3 seconds (or falls back to LA)
+3) Zoom +/- buttons work, and “center on me” button recenters and re-requests location
+4) Detailers render as Mapbox layers (not DOM markers) and are clickable
+DELIVERABLE:
+- unified diff
+- verify commands
+STOP AFTER DONE.
+```
+
+This will force the agent to implement the **correct Mapbox pattern** (ReactMapGL + controls + geolocate) without wandering.
+
+---
+
+## 7) One more hard guardrail for your two-sided app
+
+Add this rule (it prevents the agent from blurring customer/detailer boundaries):
+
+```txt
+ROLE SEPARATION RULE:
+If a feature affects both customer and detailer flows, implement it in two separate tasks:
+- Task A: customer-facing UI/API
+- Task B: detailer-facing UI/API
+Never mix both sides in one task unless explicitly approved.
+```
+
+---
+
+## If you want, I’ll also generate a single “CLAWDBOT_RULES.md” file
+
+So you can literally drop it into the repo and tell the bot: “Follow this file.”
+
+If you say “generate it”, I’ll output the full file contents (clean, final), including:
+
+* constitution
+* spec pointers
+* task template
+* sprint backlog
+* acceptance gates
+* forbidden actions list
+
+Pick your next move: **Map sprint** or **Booking sprint**. My vote: **Map sprint first** because every other feature depends on it feeling “Uber-level” and stable.
