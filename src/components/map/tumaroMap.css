@@ -1,0 +1,64 @@
+/* Hide Mapbox logo and attribution */
+.mapboxgl-ctrl-logo,
+.mapbox-logo,
+.mapboxgl-ctrl-attrib,
+.mapboxgl-ctrl-attrib-button {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Ensure map fills parent container properly */
+.mapboxgl-map {
+  width: 100% !important;
+  height: 100% !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* Ensure map canvas fills container and prevents black bars */
+.mapboxgl-canvas-container,
+.mapboxgl-canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+}
+
+/* Remove any margins/padding that might cause gaps */
+.mapboxgl-map * {
+  box-sizing: border-box;
+}
+
+/* Force map container to fill available space */
+.mapboxgl-map-container {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Ensure proper bounds for mobile */
+@media (max-width: 1024px) {
+  .mapboxgl-map {
+    min-height: calc(100vh - 160px) !important;
+    width: 100vw !important;
+  }
+  
+  .mapboxgl-canvas-container,
+  .mapboxgl-canvas {
+    min-height: calc(100vh - 160px) !important;
+    width: 100vw !important;
+  }
+}
+
+/* Desktop full width */
+@media (min-width: 1024px) {
+  .mapboxgl-map {
+    width: calc(100vw - 288px) !important; /* Account for sidebar width */
+    height: calc(100vh - 80px) !important;
+  }
+  
+  .mapboxgl-canvas-container,
+  .mapboxgl-canvas {
+    width: calc(100vw - 288px) !important;
+    height: calc(100vh - 80px) !important;
+  }
+}

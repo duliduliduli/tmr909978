@@ -14,11 +14,8 @@ export default function HomePage() {
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-brand-800/50 bg-brand-950/80 backdrop-blur-md">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-20 items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-accent-DEFAULT to-blue-600 shadow-lg shadow-accent/20 flex items-center justify-center">
-                <span className="text-white font-bold text-xl">T</span>
-              </div>
-              <h1 className="text-xl font-bold text-white tracking-tight">TUMARO</h1>
+            <div className="flex items-center">
+              {/* Logo removed from landing page header */}
             </div>
             <div className="flex items-center space-x-6">
               <Link
@@ -47,12 +44,16 @@ export default function HomePage() {
               Now available in Los Angeles
             </div>
 
-            <h1 className="text-5xl font-bold tracking-tight text-white sm:text-7xl mb-8 leading-tight">
-              Tumaro - <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-DEFAULT to-blue-500">
+            <div className="mb-8 flex flex-col items-center gap-6">
+              <img 
+                src="/tumaro-logo.png" 
+                alt="Tumaro" 
+                className="h-12 sm:h-16 object-contain"
+              />
+              <h1 className="text-4xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-accent-DEFAULT to-blue-500 sm:text-6xl leading-tight">
                 Mobile services made easy
-              </span>
-            </h1>
+              </h1>
+            </div>
 
             <p className="mx-auto max-w-2xl text-lg text-brand-400 mb-10 leading-relaxed">
               Helping mobile businesses keep customers close while helping customers earn on their loyalty

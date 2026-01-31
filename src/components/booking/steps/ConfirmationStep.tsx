@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { CheckCircle, Calendar, MapPin, Car, CreditCard, Star } from 'lucide-react';
 import { BookingData } from '../BookingWizard';
+import { useAppStore, type Appointment } from '@/lib/store';
+import { mockDetailers } from '@/lib/mockData';
 
 interface ConfirmationStepProps {
   bookingData: BookingData;
@@ -24,6 +26,7 @@ export function ConfirmationStep({
 }: ConfirmationStepProps) {
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [isCreatingBooking, setIsCreatingBooking] = useState(true);
+  const { addAppointment, activeCustomerId } = useAppStore();
 
   useEffect(() => {
     createBooking();
@@ -40,6 +43,44 @@ export function ConfirmationStep({
       // Generate mock booking ID
       const mockBookingId = `TUM${Date.now()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       setBookingId(mockBookingId);
+      
+      // Create appointment object and save to store
+      if (bookingData.selectedDetailer && bookingData.selectedService && bookingData.scheduledStartTime) {
+        const detailer = mockDetailers.find(d => d.id === bookingData.selectedDetailer);
+        const service = detailer?.services.find(s => s.id === bookingData.selectedService);
+        
+        if (detailer && service) {
+          const appointmentDate = new Date(bookingData.scheduledStartTime);
+          const appointment: Appointment = {
+            id: mockBookingId,
+            customerId: activeCustomerId,
+            detailerId: detailer.id,
+            detailerName: detailer.name,
+            businessName: detailer.businessName,
+            serviceId: service.id,
+            serviceName: service.name,
+            serviceDescription: service.description,
+            price: service.price,
+            scheduledDate: appointmentDate.toISOString().split('T')[0],
+            scheduledTime: appointmentDate.toLocaleTimeString('en-US', { 
+              hour: 'numeric', 
+              minute: '2-digit', 
+              hour12: true 
+            }),
+            duration: service.duration,
+            address: bookingData.serviceAddress ? 
+              `${bookingData.serviceAddress.street}, ${bookingData.serviceAddress.city}, ${bookingData.serviceAddress.state}` :
+              'Address not specified',
+            phone: detailer.phone,
+            status: 'scheduled',
+            bookedAt: new Date().toISOString(),
+            notes: bookingData.specialInstructions
+          };
+          
+          // Save appointment to global store
+          addAppointment(appointment);
+        }
+      }
       
       // Call completion handler
       onComplete?.(mockBookingId);

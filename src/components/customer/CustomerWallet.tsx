@@ -135,7 +135,7 @@ export function CustomerWallet() {
 
   // Payment Methods View
   const renderPaymentMethodsView = () => (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 pb-24 lg:pb-6">
       {/* Back Button */}
       <div className="flex items-center gap-3">
         <button
@@ -233,7 +233,7 @@ export function CustomerWallet() {
 
   // Transaction History View
   const renderTransactionHistoryView = () => (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 pb-24 lg:pb-6">
       {/* Back Button */}
       <div className="flex items-center gap-3">
         <button
@@ -312,7 +312,7 @@ export function CustomerWallet() {
   }
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-6 space-y-8 pb-24 lg:pb-6">
       {/* Coin Summary Card */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

@@ -103,7 +103,7 @@ export function CustomerHome() {
   };
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-6 space-y-8 pb-24 lg:pb-6">
       {/* Welcome Section */}
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-bold text-white">Welcome back!</h1>

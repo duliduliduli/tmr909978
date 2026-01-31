@@ -57,6 +57,16 @@ Name: David Wilson
 Phone: (555) 678-9012
 Location: Santa Monica, CA (Fixed mock location)
 
+6. Test Drive Detailing (FREE SERVICE PROVIDER)
+Username: emma.thompson@testdrive.test
+Password: Emma123!
+Role: Detailer
+Business: Test Drive Detailing
+Name: Emma Thompson
+Phone: (555) 789-0123
+Location: West Hollywood, CA (Fixed mock location)
+⭐ SPECIAL: Offers FREE test service for functionality testing!
+
 TESTING NOTES:
 --------------
 - All detailers use hardcoded locations (not real GPS tracking)
@@ -66,6 +76,7 @@ TESTING NOTES:
 - Customer account can book services from any detailer
 - Each detailer account shows their individual business dashboard
 - Locations correspond to map markers in Los Angeles area
+- Test Drive Detailing (#6) offers a FREE service ($0) for testing booking flow
 
 USAGE:
 ------

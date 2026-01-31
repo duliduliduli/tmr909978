@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Map, Wallet, User, HelpCircle, ChevronRight } from "lucide-react";
+import { Home, Map, Wallet, User, HelpCircle, ChevronRight, Calendar } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
   { key: "home", label: "Home", icon: Home, href: "/home" },
   { key: "map", label: "Map", icon: Map, href: "/map" },
+  { key: "appointments", label: "Appointments", icon: Calendar, href: "/appointments" },
   { key: "wallet", label: "Wallet", icon: Wallet, href: "/wallet" },
   { key: "account", label: "Account", icon: User, href: "/account" },
   { key: "help", label: "Help", icon: HelpCircle, href: "/help" },
@@ -18,7 +19,7 @@ function cx(...c: Array<string | false | undefined>) {
   return c.filter(Boolean).join(" ");
 }
 
-export function AppShell({ children, title }: { children: React.ReactNode; title: string }) {
+export function AppShell({ children, title, fullWidth = false }: { children: React.ReactNode; title: string; fullWidth?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const { role, setRole } = useAppStore();
@@ -39,11 +40,12 @@ export function AppShell({ children, title }: { children: React.ReactNode; title
       {/* Desktop sidebar */}
       <div className="hidden lg:flex">
         <aside className="fixed left-0 top-0 h-screen w-72 bg-brand-900 border-r border-brand-800 shadow-2xl z-20">
-          <div className="h-20 px-6 flex items-center gap-4 border-b border-brand-800/50">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-accent-DEFAULT to-blue-600 shadow-lg shadow-accent/20 flex items-center justify-center">
-              <span className="text-white font-bold text-xl">M</span>
-            </div>
-            <div className="font-bold text-lg tracking-tight text-white">Mobile Detailer</div>
+          <div className="h-20 px-6 flex items-center justify-center border-b border-brand-800/50">
+            <img 
+              src="/tumaro-logo.png" 
+              alt="Tumaro" 
+              className="h-8 object-contain"
+            />
           </div>
 
           <nav className="p-4 space-y-2 mt-4">
@@ -111,7 +113,7 @@ export function AppShell({ children, title }: { children: React.ReactNode; title
         <main className="ml-72 w-full min-h-screen bg-brand-950 relative">
           {/* Header */}
           <header className="sticky top-0 z-10 h-20 px-8 flex items-center justify-between bg-brand-950/80 backdrop-blur-md border-b border-brand-800/50">
-            <h1 className="text-2xl font-bold text-white tracking-tight">{title}</h1>
+            {/* No logo in desktop header - it's already in sidebar */}
             <div className="flex items-center gap-4">
               <div className="bg-brand-900 border border-brand-800 rounded-full px-4 py-1.5 flex items-center gap-2">
                 <div className={cx(
@@ -128,11 +130,12 @@ export function AppShell({ children, title }: { children: React.ReactNode; title
             </div>
           </header>
 
-          <div className="p-8 max-w-7xl mx-auto">
+          <div className={fullWidth ? "" : "p-8 max-w-7xl mx-auto"}>
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
+              className={fullWidth ? "w-full h-full" : ""}
             >
               {children}
             </motion.div>
@@ -143,7 +146,11 @@ export function AppShell({ children, title }: { children: React.ReactNode; title
       {/* Mobile layout */}
       <div className="lg:hidden flex flex-col min-h-screen">
         <header className="sticky top-0 z-20 h-16 px-4 flex items-center justify-between bg-brand-950/90 backdrop-blur-md border-b border-brand-800">
-          <div className="font-bold text-lg text-white">{title}</div>
+          <img 
+            src="/tumaro-logo.png" 
+            alt="Tumaro" 
+            className="h-5 object-contain"
+          />
           <button
             onClick={() => switchRole(role === "customer" ? "detailer" : "customer")}
             className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-900 border border-brand-800 text-xs font-medium text-brand-300"
@@ -153,12 +160,12 @@ export function AppShell({ children, title }: { children: React.ReactNode; title
           </button>
         </header>
 
-        <div className="h-[calc(100vh-9rem)] overflow-hidden">
+        <div className="flex-1 overflow-y-auto pb-safe">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
-            className="h-full"
+            className={fullWidth ? "min-h-full w-full h-full" : "min-h-full"}
           >
             {children}
           </motion.div>

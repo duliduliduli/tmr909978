@@ -151,7 +151,7 @@ export function CustomerAccount() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 pb-24 lg:pb-6">
       {/* Profile Section */}
       <div className="bg-brand-900/50 border border-brand-800 rounded-xl p-6">
         <h2 className="text-xl font-bold text-white mb-4">Profile</h2>

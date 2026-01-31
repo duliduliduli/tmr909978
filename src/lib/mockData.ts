@@ -205,6 +205,33 @@ export const mockDetailers: Detailer[] = [
       password: "David123!",
       email: "david.wilson@proauto.test"
     }
+  },
+  {
+    id: "det_6",
+    name: "Emma Thompson",
+    businessName: "Test Drive Detailing", 
+    rating: 5.0,
+    reviewCount: 15,
+    services: [
+      { id: "s12", name: "FREE Test Service", description: "Complimentary test service for functionality testing", price: 0, duration: 30, category: "Free" },
+      { id: "s13", name: "Basic Exterior Wash", description: "Simple exterior wash and rinse", price: 25, duration: 45, category: "Basic" },
+      { id: "s14", name: "Interior Vacuum", description: "Full interior vacuum service", price: 35, duration: 60, category: "Interior" }
+    ],
+    coin: { name: "Test Coins", iconColor: "#6366F1", earnRate: 3, redemptionValue: 0.20 },
+    promotions: [
+      { id: "p4", title: "FREE Service", description: "Try our free test service - no payment required!", discount: 100, validUntil: "2025-12-31" },
+      { id: "p5", title: "Testing Special", description: "Perfect for app functionality testing", discount: 0, validUntil: "2025-12-31" }
+    ],
+    phone: "(555) 789-0123",
+    hours: "Daily 24/7 (Test Account)",
+    photos: Array(4).fill(0).map((_, i) => `/demo/detailer-6-${i + 1}.jpg`),
+    location: { xPct: 60, yPct: 40, lat: 34.0689, lng: -118.4452 }, // West Hollywood, CA
+    scatterEnabled: false,
+    account: {
+      username: "emma.thompson@testdrive.test", 
+      password: "Emma123!",
+      email: "emma.thompson@testdrive.test"
+    }
   }
 ];
 

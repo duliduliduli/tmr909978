@@ -31,7 +31,16 @@ const config: Config = {
                 }
             },
             fontFamily: {
-                sans: ['var(--font-inter)', 'sans-serif'],
+                sans: [
+                    '-apple-system',
+                    'BlinkMacSystemFont', 
+                    'SF Pro Display',
+                    'SF Pro Text',
+                    'Helvetica Neue',
+                    'Helvetica',
+                    'Arial',
+                    'sans-serif'
+                ],
             },
             backgroundImage: {
                 "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { mockCustomers } from '@/lib/mockData';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,12 +13,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const addresses = await prisma.savedAddress.findMany({
-      where: { customerId },
-      orderBy: { sortOrder: 'asc' }
-    });
+    // Use mock data for demo
+    if (customerId === 'cust_1') {
+      const customer = mockCustomers.find(c => c.id === customerId);
+      return NextResponse.json(customer?.savedAddresses || []);
+    }
 
-    return NextResponse.json(addresses);
+    return NextResponse.json([]);
   } catch (error) {
     console.error('Error fetching saved addresses:', error);
     return NextResponse.json(
@@ -42,44 +41,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if address with same label already exists
-    const existingAddress = await prisma.savedAddress.findFirst({
-      where: {
-        customerId,
-        label: label.toLowerCase()
-      }
-    });
+    // For demo purposes, just return the address data
+    const newAddress = {
+      id: `addr_${Date.now()}`,
+      customerId,
+      label,
+      address,
+      coords: { lat: latitude, lng: longitude },
+      city,
+      state,
+      postalCode
+    };
 
-    if (existingAddress) {
-      // Update existing address
-      const updatedAddress = await prisma.savedAddress.update({
-        where: { id: existingAddress.id },
-        data: {
-          address,
-          latitude,
-          longitude,
-          city,
-          state,
-          postalCode
-        }
-      });
-      return NextResponse.json(updatedAddress);
-    } else {
-      // Create new address
-      const newAddress = await prisma.savedAddress.create({
-        data: {
-          customerId,
-          label,
-          address,
-          latitude,
-          longitude,
-          city,
-          state,
-          postalCode
-        }
-      });
-      return NextResponse.json(newAddress);
-    }
+    return NextResponse.json(newAddress);
   } catch (error) {
     console.error('Error saving address:', error);
     return NextResponse.json(
