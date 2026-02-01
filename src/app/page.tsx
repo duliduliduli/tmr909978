@@ -39,10 +39,6 @@ export default function HomePage() {
       <main className="relative pt-32 pb-16 sm:pt-40 sm:pb-24 lg:pb-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-900/80 border border-brand-700 text-brand-300 text-sm font-medium mb-8 backdrop-blur-sm">
-              <span className="flex h-2 w-2 rounded-full bg-accent-DEFAULT animate-pulse"></span>
-              Now available in Los Angeles
-            </div>
 
             <div className="mb-8 flex flex-col items-center gap-6">
               <img 

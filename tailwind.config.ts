@@ -10,17 +10,17 @@ const config: Config = {
         extend: {
             colors: {
                 brand: {
-                    950: '#020617', // Very dark background
-                    900: '#0f172a', // Main background
-                    800: '#1e293b', // Cards / Secondary
-                    700: '#334155', // Borders
-                    600: '#475569', // Muted text
-                    500: '#64748b',
-                    400: '#94a3b8',
-                    300: '#cbd5e1',
-                    200: '#e2e8f0',
-                    100: '#f1f5f9',
-                    50: '#f8fafc',
+                    950: '#1E2A38', // Base background - brighter, desaturated
+                    900: '#253344', // Main background - lighter variant
+                    800: '#2D3E52', // Cards / Secondary - brighter
+                    700: '#3A4B61', // Borders - more visible
+                    600: '#4A5B72', // Muted text - brighter
+                    500: '#5E6F85',
+                    400: '#7A8B9E',
+                    300: '#9CAAB8',
+                    200: '#BDC8D1',
+                    100: '#DDE5EA',
+                    50: '#F2F6F9',
                 },
                 accent: {
                     DEFAULT: '#38bdf8', // Sky 400 - Primary Action

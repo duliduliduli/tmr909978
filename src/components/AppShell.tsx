@@ -16,6 +16,9 @@ const navItems = [
   { key: "help", label: "Help", icon: HelpCircle, href: "/help" },
 ];
 
+// Bottom nav items exclude help to prevent overcrowding
+const bottomNavItems = navItems.filter(item => item.key !== "help");
+
 function cx(...c: Array<string | false | undefined>) {
   return c.filter(Boolean).join(" ");
 }
@@ -131,6 +134,12 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
                   {role === "customer" ? "Customer Mode" : "Detailer Mode"}
                 </span>
               </div>
+              <Link 
+                href={`${base}/help`}
+                className="h-10 w-10 rounded-full bg-brand-800 border border-brand-700 flex items-center justify-center text-brand-300 hover:border-brand-600 hover:text-accent-DEFAULT transition-colors cursor-pointer"
+              >
+                <HelpCircle className="h-5 w-5" />
+              </Link>
               <div className="h-10 w-10 rounded-full bg-brand-800 border border-brand-700 flex items-center justify-center text-brand-300 hover:border-brand-600 transition-colors cursor-pointer">
                 <User className="h-5 w-5" />
               </div>
@@ -158,13 +167,21 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
             alt="Tumaro" 
             className="h-5 object-contain"
           />
-          <button
-            onClick={() => switchRole(role === "customer" ? "detailer" : "customer")}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-900 border border-brand-800 text-xs font-medium text-brand-300"
-          >
-            <div className={cx("w-2 h-2 rounded-full", role === 'customer' ? 'bg-accent-DEFAULT' : 'bg-purple-500')} />
-            {role === "customer" ? "Customer" : "Detailer"}
-          </button>
+          <div className="flex items-center gap-3">
+            <Link 
+              href={`${base}/help`}
+              className="h-8 w-8 rounded-full bg-brand-900 border border-brand-800 flex items-center justify-center text-brand-300 hover:border-brand-600 hover:text-accent-DEFAULT transition-colors"
+            >
+              <HelpCircle className="h-4 w-4" />
+            </Link>
+            <button
+              onClick={() => switchRole(role === "customer" ? "detailer" : "customer")}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-900 border border-brand-800 text-xs font-medium text-brand-300"
+            >
+              <div className={cx("w-2 h-2 rounded-full", role === 'customer' ? 'bg-accent-DEFAULT' : 'bg-purple-500')} />
+              {role === "customer" ? "Customer" : "Detailer"}
+            </button>
+          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto pb-safe">
@@ -180,7 +197,7 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
 
         <nav className="fixed bottom-0 left-0 right-0 h-20 bg-brand-900/90 backdrop-blur-lg border-t border-brand-800 z-50 pb-safe">
           <div className="grid grid-cols-5 h-full relative">
-            {navItems.map((it) => {
+            {bottomNavItems.map((it) => {
               const Icon = it.icon;
               const href = `${base}${it.href}`;
               const active = isActive(it.href.split("/").pop() || "");
@@ -194,8 +211,8 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
                       transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     />
                   )}
-                  <Icon className={cx("h-6 w-6 transition-colors", active ? "text-accent-DEFAULT" : "text-brand-500")} />
-                  <span className={cx("text-[10px] font-medium transition-colors", active ? "text-brand-100" : "text-brand-600")}>
+                  <Icon className={cx("h-6 w-6 transition-colors", active ? "text-accent-DEFAULT" : "text-brand-300")} />
+                  <span className={cx("text-[10px] font-medium transition-colors", active ? "text-brand-100" : "text-brand-400")}>
                     {it.label}
                   </span>
                 </Link>

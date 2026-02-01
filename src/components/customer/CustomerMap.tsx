@@ -5,6 +5,7 @@ import mapboxgl from "mapbox-gl";
 import { mockDetailers } from "@/lib/mockData";
 import { Star, Phone, Clock, X, MapPin, Shuffle, Search, Navigation } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { DetailerBottomSheet } from "@/components/map/DetailerBottomSheet";
 
 // Mapbox access token - in production, use environment variables
 const MAPBOX_TOKEN = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw';
@@ -16,6 +17,7 @@ export function CustomerMap() {
   const [selectedDetailer, setSelectedDetailer] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showBottomSheet, setShowBottomSheet] = useState(false);
 
   const selected = selectedDetailer ? mockDetailers.find(d => d.id === selectedDetailer) : null;
 
@@ -92,6 +94,8 @@ export function CustomerMap() {
     map.current.on('load', () => {
       setIsLoading(false);
       getCurrentLocation();
+      // Show bottom sheet after a short delay
+      setTimeout(() => setShowBottomSheet(true), 1500);
     });
 
     // Add navigation controls
@@ -219,75 +223,12 @@ export function CustomerMap() {
         </div>
       </div>
 
-      {/* Bottom Sheet */}
-      <AnimatePresence>
-        {selected && (
-          <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="absolute bottom-0 left-0 right-0 max-h-[70%] z-40 p-4"
-          >
-            <div className="bg-brand-900/95 backdrop-blur-xl border border-brand-700 rounded-3xl shadow-2xl overflow-hidden">
-              {/* Handle bar */}
-              <div className="h-1.5 w-12 bg-brand-700 rounded-full mx-auto mt-3 mb-2" />
-
-              <div className="p-6 pt-2 overflow-y-auto max-h-[60vh]">
-                <div className="flex items-start justify-between mb-6">
-                  <div>
-                    <h3 className="text-2xl font-bold text-white mb-1">{selected.businessName}</h3>
-                    <p className="text-brand-400 font-medium">{selected.name}</p>
-                  </div>
-                  <button
-                    onClick={() => setSelectedDetailer(null)}
-                    className="p-2 bg-brand-800 rounded-full hover:bg-brand-700 transition-colors text-brand-400 hover:text-white"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-6 mb-6">
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-400/10 rounded-lg border border-yellow-400/20">
-                    <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-                    <span className="font-bold text-yellow-100">{selected.rating}</span>
-                    <span className="text-xs text-brand-400 ml-1">({selected.reviewCount})</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-sm text-brand-300">
-                    <Clock className="h-4 w-4 text-brand-400" />
-                    <span>{selected.hours}</span>
-                  </div>
-                </div>
-
-                <div className="space-y-4 mb-8">
-                  <h4 className="font-semibold text-white text-sm uppercase tracking-wider">Popular Services</h4>
-                  {selected.services.slice(0, 3).map((service) => (
-                    <div key={service.id} className="flex items-center justify-between p-4 rounded-xl bg-brand-800/50 border border-brand-700/50 hover:border-brand-600 transition-colors group cursor-pointer">
-                      <div>
-                        <div className="font-bold text-white group-hover:text-accent-DEFAULT transition-colors">{service.name}</div>
-                        <div className="text-sm text-brand-400 mt-0.5">{service.description}</div>
-                        <div className="text-xs text-brand-500 mt-1">{service.duration} min</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-bold text-accent-DEFAULT text-lg">${service.price}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex gap-4">
-                  <button className="flex-1 bg-accent-DEFAULT text-white py-4 px-6 rounded-xl font-bold hover:bg-accent-hover transition-all transform hover:scale-[1.02] shadow-lg shadow-accent/20">
-                    Book Now
-                  </button>
-                  <button className="flex items-center justify-center w-14 h-14 bg-brand-800 border border-brand-700 rounded-xl hover:bg-brand-700 transition-colors text-brand-300 hover:text-white">
-                    <Phone className="h-6 w-6" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Detailer Bottom Sheet */}
+      <DetailerBottomSheet 
+        isVisible={showBottomSheet}
+        onClose={() => setShowBottomSheet(false)}
+        userLocation={userLocation}
+      />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, Edit3, Trash2, Plus, Home, Briefcase, Star, Car, X } from "lucide-react";
 import { mockCustomers, type Vehicle } from "@/lib/mockData";
+import { useAppStore } from "@/lib/store";
 
 interface SavedAddress {
   id: string;
@@ -16,10 +17,70 @@ interface SavedAddress {
   postalCode?: string;
 }
 
+// Mock detailers data that matches the bottom sheet
+const mockDetailers = [
+  {
+    id: '1',
+    name: 'Alex\'s Premium Detailing',
+    rating: 4.9,
+    reviewCount: 234,
+    distance: 2.3,
+    profileImage: '/api/placeholder/60/60',
+    specialties: ['Premium Wash', 'Ceramic Coating'],
+    price: '$$$',
+    availability: 'available' as const
+  },
+  {
+    id: '2',
+    name: 'Maria\'s Mobile Detail',
+    rating: 4.7,
+    reviewCount: 189,
+    distance: 1.8,
+    profileImage: '/api/placeholder/60/60',
+    specialties: ['Interior Deep Clean', 'Paint Protection'],
+    price: '$$',
+    availability: 'available' as const
+  },
+  {
+    id: '3',
+    name: 'Elite Auto Spa',
+    rating: 4.8,
+    reviewCount: 156,
+    distance: 3.2,
+    profileImage: '/api/placeholder/60/60',
+    specialties: ['Full Service', 'Wax & Polish'],
+    price: '$$',
+    availability: 'busy' as const
+  },
+  {
+    id: '4',
+    name: 'Quick Shine Mobile',
+    rating: 4.5,
+    reviewCount: 98,
+    distance: 4.1,
+    profileImage: '/api/placeholder/60/60',
+    specialties: ['Express Wash', 'Interior Vacuum'],
+    price: '$',
+    availability: 'available' as const
+  },
+  {
+    id: '5',
+    name: 'Luxury Detail Co.',
+    rating: 4.9,
+    reviewCount: 287,
+    distance: 5.2,
+    profileImage: '/api/placeholder/60/60',
+    specialties: ['Luxury Vehicles', 'Leather Treatment'],
+    price: '$$$$',
+    availability: 'offline' as const
+  },
+];
+
 export function CustomerAccount() {
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [loading, setLoading] = useState(true);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const { favoriteDetailers, removeFavoriteDetailer } = useAppStore();
   const [showVehicleForm, setShowVehicleForm] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [vehicleFormData, setVehicleFormData] = useState({
@@ -264,10 +325,91 @@ export function CustomerAccount() {
         )}
       </div>
 
-      {/* Favorites Section */}
+      {/* Favorite Detailers Section */}
       <div className="bg-brand-900/50 border border-brand-800 rounded-xl p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-white">Favorites</h2>
+          <h2 className="text-xl font-bold text-white">Favorite Detailers</h2>
+          <span className="text-sm text-brand-400">{favoriteDetailers.length} saved</span>
+        </div>
+        
+        {favoriteDetailers.length > 0 ? (
+          <div className="space-y-3">
+            {favoriteDetailers.map((detailerId, index) => {
+              const detailer = mockDetailers.find(d => d.id === detailerId);
+              if (!detailer) return null;
+              
+              return (
+                <motion.div
+                  key={detailer.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="flex items-center gap-4 p-4 bg-brand-800/50 rounded-lg border border-brand-700 hover:bg-brand-800/70 transition-colors"
+                >
+                  <img
+                    src={detailer.profileImage}
+                    alt={detailer.name}
+                    className="w-12 h-12 rounded-xl object-cover"
+                  />
+                  <div className="flex-1">
+                    <h3 className="font-medium text-white">{detailer.name}</h3>
+                    <div className="flex items-center gap-2 text-sm text-brand-400 mt-1">
+                      <div className="flex items-center gap-1">
+                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                        <span>{detailer.rating}</span>
+                      </div>
+                      <span>•</span>
+                      <span>({detailer.reviewCount})</span>
+                      <span>•</span>
+                      <span>{detailer.distance} mi</span>
+                      <span>•</span>
+                      <span className={`${
+                        detailer.availability === 'available' ? 'text-green-400' :
+                        detailer.availability === 'busy' ? 'text-yellow-400' : 'text-red-400'
+                      }`}>
+                        {detailer.availability === 'available' ? 'Available' :
+                         detailer.availability === 'busy' ? 'Busy' : 'Offline'}
+                      </span>
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      {detailer.specialties.slice(0, 2).map((specialty) => (
+                        <span
+                          key={specialty}
+                          className="text-xs bg-blue-600/20 text-blue-300 px-2 py-1 rounded-md"
+                        >
+                          {specialty}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => removeFavoriteDetailer(detailer.id)}
+                    className="p-2 hover:bg-brand-700 rounded-lg transition-colors"
+                    title="Remove from favorites"
+                  >
+                    <Trash2 className="h-4 w-4 text-red-400 hover:text-red-300 transition-colors" />
+                  </button>
+                </motion.div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-8 space-y-3">
+            <div className="h-16 w-16 rounded-full bg-brand-800 flex items-center justify-center mx-auto">
+              <Star className="h-8 w-8 text-brand-600" />
+            </div>
+            <p className="text-brand-400">No favorite detailers yet</p>
+            <p className="text-sm text-brand-500">
+              Heart detailers from the Map to add them to your favorites
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Saved Addresses Section */}
+      <div className="bg-brand-900/50 border border-brand-800 rounded-xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-white">Saved Addresses</h2>
           <button className="text-accent-DEFAULT text-sm font-medium hover:text-accent-hover transition-colors">
             + Add New
           </button>

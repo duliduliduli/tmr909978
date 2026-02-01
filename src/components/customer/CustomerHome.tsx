@@ -34,21 +34,21 @@ export function CustomerHome() {
       description: "Set your home address for quick access",
       icon: Home,
       action: () => openAddressInput('home'),
-      color: "bg-green-600",
+      color: "bg-brand-700",
     },
     {
       title: "Add Work",
       description: "Set your work address for convenience",
       icon: Briefcase,
       action: () => openAddressInput('work'),
-      color: "bg-blue-600",
+      color: "bg-brand-600",
     },
     {
       title: "+ Add Favorite",
       description: "Add a frequently visited location",
       icon: Plus,
       action: () => openAddressInput('favorite'),
-      color: "bg-purple-600",
+      color: "bg-brand-800",
     },
   ];
 

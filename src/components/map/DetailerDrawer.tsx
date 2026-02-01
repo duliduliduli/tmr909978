@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { Star, Clock, Phone, X, Calendar, CreditCard, ChevronLeft, CheckCircle, Car, ChevronUp, ChevronDown, Crown } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
-import { motion, AnimatePresence } from 'framer-motion';
 import { mockCustomers, type Vehicle } from '@/lib/mockData';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -41,12 +40,12 @@ interface DetailerDrawerProps {
 }
 
 // Enhanced Payment Form Component
-function PaymentForm({ 
-  selectedService, 
-  selectedDate, 
-  selectedTime, 
+function PaymentForm({
+  selectedService,
+  selectedDate,
+  selectedTime,
   getFinalPrice,
-  onSuccess 
+  onSuccess
 }: {
   selectedService: Service;
   selectedDate: string;
@@ -70,16 +69,16 @@ function PaymentForm({
   const formatCardNumber = (value: string) => {
     // Remove all non-digit characters
     const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-    
+
     // Add a space every 4 digits
     const matches = v.match(/\d{4,16}/g);
     const match = matches && matches[0] || '';
     const parts = [];
-    
+
     for (let i = 0, len = match.length; i < len; i += 4) {
       parts.push(match.substring(i, i + 4));
     }
-    
+
     if (parts.length) {
       return parts.join(' ');
     } else {
@@ -97,12 +96,12 @@ function PaymentForm({
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    
+
     if (!paymentData.cardNumber || !paymentData.expiryDate || !paymentData.cvv || !paymentData.nameOnCard) {
       setError('Please fill in all payment details');
       return;
     }
-    
+
     setIsProcessing(true);
     setError(null);
 
@@ -136,7 +135,7 @@ function PaymentForm({
               className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-          
+
           <div>
             <label className="block text-xs font-medium text-slate-700 mb-1">
               Card Number
@@ -150,7 +149,7 @@ function PaymentForm({
               className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-          
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-slate-700 mb-1">
@@ -209,7 +208,7 @@ export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDra
     truck: 0,
     van: 0
   });
-  const [washItems, setWashItems] = useState<{id: string, vehicleType: 'car'|'suv'|'truck'|'van', isLuxury: boolean, vehicleId?: string}[]>([]);
+  const [washItems, setWashItems] = useState<{ id: string, vehicleType: 'car' | 'suv' | 'truck' | 'van', isLuxury: boolean, vehicleId?: string }[]>([]);
   const [customerCoins, setCustomerCoins] = useState<number>(0);
   const [showCoinInfo, setShowCoinInfo] = useState<boolean>(false);
   const [coinsToUse, setCoinsToUse] = useState<number>(0);
@@ -231,13 +230,13 @@ export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDra
   // Calculate total service time needed based on selected washes
   const calculateServiceDuration = () => {
     if (!selectedService) return 0;
-    
+
     let totalMinutes = 0;
     const baseDuration = selectedService.duration; // Base duration from service
-    
+
     washItems.forEach(item => {
       let itemDuration = baseDuration;
-      
+
       // Vehicle type duration multipliers
       switch (item.vehicleType) {
         case 'car':
@@ -253,22 +252,22 @@ export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDra
           itemDuration *= 1.4; // ~49 minutes
           break;
       }
-      
+
       // Luxury adds extra time
       if (item.isLuxury) {
         itemDuration *= 1.2; // +20% time for luxury care
       }
-      
+
       totalMinutes += itemDuration;
     });
-    
+
     return Math.ceil(totalMinutes);
   };
 
   const getTimeSlots = () => {
     const slots = [];
     const totalServiceTime = calculateServiceDuration();
-    
+
     // Fixed detailer availability (simulate actual business hours with breaks)
     const detailerAvailability = {
       // Unavailable slots (lunch, existing bookings, etc.)
@@ -278,24 +277,24 @@ export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDra
         '15:00', '15:30', '16:00', // Afternoon booking
       ]
     };
-    
+
     for (let hour = 9; hour < 18; hour++) {
       for (let minute of [0, 30]) {
         const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        
+
         // Check if this time slot can accommodate the full service duration
         let available = true;
-        
+
         // Check if starting time is in unavailable list
         if (detailerAvailability.unavailable.includes(time)) {
           available = false;
         }
-        
+
         // Check if service would overlap with any unavailable slots
         if (available && totalServiceTime > 0) {
           const startTime = new Date(`2024-01-01 ${time}`);
           const endTime = new Date(startTime.getTime() + totalServiceTime * 60000);
-          
+
           // Check each 30-minute slot within the service duration
           for (let checkTime = new Date(startTime); checkTime < endTime; checkTime.setMinutes(checkTime.getMinutes() + 30)) {
             const checkTimeStr = `${checkTime.getHours().toString().padStart(2, '0')}:${checkTime.getMinutes().toString().padStart(2, '0')}`;
@@ -304,19 +303,19 @@ export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDra
               break;
             }
           }
-          
+
           // Don't allow bookings that would end after 6 PM
           if (endTime.getHours() >= 18) {
             available = false;
           }
         }
-        
+
         slots.push({
           time,
           available,
-          estimatedEnd: totalServiceTime > 0 ? 
+          estimatedEnd: totalServiceTime > 0 ?
             new Date(new Date(`2024-01-01 ${time}`).getTime() + totalServiceTime * 60000)
-              .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) 
+              .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
             : null
         });
       }
@@ -333,7 +332,7 @@ export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDra
       const response = await fetch('/api/coins/balance?customerId=cust_1');
       if (response.ok) {
         const data = await response.json();
-        const detailerCoins = data.balances.find((balance: any) => 
+        const detailerCoins = data.balances.find((balance: any) =>
           balance.coin.provider.businessName === detailer.businessName
         );
         setCustomerCoins(detailerCoins ? detailerCoins.balance : 0);
@@ -346,7 +345,7 @@ export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDra
   // Calculate total price with mixed vehicle types and luxury options
   const calculatePrice = (service: Service) => {
     if (!service) return 0;
-    
+
     let totalPrice = 0;
     const vehicleMultipliers = {
       car: 1.0,
@@ -354,19 +353,19 @@ export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDra
       truck: 1.4,
       van: 1.5
     };
-    
+
     // Calculate price for each wash item
     washItems.forEach(item => {
       let itemPrice = service.price;
       itemPrice *= vehicleMultipliers[item.vehicleType];
-      
+
       if (item.isLuxury) {
         itemPrice *= 1.15; // 15% luxury upcharge
       }
-      
+
       totalPrice += itemPrice;
     });
-    
+
     return Math.round(totalPrice);
   };
 
@@ -389,22 +388,22 @@ export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDra
   const updateWashItems = (newQuantities: typeof vehicleQuantities) => {
     const newWashItems: typeof washItems = [];
     let itemId = 1;
-    
+
     Object.entries(newQuantities).forEach(([vehicleType, quantity]) => {
       for (let i = 0; i < quantity; i++) {
         newWashItems.push({
           id: `wash_${itemId++}`,
-          vehicleType: vehicleType as 'car'|'suv'|'truck'|'van',
+          vehicleType: vehicleType as 'car' | 'suv' | 'truck' | 'van',
           isLuxury: false
         });
       }
     });
-    
+
     setWashItems(newWashItems);
   };
 
   // Handle vehicle quantity changes
-  const updateVehicleQuantity = (vehicleType: 'car'|'suv'|'truck'|'van', change: number) => {
+  const updateVehicleQuantity = (vehicleType: 'car' | 'suv' | 'truck' | 'van', change: number) => {
     const newQuantities = {
       ...vehicleQuantities,
       [vehicleType]: Math.max(0, Math.min(10, vehicleQuantities[vehicleType] + change))
@@ -415,7 +414,7 @@ export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDra
 
   // Toggle luxury for specific wash item
   const toggleWashLuxury = (washId: string) => {
-    setWashItems(prev => prev.map(item => 
+    setWashItems(prev => prev.map(item =>
       item.id === washId ? { ...item, isLuxury: !item.isLuxury } : item
     ));
   };
@@ -423,14 +422,14 @@ export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDra
   // Add stored vehicle to wash items
   const addStoredVehicle = (vehicle: Vehicle) => {
     if (selectedStoredVehicles.includes(vehicle.id)) return;
-    
+
     const newWashItem = {
       id: `wash_stored_${vehicle.id}`,
       vehicleType: vehicle.bodyType,
       isLuxury: vehicle.isLuxury,
       vehicleId: vehicle.id
     };
-    
+
     setWashItems(prev => [...prev, newWashItem]);
     setSelectedStoredVehicles(prev => [...prev, vehicle.id]);
   };
@@ -453,48 +452,41 @@ export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDra
   }, [detailer.id]);
 
   return (
-    <AnimatePresence>
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+    <div>
+      <div
         className="absolute inset-0 bg-black/20 z-40"
         onClick={onClose}
       />
-      
-      <motion.div 
-        initial={{ y: '100%', opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: '100%', opacity: 0 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+
+      <div
         className="absolute bottom-0 left-4 right-4 bg-white rounded-t-2xl border-t border-slate-200 z-50 shadow-2xl max-h-[70vh] mb-4 flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-white rounded-t-2xl flex-shrink-0">
-            <div className="flex items-center gap-3">
-              {bookingStep !== 'details' && (
-                <button 
-                  onClick={() => {
-                    if (bookingStep === 'service') setBookingStep('details');
-                    else if (bookingStep === 'datetime') setBookingStep('service');
-                    else if (bookingStep === 'payment') setBookingStep('datetime');
-                  }}
-                  className="p-1 hover:bg-slate-100 rounded transition-colors"
-                >
-                  <ChevronLeft className="h-4 w-4 text-slate-600" />
-                </button>
+          <div className="flex items-center gap-3">
+            {bookingStep !== 'details' && (
+              <button
+                onClick={() => {
+                  if (bookingStep === 'service') setBookingStep('details');
+                  else if (bookingStep === 'datetime') setBookingStep('service');
+                  else if (bookingStep === 'payment') setBookingStep('datetime');
+                }}
+                className="p-1 hover:bg-slate-100 rounded transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4 text-slate-600" />
+              </button>
+            )}
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">{detailer.businessName}</h3>
+              {detailer.distance && (
+                <p className="text-xs text-slate-600 font-medium">{detailer.distance.toFixed(1)} miles away</p>
               )}
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">{detailer.businessName}</h3>
-                {detailer.distance && (
-                  <p className="text-xs text-slate-600 font-medium">{detailer.distance.toFixed(1)} miles away</p>
-                )}
-              </div>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-              <X className="h-4 w-4 text-slate-600" />
-            </button>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+            <X className="h-4 w-4 text-slate-600" />
+          </button>
         </div>
 
         {/* Scrollable Content */}
@@ -502,11 +494,7 @@ export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDra
           <div className="p-4">
             {/* Detailer Details View */}
             {bookingStep === 'details' && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-              >
+              <div>
                 {/* Rating and Hours */}
                 <div className="flex items-center gap-4 mb-4">
                   <div className="flex items-center gap-1">
@@ -545,22 +533,18 @@ export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDra
                   ))}
                 </div>
 
-                <button 
+                <button
                   onClick={() => setBookingStep('service')}
                   className="w-full bg-slate-900 text-white py-3 rounded-lg font-medium hover:bg-slate-800 transition-colors"
                 >
                   Book Service
                 </button>
-              </motion.div>
+              </div>
             )}
 
             {/* Service Selection */}
             {bookingStep === 'service' && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-              >
+              <div>
                 <h4 className="text-sm font-semibold mb-3 text-slate-900">Select a Service</h4>
                 <div className="space-y-2 mb-4">
                   {detailer.services.map((service) => (
@@ -586,23 +570,19 @@ export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDra
                     </div>
                   ))}
                 </div>
-              </motion.div>
+              </div>
             )}
 
             {/* Vehicle & Options Selection */}
             {bookingStep === 'vehicle' && selectedService && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-              >
+              <div>
                 <div className="bg-slate-50 rounded-lg p-3 mb-4">
                   <h5 className="text-sm font-medium text-slate-900">{selectedService.name}</h5>
                   <div className="text-xs text-slate-600">Base price: ${selectedService.price}</div>
                 </div>
 
                 <h4 className="text-sm font-semibold mb-2 text-slate-900">Select Vehicles</h4>
-                
+
                 {/* My Vehicles Section */}
                 {customerVehicles.length > 0 && (
                   <div className="mb-3">
@@ -611,14 +591,13 @@ export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDra
                       {customerVehicles.map((vehicle) => (
                         <button
                           key={vehicle.id}
-                          onClick={() => selectedStoredVehicles.includes(vehicle.id) 
-                            ? removeStoredVehicle(vehicle.id) 
+                          onClick={() => selectedStoredVehicles.includes(vehicle.id)
+                            ? removeStoredVehicle(vehicle.id)
                             : addStoredVehicle(vehicle)}
-                          className={`p-2 text-xs border rounded transition-all ${
-                            selectedStoredVehicles.includes(vehicle.id)
+                          className={`p-2 text-xs border rounded transition-all ${selectedStoredVehicles.includes(vehicle.id)
                               ? 'border-slate-400 bg-slate-100 text-slate-900'
                               : 'border-slate-200 hover:border-slate-300 text-slate-600'
-                          }`}
+                            }`}
                         >
                           <div className="font-medium">{vehicle.year} {vehicle.make} {vehicle.model}</div>
                           <div className="flex items-center justify-between">
@@ -630,7 +609,7 @@ export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDra
                     </div>
                   </div>
                 )}
-                
+
                 {/* Quick Add Vehicles */}
                 <div className="mb-3">
                   <h5 className="text-xs font-medium mb-1.5 text-slate-700">Quick Add</h5>
@@ -670,28 +649,23 @@ export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDra
                       {washItems.map((item, index) => {
                         const vehicle = item.vehicleId ? customerVehicles.find(v => v.id === item.vehicleId) : null;
                         return (
-                          <motion.button
+                          <button
                             key={item.id}
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ delay: index * 0.02 }}
                             onClick={() => item.vehicleId ? removeStoredVehicle(item.vehicleId) : toggleWashLuxury(item.id)}
-                            className={`p-1.5 rounded border text-center transition-all ${
-                              item.isLuxury 
-                                ? 'border-amber-300 bg-amber-50' 
+                            className={`p-1.5 rounded border text-center transition-all ${item.isLuxury
+                                ? 'border-amber-300 bg-amber-50'
                                 : 'border-slate-200 bg-white hover:border-slate-300'
-                            }`}
+                              }`}
                           >
-                            <Car className={`h-3 w-3 mx-auto ${
-                              item.isLuxury ? 'text-amber-600' : 'text-slate-500'
-                            }`} />
+                            <Car className={`h-3 w-3 mx-auto ${item.isLuxury ? 'text-amber-600' : 'text-slate-500'
+                              }`} />
                             <div className="text-xs capitalize mt-0.5">
-                              {vehicle ? `${vehicle.make.slice(0,3)}` : item.vehicleType.slice(0,3)}
+                              {vehicle ? `${vehicle.make.slice(0, 3)}` : item.vehicleType.slice(0, 3)}
                             </div>
                             {item.isLuxury && (
                               <Crown className="h-2 w-2 mx-auto text-amber-500" />
                             )}
-                          </motion.button>
+                          </button>
                         );
                       })}
                     </div>
@@ -761,12 +735,12 @@ export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDra
                     <div className="space-y-1 text-xs text-slate-600">
                       {Object.entries(vehicleQuantities).map(([vehicleType, quantity]) => {
                         if (quantity === 0) return null;
-                        const luxuryCount = washItems.filter(item => 
+                        const luxuryCount = washItems.filter(item =>
                           item.vehicleType === vehicleType && item.isLuxury
                         ).length;
                         const regularCount = quantity - luxuryCount;
                         const multiplier = vehicleType === 'car' ? 1 : vehicleType === 'suv' ? 1.25 : vehicleType === 'truck' ? 1.4 : 1.5;
-                        
+
                         return (
                           <div key={vehicleType}>
                             {regularCount > 0 && (
@@ -805,23 +779,19 @@ export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDra
                 >
                   {getTotalWashes() > 0 ? 'Continue to Date & Time' : 'Select Vehicle Washes to Continue'}
                 </button>
-              </motion.div>
+              </div>
             )}
 
             {/* Date & Time Selection */}
             {bookingStep === 'datetime' && selectedService && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-              >
+              <div>
                 <div className="bg-slate-50 rounded-lg p-3 mb-4">
                   <h5 className="text-sm font-medium text-slate-900">{selectedService.name}</h5>
                   <div className="text-xs text-slate-600">${selectedService.price} • {selectedService.duration} min</div>
                 </div>
 
                 <h4 className="text-sm font-semibold mb-3 text-slate-900">Select Date & Time</h4>
-                
+
                 {/* Date Selection */}
                 <div className="mb-4">
                   <h5 className="text-xs font-medium mb-2 text-slate-700">Date</h5>
@@ -830,11 +800,10 @@ export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDra
                       <button
                         key={day.date}
                         onClick={() => setSelectedDate(day.date)}
-                        className={`p-2 rounded-lg border text-left text-xs transition-all ${
-                          selectedDate === day.date
+                        className={`p-2 rounded-lg border text-left text-xs transition-all ${selectedDate === day.date
                             ? 'border-slate-400 bg-slate-100 text-slate-900'
                             : 'border-slate-200 hover:border-slate-300 text-slate-700'
-                        }`}
+                          }`}
                       >
                         <div className="font-medium">{day.label}</div>
                       </button>
@@ -866,13 +835,12 @@ export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDra
                           key={slot.time}
                           onClick={() => setSelectedTime(slot.time)}
                           disabled={!slot.available}
-                          className={`p-2 rounded text-xs transition-all ${
-                            !slot.available
+                          className={`p-2 rounded text-xs transition-all ${!slot.available
                               ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                               : selectedTime === slot.time
-                              ? 'bg-slate-900 text-white'
-                              : 'border border-slate-200 hover:border-slate-300 text-slate-700 hover:bg-slate-50'
-                          }`}
+                                ? 'bg-slate-900 text-white'
+                                : 'border border-slate-200 hover:border-slate-300 text-slate-700 hover:bg-slate-50'
+                            }`}
                         >
                           <div className="font-medium">{slot.time}</div>
                           {slot.available && slot.estimatedEnd && (
@@ -897,16 +865,12 @@ export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDra
                     Continue to Payment
                   </button>
                 )}
-              </motion.div>
+              </div>
             )}
 
             {/* Payment */}
             {bookingStep === 'payment' && selectedService && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-              >
+              <div>
                 <div className="bg-slate-50 rounded-lg p-3 mb-4">
                   <h5 className="text-sm font-medium text-slate-900">{selectedService.name}</h5>
                   <div className="text-xs text-slate-600">
@@ -923,14 +887,12 @@ export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDra
                     onSuccess={() => setBookingStep('success')}
                   />
                 </Elements>
-              </motion.div>
+              </div>
             )}
 
             {/* Success */}
             {bookingStep === 'success' && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
+              <div
                 className="text-center py-8"
               >
                 <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
@@ -944,11 +906,11 @@ export function DetailerDrawer({ detailer, onClose, onBookService }: DetailerDra
                 >
                   Done
                 </button>
-              </motion.div>
+              </div>
             )}
           </div>
         </div>
-      </motion.div>
-    </AnimatePresence>
+      </div>
+    </div>
   );
 }

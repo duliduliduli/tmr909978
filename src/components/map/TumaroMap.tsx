@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import type { FeatureCollection, Feature, Point } from 'geojson';
 import { MapControls } from './MapControls';
-import { DetailerDrawer } from './DetailerDrawer';
+import { DetailerBottomSheet } from './DetailerBottomSheet';
 import { useAppStore } from '@/lib/store';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './tumaroMap.css';
@@ -44,11 +44,37 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
   const [selectedDetailerId, setSelectedDetailerId] = useState<string | null>(null);
   const [isLocationPermissionDenied, setIsLocationPermissionDenied] = useState(false);
   const [isLocationShuffled, setIsLocationShuffled] = useState(false);
+  const [showBottomSheet, setShowBottomSheet] = useState(false);
 
   // Get selected detailer data
   const selectedDetailer = selectedDetailerId && detailers 
     ? detailers.features.find(f => f.properties?.id === selectedDetailerId)?.properties
     : null;
+
+  // Convert map detailer data to bottom sheet format
+  const convertToBottomSheetDetailer = (mapDetailer: any) => {
+    if (!mapDetailer) return null;
+    
+    return {
+      id: mapDetailer.id,
+      name: mapDetailer.name,
+      rating: mapDetailer.rating || 4.8,
+      reviewCount: mapDetailer.reviewCount || 89,
+      distance: mapDetailer.distance || 2.1,
+      profileImage: mapDetailer.image || '/api/placeholder/60/60',
+      specialties: mapDetailer.services || ['Premium Wash', 'Ceramic Coating'],
+      price: mapDetailer.priceRange || '$$$',
+      availability: mapDetailer.status === 'available' ? 'available' as const : 
+                   mapDetailer.status === 'busy' ? 'busy' as const : 'offline' as const,
+      phone: mapDetailer.phone || '+1234567890',
+      isFavorite: false,
+      popularity: mapDetailer.popularity || 85,
+      latitude: mapDetailer.latitude || 0,
+      longitude: mapDetailer.longitude || 0
+    };
+  };
+
+  const bottomSheetDetailer = selectedDetailer ? convertToBottomSheetDetailer(selectedDetailer) : null;
 
   // Initialize map
   useEffect(() => {
@@ -75,43 +101,63 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
       console.log('🗺️ Map loaded successfully');
       setIsLoaded(true);
       
-      // Remove traffic colors and set roads to gray shades
+      // Fetch detailers after map is loaded
+      fetchDetailers();
+      
+      // Show bottom sheet after a delay
+      setTimeout(() => {
+        setShowBottomSheet(true);
+      }, 1500);
+      
+      // Remove traffic colors and set roads to neutral shades  
       const mapInstance = map.current;
       if (mapInstance) {
-        // Override road colors to use gray instead of traffic colors
+        // Override road colors to use neutral grays instead of traffic colors
         try {
-          // Primary roads (highways) - dark gray
-          if (mapInstance.getLayer('road-primary')) {
-            mapInstance.setPaintProperty('road-primary', 'line-color', '#4a5568');
-          }
-          if (mapInstance.getLayer('road-secondary-tertiary')) {
-            mapInstance.setPaintProperty('road-secondary-tertiary', 'line-color', '#6b7280');
-          }
-          if (mapInstance.getLayer('road-street')) {
-            mapInstance.setPaintProperty('road-street', 'line-color', '#9ca3af');
-          }
-          if (mapInstance.getLayer('road-minor')) {
-            mapInstance.setPaintProperty('road-minor', 'line-color', '#d1d5db');
-          }
-          
-          // Remove traffic layers if they exist
-          const trafficLayers = [
-            'traffic-primary',
-            'traffic-secondary', 
-            'traffic-tertiary',
-            'traffic-local',
-            'traffic-congestion'
+          const roadLayers = [
+            'road-primary', 'road-secondary-tertiary', 'road-street', 'road-minor',
+            'road-arterial', 'road-trunk', 'road-residential', 'road-motorway',
+            'road-highway', 'road-main', 'road-path', 'road-rail'
           ];
           
-          trafficLayers.forEach(layerId => {
+          roadLayers.forEach(layerId => {
             if (mapInstance.getLayer(layerId)) {
-              mapInstance.removeLayer(layerId);
+              mapInstance.setPaintProperty(layerId, 'line-color', '#6b7280'); // Neutral gray
             }
           });
           
-          console.log('🎨 Road colors updated to gray shades (no traffic colors)');
+          // Remove any traffic-related layers completely
+          const trafficLayers = [
+            'traffic-primary', 'traffic-secondary', 'traffic-tertiary', 'traffic-local',
+            'traffic-congestion', 'traffic-heavy', 'traffic-moderate', 'traffic-light',
+            'traffic', 'traffic-flow', 'traffic-incidents', 'mapbox-traffic'
+          ];
+          
+          trafficLayers.forEach(layerId => {
+            try {
+              if (mapInstance.getLayer(layerId)) {
+                mapInstance.removeLayer(layerId);
+              }
+            } catch (e) {
+              // Layer doesn't exist, continue
+            }
+          });
+          
+          // Also remove any traffic sources
+          const trafficSources = ['traffic', 'mapbox-traffic', 'composite-traffic'];
+          trafficSources.forEach(sourceId => {
+            try {
+              if (mapInstance.getSource(sourceId)) {
+                mapInstance.removeSource(sourceId);
+              }
+            } catch (e) {
+              // Source doesn't exist, continue  
+            }
+          });
+          
+          console.log('🎨 All traffic colors and layers removed - roads set to neutral gray');
         } catch (error) {
-          console.log('ℹ️ Some road layers not found (normal for custom styles)');
+          console.log('ℹ️ Traffic removal completed with some expected layer differences');
         }
       }
       
@@ -333,6 +379,13 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
     
     // Remove existing source and layers if they exist
     if (mapInstance.getSource('detailers')) {
+      // Remove layers in reverse order they were added
+      if (mapInstance.getLayer('cluster-count')) {
+        mapInstance.removeLayer('cluster-count');
+      }
+      if (mapInstance.getLayer('clusters')) {
+        mapInstance.removeLayer('clusters');
+      }
       if (mapInstance.getLayer('detailers-layer')) {
         mapInstance.removeLayer('detailers-layer');
       }
@@ -380,9 +433,10 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
         'circle-radius': [
           'step',
           ['get', 'point_count'],
-          15, 10,
-          20, 20,
-          30, 25
+          15,
+          10, 20,
+          20, 25,
+          30, 30
         ],
         'circle-stroke-width': 2,
         'circle-stroke-color': '#ffffff'
@@ -448,6 +502,49 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
       mapInstance.getCanvas().style.cursor = '';
     });
     
+    // Cleanup function to remove event listeners and layers
+    return () => {
+      if (mapInstance && mapInstance.getStyle && mapInstance.getSource) {
+        try {
+          // Check if source exists before cleanup
+          const detailersSource = mapInstance.getSource('detailers');
+          if (detailersSource) {
+            // Remove event listeners
+            mapInstance.off('click', 'detailers-layer');
+            mapInstance.off('click', 'clusters');
+            mapInstance.off('mouseenter', 'detailers-layer');
+            mapInstance.off('mouseleave', 'detailers-layer');
+            mapInstance.off('mouseenter', 'clusters');
+            mapInstance.off('mouseleave', 'clusters');
+            
+            // Remove layers in reverse order
+            try {
+              if (mapInstance.getLayer('cluster-count')) {
+                mapInstance.removeLayer('cluster-count');
+              }
+            } catch (e) { /* Layer already removed */ }
+            
+            try {
+              if (mapInstance.getLayer('clusters')) {
+                mapInstance.removeLayer('clusters');
+              }
+            } catch (e) { /* Layer already removed */ }
+            
+            try {
+              if (mapInstance.getLayer('detailers-layer')) {
+                mapInstance.removeLayer('detailers-layer');
+              }
+            } catch (e) { /* Layer already removed */ }
+            
+            try {
+              mapInstance.removeSource('detailers');
+            } catch (e) { /* Source already removed */ }
+          }
+        } catch (error) {
+          console.log('Map cleanup completed with expected cleanup variations');
+        }
+      }
+    };
   }, [detailers, isLoaded]);
   
   // Add customer location marker
@@ -479,9 +576,10 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
     };
   }, [userLocation]);
 
-  // Initialize on mount - only run once
+  // Initialize on mount - just run once
   useEffect(() => {
-    fetchDetailers();
+    // Removed fetchDetailers from here since it's now called in map.on('load')
+    // This prevents the dependency array issue
   }, []); // Only run once on mount
 
   // Handle location request separately - only when needed
@@ -532,13 +630,7 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
         isLocationShuffled={isLocationShuffled}
       />
 
-      {/* Detailer Selection Drawer */}
-      {selectedDetailer && (
-        <DetailerDrawer
-          detailer={selectedDetailer as any}
-          onClose={() => setSelectedDetailerId(null)}
-        />
-      )}
+      {/* Note: Detailer selection now handled by bottom sheet */}
 
       {/* Loading indicator */}
       {!isLoaded && (
@@ -549,6 +641,15 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
           </div>
         </div>
       )}
+
+      {/* Detailer Bottom Sheet */}
+      <DetailerBottomSheet
+        isVisible={showBottomSheet}
+        onClose={() => setShowBottomSheet(false)}
+        userLocation={userLocation}
+        selectedDetailerFromMap={bottomSheetDetailer}
+        onClearMapSelection={() => setSelectedDetailerId(null)}
+      />
 
     </div>
   );

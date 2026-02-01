@@ -49,6 +49,12 @@ interface AppState {
   updateAppointmentStatus: (appointmentId: string, status: Appointment['status']) => void;
   getUpcomingAppointments: () => Appointment[];
   getPastAppointments: () => Appointment[];
+  // Favorites storage
+  favoriteDetailers: string[];
+  addFavoriteDetailer: (detailerId: string) => void;
+  removeFavoriteDetailer: (detailerId: string) => void;
+  toggleFavoriteDetailer: (detailerId: string) => void;
+  isFavoriteDetailer: (detailerId: string) => boolean;
 }
 
 export const useAppStore = create<AppState>()(
@@ -211,7 +217,27 @@ export const useAppStore = create<AppState>()(
           return appointmentDate <= now || apt.status === 'completed' || apt.status === 'cancelled';
         });
       },
+      // Favorites functionality
+      favoriteDetailers: [],
+      addFavoriteDetailer: (detailerId) => set((state) => ({
+        favoriteDetailers: [...new Set([...state.favoriteDetailers, detailerId])]
+      })),
+      removeFavoriteDetailer: (detailerId) => set((state) => ({
+        favoriteDetailers: state.favoriteDetailers.filter(id => id !== detailerId)
+      })),
+      toggleFavoriteDetailer: (detailerId) => set((state) => {
+        const isFavorite = state.favoriteDetailers.includes(detailerId);
+        if (isFavorite) {
+          return { favoriteDetailers: state.favoriteDetailers.filter(id => id !== detailerId) };
+        } else {
+          return { favoriteDetailers: [...new Set([...state.favoriteDetailers, detailerId])] };
+        }
+      }),
+      isFavoriteDetailer: (detailerId) => {
+        const state = useAppStore.getState();
+        return state.favoriteDetailers.includes(detailerId);
+      },
     }),
-    { name: "app_state_v3" }
+    { name: "app_state_v4" }
   )
 );
