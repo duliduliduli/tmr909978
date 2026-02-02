@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Calendar, Clock, MapPin, Car, CreditCard, Check } from 'lucide-react';
 import { ServiceSelectionStep } from './steps/ServiceSelectionStep';
 import { SchedulingStep } from './steps/SchedulingStep';
-import { AddressStep } from './steps/AddressStep';
+import { AddressStepEnhanced as AddressStep } from './steps/AddressStepEnhanced';
 import { VehicleInfoStep } from './steps/VehicleInfoStep';
 import { PaymentStep } from './steps/PaymentStep';
 import { ConfirmationStep } from './steps/ConfirmationStep';

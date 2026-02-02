@@ -10,6 +10,22 @@ interface MapViewState {
   zoom: number;
 }
 
+export interface SavedAddress {
+  id: string;
+  customerId: string;
+  label?: string; // e.g., "Home", "Work", "Mom's House"
+  street: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  latitude: number;
+  longitude: number;
+  fullAddress: string;
+  isDefault?: boolean;
+  createdAt: string;
+  lastUsed?: string;
+}
+
 export interface Appointment {
   id: string;
   customerId: string;
@@ -24,6 +40,7 @@ export interface Appointment {
   scheduledTime: string;
   duration: number;
   address: string;
+  addressId?: string; // Reference to saved address if used
   phone: string;
   status: 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
   bookedAt: string;
@@ -55,6 +72,14 @@ interface AppState {
   removeFavoriteDetailer: (detailerId: string) => void;
   toggleFavoriteDetailer: (detailerId: string) => void;
   isFavoriteDetailer: (detailerId: string) => boolean;
+  // Saved addresses storage
+  savedAddresses: SavedAddress[];
+  addSavedAddress: (address: Omit<SavedAddress, 'id' | 'createdAt'>) => void;
+  updateSavedAddress: (id: string, updates: Partial<SavedAddress>) => void;
+  deleteSavedAddress: (id: string) => void;
+  getSavedAddressesByCustomer: (customerId: string) => SavedAddress[];
+  setDefaultAddress: (id: string) => void;
+  updateAddressLastUsed: (id: string) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -219,13 +244,13 @@ export const useAppStore = create<AppState>()(
       },
       // Favorites functionality
       favoriteDetailers: [],
-      addFavoriteDetailer: (detailerId) => set((state) => ({
+      addFavoriteDetailer: (detailerId: string) => set((state) => ({
         favoriteDetailers: [...new Set([...state.favoriteDetailers, detailerId])]
       })),
-      removeFavoriteDetailer: (detailerId) => set((state) => ({
+      removeFavoriteDetailer: (detailerId: string) => set((state) => ({
         favoriteDetailers: state.favoriteDetailers.filter(id => id !== detailerId)
       })),
-      toggleFavoriteDetailer: (detailerId) => set((state) => {
+      toggleFavoriteDetailer: (detailerId: string) => set((state) => {
         const isFavorite = state.favoriteDetailers.includes(detailerId);
         if (isFavorite) {
           return { favoriteDetailers: state.favoriteDetailers.filter(id => id !== detailerId) };
@@ -233,11 +258,85 @@ export const useAppStore = create<AppState>()(
           return { favoriteDetailers: [...new Set([...state.favoriteDetailers, detailerId])] };
         }
       }),
-      isFavoriteDetailer: (detailerId) => {
+      isFavoriteDetailer: (detailerId: string) => {
         const state = useAppStore.getState();
         return state.favoriteDetailers.includes(detailerId);
       },
+      // Saved addresses implementation
+      savedAddresses: [
+        // Sample saved addresses
+        {
+          id: "addr_1",
+          customerId: "cust_1",
+          label: "Home",
+          street: "123 Main Street",
+          city: "Los Angeles",
+          state: "CA",
+          postalCode: "90210",
+          latitude: 34.0522,
+          longitude: -118.2437,
+          fullAddress: "123 Main Street, Los Angeles, CA 90210",
+          isDefault: true,
+          createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+          lastUsed: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+        },
+        {
+          id: "addr_2",
+          customerId: "cust_1",
+          label: "Work",
+          street: "456 Business Ave",
+          city: "Beverly Hills",
+          state: "CA",
+          postalCode: "90212",
+          latitude: 34.0669,
+          longitude: -118.3965,
+          fullAddress: "456 Business Ave, Beverly Hills, CA 90212",
+          isDefault: false,
+          createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+          lastUsed: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+        }
+      ],
+      addSavedAddress: (address) => set((state) => {
+        const newAddress: SavedAddress = {
+          ...address,
+          id: `addr_${Date.now()}`,
+          createdAt: new Date().toISOString()
+        };
+        return { savedAddresses: [...state.savedAddresses, newAddress] };
+      }),
+      updateSavedAddress: (id, updates) => set((state) => ({
+        savedAddresses: state.savedAddresses.map(addr =>
+          addr.id === id ? { ...addr, ...updates } : addr
+        )
+      })),
+      deleteSavedAddress: (id) => set((state) => ({
+        savedAddresses: state.savedAddresses.filter(addr => addr.id !== id)
+      })),
+      getSavedAddressesByCustomer: (customerId) => {
+        const state = useAppStore.getState();
+        return state.savedAddresses
+          .filter(addr => addr.customerId === customerId)
+          .sort((a, b) => {
+            if (a.isDefault) return -1;
+            if (b.isDefault) return 1;
+            if (a.lastUsed && b.lastUsed) {
+              return new Date(b.lastUsed).getTime() - new Date(a.lastUsed).getTime();
+            }
+            return 0;
+          });
+      },
+      setDefaultAddress: (id) => set((state) => ({
+        savedAddresses: state.savedAddresses.map(addr => ({
+          ...addr,
+          isDefault: addr.id === id
+        }))
+      })),
+      updateAddressLastUsed: (id) => set((state) => ({
+        savedAddresses: state.savedAddresses.map(addr =>
+          addr.id === id ? { ...addr, lastUsed: new Date().toISOString() } : addr
+        )
+      })),
     }),
-    { name: "app_state_v4" }
+    { name: "app_state_v5" }
   )
 );

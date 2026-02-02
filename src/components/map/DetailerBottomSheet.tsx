@@ -34,10 +34,18 @@ type SheetState = 'collapsed' | 'expanded';
 type ViewState = 'list' | 'profile' | 'chat' | 'reviews' | 'single';
 type SortOption = 'distance' | 'rating' | 'popularity';
 
-const getSheetHeights = () => ({
-  collapsed: 180,
-  expanded: typeof window !== 'undefined' ? window.innerHeight - 300 : 500, // Leave more space for tabs
-});
+const getSheetHeights = () => {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const bottomNavHeight = isMobile ? 80 : 0; // Account for mobile bottom navigation
+  const topOffset = 60;
+  
+  return {
+    collapsed: 140, // Reduced to avoid overlapping map controls
+    expanded: typeof window !== 'undefined' 
+      ? window.innerHeight - topOffset - bottomNavHeight 
+      : 600, // Expand to near full height, accounting for bottom nav on mobile
+  };
+};
 
 export function DetailerBottomSheet({ isVisible, onClose, userLocation, selectedDetailerFromMap, onClearMapSelection }: DetailerBottomSheetProps) {
   const [sheetState, setSheetState] = useState<SheetState>('collapsed');
@@ -57,10 +65,20 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
 
   // Update heights on window resize
   useEffect(() => {
-    const updateHeights = () => setSheetHeights(getSheetHeights());
+    const updateHeights = () => {
+      const newHeights = getSheetHeights();
+      setSheetHeights(newHeights);
+      // If expanded and height changed significantly, adjust to new height
+      if (sheetState === 'expanded' && Math.abs(newHeights.expanded - sheetHeights.expanded) > 50) {
+        // Force re-render with new height
+        setSheetState('collapsed');
+        setTimeout(() => setSheetState('expanded'), 10);
+      }
+    };
     window.addEventListener('resize', updateHeights);
+    updateHeights(); // Call immediately to set correct initial heights
     return () => window.removeEventListener('resize', updateHeights);
-  }, []);
+  }, [sheetState, sheetHeights.expanded]);
 
   // Handle map selection - switch to single detailer view
   useEffect(() => {
@@ -303,7 +321,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
     <>
       <motion.div
         ref={sheetRef}
-        className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl z-40"
+        className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl z-40 flex flex-col md:left-0 md:right-0"
         initial={{ y: `calc(100% - ${sheetHeights.collapsed}px)` }}
         animate={{ y: `calc(100% - ${sheetHeights[sheetState]}px)` }}
         exit={{ y: "100%" }}
@@ -311,11 +329,15 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
         style={{ 
           height: sheetHeights[sheetState],
           y: y,
+          maxHeight: typeof window !== 'undefined' && window.innerWidth < 768 
+            ? 'calc(100vh - 80px)' // Account for mobile bottom nav
+            : '100vh',
         }}
         drag="y"
         dragConstraints={{ top: 0, bottom: 0 }}
         dragElastic={0.1}
         onDragEnd={handleDragEnd}
+        dragPropagation={false}
       >
         {/* Drag Handle - now with mouse drag support */}
         <div 
@@ -349,7 +371,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
         </div>
 
         {/* Header */}
-        <div className="px-6 pb-4">
+        <div className="px-6 pb-4 flex-shrink-0">
           <div className="flex items-center justify-between mb-4">
             {viewState === 'list' ? (
               <div>
@@ -436,8 +458,8 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                     onClick={() => setSortBy(value as SortOption)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
                       sortBy === value
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        ? 'bg-blue-200 text-blue-900'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
                     <Icon className="h-4 w-4" />
@@ -449,8 +471,8 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
           )}
         </div>
 
-        {/* Content Area */}
-        <div className="flex-1 min-h-0 px-6 pb-6 flex flex-col">
+        {/* Content Area - Added pb-20 for mobile to account for bottom nav */}
+        <div className="flex-1 min-h-0 overflow-hidden px-6 pb-6 md:pb-6 flex flex-col">
           {viewState === 'list' && sheetState === 'collapsed' && (
             // Collapsed view - horizontal scroll
             <div className="flex gap-4 overflow-x-auto pb-2">
@@ -494,7 +516,12 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
 
           {viewState === 'list' && sheetState === 'expanded' && (
             // Expanded view - vertical list with scroll
-            <div className="space-y-4 flex-1 overflow-y-auto">
+            <div 
+              className="space-y-4 flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y pb-20" 
+              onMouseDown={(e) => e.stopPropagation()} 
+              onTouchStart={(e) => e.stopPropagation()}
+              onTouchMove={(e) => e.stopPropagation()}
+            >
               {filteredDetailers.map((detailer) => (
                 <motion.div
                   key={detailer.id}
@@ -564,7 +591,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleProfileClick(detailer)}
-                          className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
+                          className="flex-1 bg-blue-100 text-blue-900 py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors"
                         >
                           View Profile
                         </button>
@@ -592,7 +619,12 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
 
           {viewState === 'profile' && selectedDetailer && (
             // Profile View - Same as Single View with booking
-            <div className="space-y-6 flex-1 overflow-y-auto">
+            <div 
+              className="space-y-6 flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y pb-20" 
+              onMouseDown={(e) => e.stopPropagation()} 
+              onTouchStart={(e) => e.stopPropagation()}
+              onTouchMove={(e) => e.stopPropagation()}
+            >
               {/* Business Header */}
               <div className="text-center">
                 <img
@@ -653,7 +685,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                       <span>⏱️ 20 min</span>
                     </div>
                     <p className="text-sm text-gray-600 mb-3">Basic exterior wash and dry</p>
-                    <button className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-600 transition-colors">
+                    <button className="w-full bg-blue-100 text-blue-900 py-2 px-4 rounded-lg font-medium hover:bg-blue-200 transition-colors">
                       Book Express Wash
                     </button>
                   </div>
@@ -668,7 +700,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                       <span>⏱️ 45 min</span>
                     </div>
                     <p className="text-sm text-gray-600 mb-3">Complete interior vacuum, wipe down, and sanitization</p>
-                    <button className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-600 transition-colors">
+                    <button className="w-full bg-blue-100 text-blue-900 py-2 px-4 rounded-lg font-medium hover:bg-blue-200 transition-colors">
                       Book Interior Deep Clean
                     </button>
                   </div>
@@ -684,7 +716,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                       <span className="ml-2 bg-blue-200 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">Most Popular</span>
                     </div>
                     <p className="text-sm text-blue-700 mb-3">Exterior wash, interior deep clean, wax, and tire shine</p>
-                    <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                    <button className="w-full bg-blue-200 text-blue-900 py-2 px-4 rounded-lg font-medium hover:bg-blue-300 transition-colors">
                       Book Premium Package
                     </button>
                   </div>
@@ -695,7 +727,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => handleChat(selectedDetailer)}
-                  className="flex-1 bg-blue-500 text-white py-3 px-4 rounded-xl font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 bg-blue-100 text-blue-900 py-3 px-4 rounded-xl font-medium hover:bg-blue-200 transition-colors flex items-center justify-center gap-2"
                 >
                   <MessageCircle className="h-5 w-5" />
                   Chat Now
@@ -715,7 +747,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
 
           {viewState === 'chat' && selectedDetailer && (
             // Chat View
-            <div className="flex flex-col flex-1">
+            <div className="flex flex-col flex-1 pb-16">
               {/* Chat Messages */}
               <div className="flex-1 space-y-4 overflow-y-auto mb-4">
                 {chatMessages.length === 0 && (
@@ -757,7 +789,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                 <button
                   onClick={handleSendMessage}
                   disabled={!chatMessage.trim()}
-                  className="bg-blue-500 text-white p-3 rounded-2xl hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-blue-200 text-blue-900 p-3 rounded-2xl hover:bg-blue-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Send className="h-5 w-5" />
                 </button>
@@ -767,7 +799,12 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
 
           {viewState === 'reviews' && selectedDetailer && (
             // Reviews View
-            <div className="space-y-4 flex-1 overflow-y-auto">
+            <div 
+              className="space-y-4 flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y pb-20" 
+              onMouseDown={(e) => e.stopPropagation()} 
+              onTouchStart={(e) => e.stopPropagation()}
+              onTouchMove={(e) => e.stopPropagation()}
+            >
               {/* Reviews Header */}
               <div className="text-center pb-4 border-b border-gray-200">
                 <div className="flex items-center justify-center gap-2 mb-2">
@@ -826,7 +863,12 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
 
           {viewState === 'single' && selectedDetailer && (
             // Single Detailer View (from map marker click)
-            <div className="space-y-6 flex-1 overflow-y-auto">
+            <div 
+              className="space-y-6 flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y pb-20" 
+              onMouseDown={(e) => e.stopPropagation()} 
+              onTouchStart={(e) => e.stopPropagation()}
+              onTouchMove={(e) => e.stopPropagation()}
+            >
               {/* Business Header */}
               <div className="text-center">
                 <img
@@ -887,7 +929,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                       <span>⏱️ 20 min</span>
                     </div>
                     <p className="text-sm text-gray-600 mb-3">Basic exterior wash and dry</p>
-                    <button className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-600 transition-colors">
+                    <button className="w-full bg-blue-100 text-blue-900 py-2 px-4 rounded-lg font-medium hover:bg-blue-200 transition-colors">
                       Book Express Wash
                     </button>
                   </div>
@@ -902,7 +944,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                       <span>⏱️ 45 min</span>
                     </div>
                     <p className="text-sm text-gray-600 mb-3">Complete interior vacuum, wipe down, and sanitization</p>
-                    <button className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-600 transition-colors">
+                    <button className="w-full bg-blue-100 text-blue-900 py-2 px-4 rounded-lg font-medium hover:bg-blue-200 transition-colors">
                       Book Interior Deep Clean
                     </button>
                   </div>
@@ -918,7 +960,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                       <span className="ml-2 bg-blue-200 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">Most Popular</span>
                     </div>
                     <p className="text-sm text-blue-700 mb-3">Exterior wash, interior deep clean, wax, and tire shine</p>
-                    <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                    <button className="w-full bg-blue-200 text-blue-900 py-2 px-4 rounded-lg font-medium hover:bg-blue-300 transition-colors">
                       Book Premium Package
                     </button>
                   </div>
@@ -929,7 +971,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => handleChat(selectedDetailer)}
-                  className="flex-1 bg-blue-500 text-white py-3 px-4 rounded-xl font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 bg-blue-100 text-blue-900 py-3 px-4 rounded-xl font-medium hover:bg-blue-200 transition-colors flex items-center justify-center gap-2"
                 >
                   <MessageCircle className="h-5 w-5" />
                   Chat Now

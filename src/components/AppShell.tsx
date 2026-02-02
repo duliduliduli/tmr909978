@@ -184,12 +184,12 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto pb-safe">
+        <div className="flex-1 overflow-y-auto pb-20">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
-            className={fullWidth ? "min-h-full w-full h-full" : "min-h-full"}
+            className={fullWidth ? "min-h-full w-full h-full pb-20" : "min-h-full p-4 pb-24"}
           >
             {children}
           </motion.div>

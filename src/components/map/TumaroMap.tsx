@@ -88,7 +88,7 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
     
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: mapboxStyle || 'mapbox://styles/mapbox/navigation-night-v1',
+      style: mapboxStyle || 'mapbox://styles/mapbox/streets-v12', // Use streets style for less bright appearance
       center: initialCenter,
       zoom: initialZoom,
       pitch: 0,
@@ -99,6 +99,29 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
     
     map.current.on('load', () => {
       console.log('🗺️ Map loaded successfully');
+      
+      // Apply matte styling after map loads
+      const mapInstance = map.current;
+      if (mapInstance) {
+        // Hide traffic layers for clean matte look
+        const trafficLayers = [
+          'traffic', 'traffic-primary', 'traffic-secondary', 'traffic-tertiary',
+          'traffic-trunk', 'traffic-motorway', 'traffic-street'
+        ];
+        
+        trafficLayers.forEach(layer => {
+          try {
+            if (mapInstance.getLayer(layer)) {
+              mapInstance.setLayoutProperty(layer, 'visibility', 'none');
+            }
+          } catch (e) {
+            // Layer doesn't exist, continue
+          }
+        });
+        
+        console.log('🎨 Matte styling applied - traffic layers hidden');
+      }
+      
       setIsLoaded(true);
       
       // Fetch detailers after map is loaded
@@ -108,58 +131,6 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
       setTimeout(() => {
         setShowBottomSheet(true);
       }, 1500);
-      
-      // Remove traffic colors and set roads to neutral shades  
-      const mapInstance = map.current;
-      if (mapInstance) {
-        // Override road colors to use neutral grays instead of traffic colors
-        try {
-          const roadLayers = [
-            'road-primary', 'road-secondary-tertiary', 'road-street', 'road-minor',
-            'road-arterial', 'road-trunk', 'road-residential', 'road-motorway',
-            'road-highway', 'road-main', 'road-path', 'road-rail'
-          ];
-          
-          roadLayers.forEach(layerId => {
-            if (mapInstance.getLayer(layerId)) {
-              mapInstance.setPaintProperty(layerId, 'line-color', '#6b7280'); // Neutral gray
-            }
-          });
-          
-          // Remove any traffic-related layers completely
-          const trafficLayers = [
-            'traffic-primary', 'traffic-secondary', 'traffic-tertiary', 'traffic-local',
-            'traffic-congestion', 'traffic-heavy', 'traffic-moderate', 'traffic-light',
-            'traffic', 'traffic-flow', 'traffic-incidents', 'mapbox-traffic'
-          ];
-          
-          trafficLayers.forEach(layerId => {
-            try {
-              if (mapInstance.getLayer(layerId)) {
-                mapInstance.removeLayer(layerId);
-              }
-            } catch (e) {
-              // Layer doesn't exist, continue
-            }
-          });
-          
-          // Also remove any traffic sources
-          const trafficSources = ['traffic', 'mapbox-traffic', 'composite-traffic'];
-          trafficSources.forEach(sourceId => {
-            try {
-              if (mapInstance.getSource(sourceId)) {
-                mapInstance.removeSource(sourceId);
-              }
-            } catch (e) {
-              // Source doesn't exist, continue  
-            }
-          });
-          
-          console.log('🎨 All traffic colors and layers removed - roads set to neutral gray');
-        } catch (error) {
-          console.log('ℹ️ Traffic removal completed with some expected layer differences');
-        }
-      }
       
       // Set max bounds to prevent showing empty areas (Los Angeles region)
       const bounds = new mapboxgl.LngLatBounds(

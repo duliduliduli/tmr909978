@@ -1,3 +1,8 @@
+/* Darken the map for less brightness */
+.mapboxgl-canvas {
+  filter: brightness(0.85) contrast(1.1) !important;
+}
+
 /* Hide Mapbox logo and attribution */
 .mapboxgl-ctrl-logo,
 .mapbox-logo,
@@ -61,4 +66,32 @@
     width: calc(100vw - 288px) !important;
     height: calc(100vh - 80px) !important;
   }
+}
+
+/* Hide traffic and transit elements for matte appearance */
+.mapboxgl-map [data-layer*="traffic"],
+.mapboxgl-map [class*="traffic"],
+.mapboxgl-map [class*="transit"] {
+  display: none !important;
+  opacity: 0 !important;
+}
+
+/* Override any traffic-related colors to maintain matte appearance */
+.mapboxgl-map svg[class*="traffic"],
+.mapboxgl-map path[stroke*="red"],
+.mapboxgl-map path[stroke*="orange"],
+.mapboxgl-map path[stroke*="green"],
+.mapboxgl-map path[stroke*="#FF"],
+.mapboxgl-map path[stroke*="#00"] {
+  stroke: #E5E7EB !important;
+  fill: #E5E7EB !important;
+}
+
+/* Ensure consistent matte road colors */
+.mapboxgl-map path[stroke] {
+  stroke: #E5E7EB !important;
+}
+
+.mapboxgl-map line[stroke] {
+  stroke: #E5E7EB !important;
 }
