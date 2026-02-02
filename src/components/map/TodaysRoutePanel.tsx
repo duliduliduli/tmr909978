@@ -1,0 +1,246 @@
+"use client";
+
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Phone, MessageCircle, Clock, MapPin, Navigation, Send, ChevronDown, ChevronUp } from 'lucide-react';
+import type { Appointment } from '@/lib/store';
+
+interface TodaysRoutePanelProps {
+  isOpen: boolean;
+  onClose: () => void;
+  appointments: Appointment[];
+  etaMinutes: number[]; // ETA in minutes between consecutive jobs
+  onJobClick: (appointment: Appointment) => void;
+}
+
+export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, onJobClick }: TodaysRoutePanelProps) {
+  const [expandedChatId, setExpandedChatId] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<Record<string, { text: string; fromMe: boolean }[]>>({});
+  const [chatInput, setChatInput] = useState('');
+
+  const formatTimeRemaining = (scheduledDate: string, scheduledTime: string) => {
+    const appointmentTime = new Date(`${scheduledDate} ${scheduledTime}`);
+    const now = new Date();
+    const diffMs = appointmentTime.getTime() - now.getTime();
+    if (diffMs <= 0) return 'Now';
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  };
+
+  const handleSendMessage = (appointmentId: string, customerName: string) => {
+    if (!chatInput.trim()) return;
+    const newMsg = { text: chatInput.trim(), fromMe: true };
+    setChatMessages(prev => ({
+      ...prev,
+      [appointmentId]: [...(prev[appointmentId] || []), newMsg]
+    }));
+    setChatInput('');
+
+    // Simulated response
+    setTimeout(() => {
+      const responses = [
+        `Thanks for the heads up! I'll be ready.`,
+        `Got it, see you soon!`,
+        `Sounds good, thanks for letting me know.`,
+        `Great, I'll make sure the car is accessible.`,
+      ];
+      const reply = { text: responses[Math.floor(Math.random() * responses.length)], fromMe: false };
+      setChatMessages(prev => ({
+        ...prev,
+        [appointmentId]: [...(prev[appointmentId] || []), reply]
+      }));
+    }, 1500);
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ x: -380, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: -380, opacity: 0 }}
+          transition={{ type: "spring", damping: 28, stiffness: 300 }}
+          className="absolute top-0 left-0 bottom-0 z-40 w-[360px] bg-white shadow-2xl border-r border-gray-200 flex flex-col overflow-hidden"
+          style={{ maxHeight: '100%' }}
+        >
+          {/* Header */}
+          <div className="bg-gradient-to-r from-yellow-300 to-yellow-400 text-gray-800 px-5 py-4 flex items-center justify-between flex-shrink-0">
+            <div>
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                <Navigation className="h-5 w-5" />
+                Today&apos;s Route
+              </h2>
+              <p className="text-gray-600 text-sm">{appointments.length} job{appointments.length !== 1 ? 's' : ''} remaining</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-yellow-500/30 rounded-full transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* Job List */}
+          <div className="flex-1 overflow-y-auto">
+            {appointments.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-gray-400 p-8">
+                <Navigation className="h-12 w-12 mb-3 opacity-50" />
+                <p className="font-medium">No more jobs today</p>
+                <p className="text-sm text-center mt-1">All caught up! Enjoy the rest of your day.</p>
+              </div>
+            ) : (
+              appointments.map((apt, index) => (
+                <div key={apt.id}>
+                  {/* ETA between jobs */}
+                  {index > 0 && etaMinutes[index - 1] !== undefined && (
+                    <div className="flex items-center gap-2 px-5 py-2 bg-blue-50 border-y border-blue-100">
+                      <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center">
+                        <Clock className="h-3 w-3 text-blue-600" />
+                      </div>
+                      <span className="text-xs font-medium text-blue-700">
+                        {etaMinutes[index - 1]} min drive
+                      </span>
+                      <div className="flex-1 border-t border-dashed border-blue-200" />
+                    </div>
+                  )}
+
+                  {/* Job Card */}
+                  <div className="border-b border-gray-100">
+                    <div
+                      className="px-5 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => onJobClick(apt)}
+                    >
+                      {/* Job number and time */}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-yellow-300 text-gray-800 flex items-center justify-center text-xs font-bold">
+                            {index + 1}
+                          </div>
+                          <span className="font-semibold text-gray-900">{apt.serviceName}</span>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-medium text-gray-900">{apt.scheduledTime}</div>
+                          <div className="text-xs text-orange-600 font-medium">
+                            in {formatTimeRemaining(apt.scheduledDate, apt.scheduledTime)}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Service description */}
+                      <p className="text-xs text-gray-500 mb-2">{apt.serviceDescription}</p>
+
+                      {/* Customer */}
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium text-gray-600">
+                          {apt.customerName?.charAt(0) || 'C'}
+                        </div>
+                        <span className="text-sm font-medium text-gray-800">{apt.customerName || 'Customer'}</span>
+                        <span className="text-sm text-green-600 font-medium ml-auto">${apt.price}</span>
+                      </div>
+
+                      {/* Address */}
+                      <div className="flex items-start gap-1.5 mt-2">
+                        <MapPin className="h-3.5 w-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <span className="text-xs text-gray-500">{apt.address}</span>
+                      </div>
+
+                      {/* Notes */}
+                      {apt.notes && (
+                        <p className="text-xs text-amber-600 mt-2 bg-amber-50 rounded px-2 py-1">
+                          {apt.notes}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="px-5 pb-3 flex items-center gap-2">
+                      <a
+                        href={`tel:${apt.phone}`}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-xs font-medium hover:bg-green-100 transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Phone className="h-3.5 w-3.5" />
+                        {apt.phone}
+                      </a>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExpandedChatId(expandedChatId === apt.id ? null : apt.id);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors"
+                      >
+                        <MessageCircle className="h-3.5 w-3.5" />
+                        Message
+                        {expandedChatId === apt.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                      </button>
+                    </div>
+
+                    {/* Inline Chat */}
+                    <AnimatePresence>
+                      {expandedChatId === apt.id && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="px-5 pb-4 bg-gray-50 border-t border-gray-100">
+                            {/* Messages */}
+                            <div className="max-h-40 overflow-y-auto py-2 space-y-2">
+                              {(!chatMessages[apt.id] || chatMessages[apt.id].length === 0) && (
+                                <p className="text-xs text-gray-400 text-center py-2">
+                                  Send a message to {apt.customerName || 'the customer'}
+                                </p>
+                              )}
+                              {(chatMessages[apt.id] || []).map((msg, i) => (
+                                <div key={i} className={`flex ${msg.fromMe ? 'justify-end' : 'justify-start'}`}>
+                                  <div className={`max-w-[80%] px-3 py-1.5 rounded-xl text-xs ${
+                                    msg.fromMe
+                                      ? 'bg-blue-500 text-white'
+                                      : 'bg-white text-gray-800 border border-gray-200'
+                                  }`}>
+                                    {msg.text}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            {/* Input */}
+                            <div className="flex items-center gap-2 mt-2">
+                              <input
+                                type="text"
+                                value={chatInput}
+                                onChange={(e) => setChatInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSendMessage(apt.id, apt.customerName || 'Customer');
+                                  }
+                                }}
+                                placeholder={`Message ${apt.customerName || 'customer'}...`}
+                                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-white"
+                              />
+                              <button
+                                onClick={() => handleSendMessage(apt.id, apt.customerName || 'Customer')}
+                                disabled={!chatInput.trim()}
+                                className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                              >
+                                <Send className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}

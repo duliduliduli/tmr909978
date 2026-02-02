@@ -1,13 +1,17 @@
 "use client";
 
-import { mockBookings } from "@/lib/mockData";
-import { Calendar, Plus, QrCode, Settings, DollarSign, Clock, MoreVertical, MapPin, Phone } from "lucide-react";
+import { useAppStore } from "@/lib/store";
+import { Plus, QrCode, DollarSign, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 
 export function DetailerHome() {
-  const todaysBookings = mockBookings.filter(b =>
-    new Date(b.scheduledFor).toDateString() === new Date().toDateString()
-  );
+  const { activeDetailerId } = useAppStore();
+  const todaysAppointments = useAppStore.getState().getTodaysAppointments(activeDetailerId);
+
+  // Compute real stats from today's appointments
+  const projectedEarnings = todaysAppointments.reduce((sum, apt) => sum + apt.price, 0);
+  const totalMinutes = todaysAppointments.reduce((sum, apt) => sum + apt.duration, 0);
+  const workloadHours = (totalMinutes / 60).toFixed(1);
 
   return (
     <div className="space-y-8">
@@ -18,8 +22,8 @@ export function DetailerHome() {
         className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-accent-600 to-blue-700 p-8 shadow-2xl shadow-accent/10"
       >
         <div className="relative z-10 text-white">
-          <h1 className="text-3xl font-bold mb-2">Good morning, Mike!</h1>
-          <p className="text-blue-100 mb-8 max-w-md text-lg">You have {todaysBookings.length} appointments scheduled for today.</p>
+          <h1 className="text-3xl font-bold mb-2">Good morning, Alex!</h1>
+          <p className="text-blue-100 mb-8 max-w-md text-lg">You have {todaysAppointments.length} appointment{todaysAppointments.length !== 1 ? 's' : ''} remaining today.</p>
 
           <div className="flex flex-wrap items-center gap-6">
             <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md rounded-xl px-4 py-3 border border-white/10">
@@ -28,7 +32,7 @@ export function DetailerHome() {
               </div>
               <div>
                 <div className="text-sm text-blue-100">Projected</div>
-                <div className="font-bold text-xl">$240</div>
+                <div className="font-bold text-xl">${projectedEarnings}</div>
               </div>
             </div>
             <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md rounded-xl px-4 py-3 border border-white/10">
@@ -37,7 +41,7 @@ export function DetailerHome() {
               </div>
               <div>
                 <div className="text-sm text-blue-100">Workload</div>
-                <div className="font-bold text-xl">4.5 hrs</div>
+                <div className="font-bold text-xl">{workloadHours} hrs</div>
               </div>
             </div>
           </div>
@@ -75,75 +79,6 @@ export function DetailerHome() {
           <p className="text-sm text-brand-400">Get more customers</p>
         </motion.button>
       </div>
-
-      {/* Today's Schedule */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-white">Today's Schedule</h2>
-          <button className="text-accent-DEFAULT text-sm font-medium flex items-center gap-2 hover:text-accent-hover transition-colors">
-            <Calendar className="h-4 w-4" />
-            View Calendar
-          </button>
-        </div>
-
-        {todaysBookings.length > 0 ? (
-          <div className="space-y-4">
-            {todaysBookings.map((booking, i) => (
-              <div key={booking.id} className="bg-brand-900 rounded-2xl p-6 border border-brand-800 hover:border-brand-700 transition-colors">
-                <div className="flex items-start justify-between mb-6">
-                  <div className="space-y-1">
-                    <div className="font-bold text-lg text-white">Full Detail Service</div>
-                    <div className="flex items-center gap-2 text-brand-400">
-                      <span className="text-brand-200">{"Customer"}</span>
-                      <span>•</span>
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        <span className="text-xs truncate max-w-[150px]">{booking.address}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold text-emerald-400 text-lg">${booking.total}</div>
-                    <div className="text-sm text-brand-500 font-medium bg-brand-950 px-2 py-1 rounded-lg inline-block mt-1">
-                      {new Date(booking.scheduledFor).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <button className="flex-1 bg-accent-DEFAULT text-white py-3 px-4 rounded-xl text-sm font-bold hover:bg-accent-hover transition-colors shadow-lg shadow-accent/10">
-                    Start Service
-                  </button>
-                  <button className="px-4 py-3 border border-brand-700 rounded-xl text-sm font-medium text-brand-300 hover:text-white hover:bg-brand-800 transition-colors flex items-center justify-center">
-                    <Phone className="h-4 w-4" />
-                  </button>
-                  <button className="px-4 py-3 border border-brand-700 rounded-xl text-sm font-medium text-brand-300 hover:text-white hover:bg-brand-800 transition-colors flex items-center justify-center">
-                    <MoreVertical className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="bg-brand-900 rounded-2xl p-10 border border-brand-800 text-center border-dashed">
-            <div className="w-16 h-16 bg-brand-800 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Calendar className="h-8 w-8 text-brand-600" />
-            </div>
-            <h3 className="font-bold text-white mb-2 text-lg">No appointments today</h3>
-            <p className="text-brand-400 mb-6 max-w-xs mx-auto">Your schedule is clear. Share your profile to get more bookings!</p>
-            <button className="bg-accent-DEFAULT text-white px-6 py-3 rounded-xl font-bold hover:bg-accent-hover transition-colors shadow-lg shadow-accent/20">
-              Share Profile
-            </button>
-          </div>
-        )}
-      </motion.div>
 
       {/* Status Toggle */}
       <div className="bg-brand-900 rounded-2xl p-5 border border-brand-800 flex items-center justify-between">

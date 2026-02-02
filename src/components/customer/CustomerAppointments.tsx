@@ -7,17 +7,23 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format, parseISO, isToday, isTomorrow, isPast } from "date-fns";
 
 export function CustomerAppointments() {
-  const { appointments, updateAppointmentStatus } = useAppStore();
+  const { appointments, updateAppointmentStatus, role, activeDetailerId, activeCustomerId } = useAppStore();
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
-  
+
   const now = new Date();
-  
-  const upcomingAppointments = appointments.filter(apt => {
+
+  // Filter appointments by role so detailers see their jobs and customers see theirs
+  const roleFilteredAppointments = appointments.filter(apt => {
+    if (role === 'detailer') return apt.detailerId === activeDetailerId;
+    return apt.customerId === activeCustomerId;
+  });
+
+  const upcomingAppointments = roleFilteredAppointments.filter(apt => {
     const appointmentDateTime = new Date(`${apt.scheduledDate} ${apt.scheduledTime}`);
     return appointmentDateTime > now && apt.status !== 'completed' && apt.status !== 'cancelled';
   });
-  
-  const pastAppointments = appointments.filter(apt => {
+
+  const pastAppointments = roleFilteredAppointments.filter(apt => {
     const appointmentDateTime = new Date(`${apt.scheduledDate} ${apt.scheduledTime}`);
     return appointmentDateTime <= now || apt.status === 'completed' || apt.status === 'cancelled';
   });
@@ -61,15 +67,24 @@ export function CustomerAppointments() {
         </div>
       </div>
 
-      {/* Business Info */}
+      {/* Contact Info */}
       <div className="bg-brand-950/50 rounded-xl p-4 mb-4">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 bg-accent-DEFAULT/20 rounded-full flex items-center justify-center">
             <Star className="h-5 w-5 text-accent-DEFAULT fill-accent-DEFAULT" />
           </div>
           <div>
-            <h4 className="font-semibold text-white">{appointment.businessName}</h4>
-            <p className="text-brand-400 text-sm">{appointment.detailerName}</p>
+            {role === 'detailer' ? (
+              <>
+                <h4 className="font-semibold text-white">{appointment.customerName || 'Customer'}</h4>
+                <p className="text-brand-400 text-sm">Customer</p>
+              </>
+            ) : (
+              <>
+                <h4 className="font-semibold text-white">{appointment.businessName}</h4>
+                <p className="text-brand-400 text-sm">{appointment.detailerName}</p>
+              </>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2 text-brand-300 text-sm">

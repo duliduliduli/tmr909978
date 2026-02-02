@@ -52,6 +52,7 @@ export interface Rating {
 export interface Appointment {
   id: string;
   customerId: string;
+  customerName: string;
   detailerId: string;
   detailerName: string;
   businessName: string;
@@ -63,7 +64,9 @@ export interface Appointment {
   scheduledTime: string;
   duration: number;
   address: string;
-  addressId?: string; // Reference to saved address if used
+  latitude: number;
+  longitude: number;
+  addressId?: string;
   phone: string;
   status: 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
   bookedAt: string;
@@ -99,6 +102,7 @@ interface AppState {
   updateAppointmentStatus: (appointmentId: string, status: Appointment['status']) => void;
   getUpcomingAppointments: () => Appointment[];
   getPastAppointments: () => Appointment[];
+  getTodaysAppointments: (detailerId: string) => Appointment[];
   // Favorites storage
   favoriteDetailers: string[];
   addFavoriteDetailer: (detailerId: string) => void;
@@ -153,30 +157,33 @@ export const useAppStore = create<AppState>()(
       setMapViewState: (mapViewState) => set({ mapViewState }),
       // Appointments storage
       appointments: [
-        // Sample upcoming appointment
+        // Today's appointments for detailer "det_1" (Alex Johnson) - for demo purposes
         {
-          id: "apt_sample_1",
+          id: "apt_today_1",
           customerId: "cust_1",
-          detailerId: "det_6",
-          detailerName: "Emma Thompson",
-          businessName: "Test Drive Detailing",
-          serviceId: "s12",
-          serviceName: "FREE Test Service",
-          serviceDescription: "Complimentary test service for functionality testing",
-          price: 0,
-          scheduledDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 days from now
-          scheduledTime: "2:00 PM",
+          customerName: "John Smith",
+          detailerId: "det_1",
+          detailerName: "Alex Johnson",
+          businessName: "Mobile Shine Pro",
+          serviceId: "s1",
+          serviceName: "Basic Wash",
+          serviceDescription: "Exterior wash & dry",
+          price: 25,
+          scheduledDate: new Date().toISOString().split('T')[0], // Today
+          scheduledTime: "10:00 AM",
           duration: 30,
-          address: "123 Main St, Los Angeles, CA 90210",
-          phone: "(555) 789-0123",
+          address: "123 Main St, Los Angeles, CA 90012",
+          latitude: 34.0522,
+          longitude: -118.2437,
+          phone: "(555) 111-2233",
           status: "confirmed" as const,
-          bookedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-          notes: "This is a free test service to try out the app functionality"
+          bookedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+          notes: "White Tesla Model 3, parked in driveway"
         },
-        // Sample past appointment
         {
-          id: "apt_sample_2", 
-          customerId: "cust_1",
+          id: "apt_today_2",
+          customerId: "cust_2",
+          customerName: "Maria Garcia",
           detailerId: "det_1",
           detailerName: "Alex Johnson",
           businessName: "Mobile Shine Pro",
@@ -184,18 +191,110 @@ export const useAppStore = create<AppState>()(
           serviceName: "Full Detail",
           serviceDescription: "Interior & exterior detail",
           price: 120,
-          scheduledDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 5 days ago
+          scheduledDate: new Date().toISOString().split('T')[0], // Today
+          scheduledTime: "11:30 AM",
+          duration: 180,
+          address: "456 Wilshire Blvd, Beverly Hills, CA 90212",
+          latitude: 34.0656,
+          longitude: -118.3976,
+          phone: "(555) 444-5566",
+          status: "confirmed" as const,
+          bookedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+          notes: "Black BMW X5, garage code is 4421"
+        },
+        {
+          id: "apt_today_3",
+          customerId: "cust_3",
+          customerName: "David Park",
+          detailerId: "det_1",
+          detailerName: "Alex Johnson",
+          businessName: "Mobile Shine Pro",
+          serviceId: "s3",
+          serviceName: "Paint Correction",
+          serviceDescription: "Paint correction & ceramic coating",
+          price: 300,
+          scheduledDate: new Date().toISOString().split('T')[0], // Today
+          scheduledTime: "3:00 PM",
+          duration: 240,
+          address: "789 Sunset Blvd, West Hollywood, CA 90069",
+          latitude: 34.0901,
+          longitude: -118.3868,
+          phone: "(555) 777-8899",
+          status: "scheduled" as const,
+          bookedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+          notes: "Red Porsche 911, please be extra careful with the paint"
+        },
+        {
+          id: "apt_today_4",
+          customerId: "cust_4",
+          customerName: "Lisa Chen",
+          detailerId: "det_1",
+          detailerName: "Alex Johnson",
+          businessName: "Mobile Shine Pro",
+          serviceId: "s1",
+          serviceName: "Basic Wash",
+          serviceDescription: "Exterior wash & dry",
+          price: 25,
+          scheduledDate: new Date().toISOString().split('T')[0], // Today
+          scheduledTime: "6:00 PM",
+          duration: 30,
+          address: "321 Melrose Ave, Los Angeles, CA 90048",
+          latitude: 34.0838,
+          longitude: -118.3614,
+          phone: "(555) 222-3344",
+          status: "confirmed" as const,
+          bookedAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        },
+        // Sample upcoming appointment (future day)
+        {
+          id: "apt_sample_1",
+          customerId: "cust_1",
+          customerName: "John Smith",
+          detailerId: "det_6",
+          detailerName: "Emma Thompson",
+          businessName: "Test Drive Detailing",
+          serviceId: "s12",
+          serviceName: "FREE Test Service",
+          serviceDescription: "Complimentary test service for functionality testing",
+          price: 0,
+          scheduledDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          scheduledTime: "2:00 PM",
+          duration: 30,
+          address: "123 Main St, Los Angeles, CA 90210",
+          latitude: 34.0522,
+          longitude: -118.2437,
+          phone: "(555) 789-0123",
+          status: "confirmed" as const,
+          bookedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+          notes: "This is a free test service to try out the app functionality"
+        },
+        // Sample past appointment
+        {
+          id: "apt_sample_2",
+          customerId: "cust_1",
+          customerName: "John Smith",
+          detailerId: "det_1",
+          detailerName: "Alex Johnson",
+          businessName: "Mobile Shine Pro",
+          serviceId: "s2",
+          serviceName: "Full Detail",
+          serviceDescription: "Interior & exterior detail",
+          price: 120,
+          scheduledDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           scheduledTime: "10:00 AM",
           duration: 180,
           address: "456 Oak Avenue, Beverly Hills, CA 90210",
+          latitude: 34.0736,
+          longitude: -118.4004,
           phone: "(555) 234-5678",
           status: "completed" as const,
-          bookedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(), // 10 days ago
+          bookedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
         },
         // Additional upcoming appointments
         {
           id: "apt_sample_3",
-          customerId: "cust_1", 
+          customerId: "cust_1",
+          customerName: "John Smith",
           detailerId: "det_3",
           detailerName: "Carlos Martinez",
           businessName: "Premium Auto Care",
@@ -203,70 +302,81 @@ export const useAppStore = create<AppState>()(
           serviceName: "Express Wash",
           serviceDescription: "Quick exterior wash and dry",
           price: 35,
-          scheduledDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Tomorrow
-          scheduledTime: "9:30 AM", 
+          scheduledDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          scheduledTime: "9:30 AM",
           duration: 45,
           address: "789 Sunset Blvd, West Hollywood, CA 90069",
+          latitude: 34.0901,
+          longitude: -118.3868,
           phone: "(555) 456-7890",
           status: "scheduled" as const,
-          bookedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+          bookedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
           notes: "Please use eco-friendly products if available"
         },
         {
           id: "apt_sample_4",
           customerId: "cust_1",
-          detailerId: "det_2", 
+          customerName: "John Smith",
+          detailerId: "det_2",
           detailerName: "Sarah Wilson",
           businessName: "Elite Detailing Co",
           serviceId: "s8",
           serviceName: "Interior Deep Clean",
           serviceDescription: "Steam cleaning and conditioning",
           price: 85,
-          scheduledDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Next week
+          scheduledDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           scheduledTime: "3:15 PM",
           duration: 120,
-          address: "321 Melrose Ave, Los Angeles, CA 90048", 
+          address: "321 Melrose Ave, Los Angeles, CA 90048",
+          latitude: 34.0838,
+          longitude: -118.3614,
           phone: "(555) 987-6543",
           status: "confirmed" as const,
-          bookedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+          bookedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
         },
         // Additional past appointments
         {
           id: "apt_sample_5",
           customerId: "cust_1",
+          customerName: "John Smith",
           detailerId: "det_4",
-          detailerName: "Mike Chen", 
+          detailerName: "Mike Chen",
           businessName: "Speedy Clean",
           serviceId: "s3",
           serviceName: "Basic Wash",
           serviceDescription: "Standard exterior wash",
           price: 25,
-          scheduledDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 15 days ago
+          scheduledDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           scheduledTime: "11:45 AM",
           duration: 30,
           address: "555 Hollywood Blvd, Hollywood, CA 90028",
-          phone: "(555) 321-0987", 
+          latitude: 34.1017,
+          longitude: -118.3409,
+          phone: "(555) 321-0987",
           status: "completed" as const,
-          bookedAt: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString(), // 18 days ago
+          bookedAt: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString(),
           notes: "Great service, very professional"
         },
         {
-          id: "apt_sample_6", 
+          id: "apt_sample_6",
           customerId: "cust_1",
+          customerName: "John Smith",
           detailerId: "det_5",
           detailerName: "Jessica Brown",
           businessName: "Luxury Auto Spa",
-          serviceId: "s10", 
+          serviceId: "s10",
           serviceName: "Ceramic Coating",
           serviceDescription: "Premium ceramic paint protection",
           price: 350,
-          scheduledDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days ago
-          scheduledTime: "1:00 PM", 
+          scheduledDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          scheduledTime: "1:00 PM",
           duration: 240,
           address: "888 Rodeo Drive, Beverly Hills, CA 90210",
+          latitude: 34.0700,
+          longitude: -118.4004,
           phone: "(555) 654-3210",
           status: "cancelled" as const,
-          bookedAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(), // 35 days ago
+          bookedAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(),
           notes: "Cancelled due to weather conditions"
         }
       ],
@@ -293,6 +403,25 @@ export const useAppStore = create<AppState>()(
           const appointmentDate = new Date(`${apt.scheduledDate} ${apt.scheduledTime}`);
           return appointmentDate <= now || apt.status === 'completed' || apt.status === 'cancelled';
         });
+      },
+      getTodaysAppointments: (detailerId: string) => {
+        const state = useAppStore.getState();
+        const today = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        return state.appointments
+          .filter(apt => {
+            const isToday = apt.scheduledDate === today;
+            const isForDetailer = apt.detailerId === detailerId;
+            const isActive = apt.status !== 'completed' && apt.status !== 'cancelled';
+            const appointmentTime = new Date(`${apt.scheduledDate} ${apt.scheduledTime}`);
+            const isUpcoming = appointmentTime > now;
+            return isToday && isForDetailer && isActive && isUpcoming;
+          })
+          .sort((a, b) => {
+            const timeA = new Date(`${a.scheduledDate} ${a.scheduledTime}`).getTime();
+            const timeB = new Date(`${b.scheduledDate} ${b.scheduledTime}`).getTime();
+            return timeA - timeB;
+          });
       },
       // Favorites functionality
       favoriteDetailers: [],

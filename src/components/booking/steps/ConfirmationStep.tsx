@@ -54,6 +54,7 @@ export function ConfirmationStep({
           const appointment: Appointment = {
             id: mockBookingId,
             customerId: activeCustomerId,
+            customerName: 'John Smith',
             detailerId: detailer.id,
             detailerName: detailer.name,
             businessName: detailer.businessName,
@@ -62,15 +63,17 @@ export function ConfirmationStep({
             serviceDescription: service.description,
             price: service.price,
             scheduledDate: appointmentDate.toISOString().split('T')[0],
-            scheduledTime: appointmentDate.toLocaleTimeString('en-US', { 
-              hour: 'numeric', 
-              minute: '2-digit', 
-              hour12: true 
+            scheduledTime: appointmentDate.toLocaleTimeString('en-US', {
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true
             }),
             duration: service.duration,
-            address: bookingData.serviceAddress ? 
+            address: bookingData.serviceAddress ?
               `${bookingData.serviceAddress.street}, ${bookingData.serviceAddress.city}, ${bookingData.serviceAddress.state}` :
               'Address not specified',
+            latitude: bookingData.serviceAddress?.latitude || detailer.location.lat,
+            longitude: bookingData.serviceAddress?.longitude || detailer.location.lng,
             phone: detailer.phone,
             status: 'scheduled',
             bookedAt: new Date().toISOString(),
