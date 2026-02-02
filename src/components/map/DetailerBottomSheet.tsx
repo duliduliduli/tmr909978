@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { ChevronUp, ChevronDown, Star, Heart, MessageCircle, Phone, MapPin, Filter, SlidersHorizontal, ArrowLeft, Send } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
+import { StarRating } from '@/components/shared/StarRating';
+import { useRouter } from 'next/navigation';
 
 interface Detailer {
   id: string;
@@ -55,7 +57,8 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
   const [sortBy, setSortBy] = useState<SortOption>('distance');
   const [selectedDetailer, setSelectedDetailer] = useState<Detailer | null>(null);
   const [viewState, setViewState] = useState<ViewState>('list');
-  const { favoriteDetailers, toggleFavoriteDetailer, isFavoriteDetailer } = useAppStore();
+  const { favoriteDetailers, toggleFavoriteDetailer, isFavoriteDetailer, getActiveServicesByDetailer } = useAppStore();
+  const router = useRouter();
   const [sheetHeights, setSheetHeights] = useState(getSheetHeights());
   const [chatMessage, setChatMessage] = useState('');
   const [chatMessages, setChatMessages] = useState<Array<{id: string; text: string; sender: 'user' | 'detailer'; timestamp: Date}>>([]);
@@ -284,6 +287,11 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
     setViewState('reviews');
   };
   
+  const handleBookService = (serviceId: string, serviceName: string, price: number) => {
+    // Navigate to booking flow with pre-selected service
+    router.push(`/customer/booking?detailerId=${selectedDetailer?.id}&serviceId=${serviceId}`);
+  };
+
   const handleSendMessage = () => {
     if (!chatMessage.trim() || !selectedDetailer) return;
     
@@ -492,9 +500,9 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                     />
                     <div className="flex-1">
                       <h3 className="font-semibold text-gray-900 text-sm">{detailer.name}</h3>
-                      <div className="flex items-center gap-1">
-                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                        <span className="text-xs text-gray-600">{detailer.rating} • {detailer.distance}mi</span>
+                      <div className="flex items-center gap-2">
+                        <StarRating rating={detailer.rating} size="sm" showNumber />
+                        <span className="text-xs text-gray-600">• {detailer.distance}mi</span>
                       </div>
                     </div>
                   </div>
@@ -543,9 +551,8 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                           >
                             {detailer.name}
                           </h3>
-                          <div className="flex items-center gap-1 mb-1">
-                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            <span className="text-sm font-medium">{detailer.rating}</span>
+                          <div className="flex items-center gap-2 mb-1">
+                            <StarRating rating={detailer.rating} size="md" showNumber />
                             <span 
                               className="text-sm text-gray-500 cursor-pointer hover:text-blue-600"
                               onClick={() => handleShowReviews(detailer)}
@@ -636,8 +643,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                 
                 {/* Rating and Favorite */}
                 <div className="flex items-center justify-center gap-2 mb-2">
-                  <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                  <span className="text-lg font-semibold">{selectedDetailer.rating}</span>
+                  <StarRating rating={selectedDetailer.rating} size="lg" showNumber />
                   <span 
                     className="text-gray-500 cursor-pointer hover:text-blue-600"
                     onClick={() => handleShowReviews(selectedDetailer)}
@@ -675,51 +681,105 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
               <div>
                 <h4 className="text-xl font-bold text-gray-900 mb-4">Services</h4>
                 <div className="space-y-3">
-                  {/* Express Wash */}
-                  <div className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center justify-between mb-2">
-                      <h5 className="font-semibold text-gray-900">Express Wash</h5>
-                      <span className="text-lg font-bold text-gray-900">$20</span>
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600 mb-2">
-                      <span>⏱️ 20 min</span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-3">Basic exterior wash and dry</p>
-                    <button className="w-full bg-blue-100 text-blue-900 py-2 px-4 rounded-lg font-medium hover:bg-blue-200 transition-colors">
-                      Book Express Wash
-                    </button>
-                  </div>
-
-                  {/* Interior Deep Clean */}
-                  <div className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center justify-between mb-2">
-                      <h5 className="font-semibold text-gray-900">Interior Deep Clean</h5>
-                      <span className="text-lg font-bold text-gray-900">$35</span>
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600 mb-2">
-                      <span>⏱️ 45 min</span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-3">Complete interior vacuum, wipe down, and sanitization</p>
-                    <button className="w-full bg-blue-100 text-blue-900 py-2 px-4 rounded-lg font-medium hover:bg-blue-200 transition-colors">
-                      Book Interior Deep Clean
-                    </button>
-                  </div>
-
-                  {/* Premium Package */}
-                  <div className="border border-blue-200 bg-blue-50 rounded-xl p-4 hover:bg-blue-100 transition-colors">
-                    <div className="flex items-center justify-between mb-2">
-                      <h5 className="font-semibold text-blue-900">Premium Package</h5>
-                      <span className="text-lg font-bold text-blue-900">$65</span>
-                    </div>
-                    <div className="flex items-center text-sm text-blue-700 mb-2">
-                      <span>⏱️ 90 min</span>
-                      <span className="ml-2 bg-blue-200 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">Most Popular</span>
-                    </div>
-                    <p className="text-sm text-blue-700 mb-3">Exterior wash, interior deep clean, wax, and tire shine</p>
-                    <button className="w-full bg-blue-200 text-blue-900 py-2 px-4 rounded-lg font-medium hover:bg-blue-300 transition-colors">
-                      Book Premium Package
-                    </button>
-                  </div>
+                  {(() => {
+                    const services = getActiveServicesByDetailer(selectedDetailer.id);
+                    if (services.length === 0) {
+                      // Show default services if none are configured
+                      return (
+                        <>
+                          <div className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition-colors">
+                            <div className="flex items-center justify-between mb-2">
+                              <h5 className="font-semibold text-gray-900">Express Wash</h5>
+                              <span className="text-lg font-bold text-gray-900">$20</span>
+                            </div>
+                            <div className="flex items-center text-sm text-gray-600 mb-2">
+                              <span>⏱️ 20 min</span>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-3">Basic exterior wash and dry</p>
+                            <button 
+                              onClick={() => handleBookService('default-1', 'Express Wash', 20)}
+                              className="w-full bg-blue-100 text-blue-900 py-2 px-4 rounded-lg font-medium hover:bg-blue-200 transition-colors"
+                            >
+                              Book Express Wash
+                            </button>
+                          </div>
+                          <div className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition-colors">
+                            <div className="flex items-center justify-between mb-2">
+                              <h5 className="font-semibold text-gray-900">Full Detail</h5>
+                              <span className="text-lg font-bold text-gray-900">$65</span>
+                            </div>
+                            <div className="flex items-center text-sm text-gray-600 mb-2">
+                              <span>⏱️ 90 min</span>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-3">Complete interior and exterior detailing</p>
+                            <button 
+                              onClick={() => handleBookService('default-2', 'Full Detail', 65)}
+                              className="w-full bg-blue-100 text-blue-900 py-2 px-4 rounded-lg font-medium hover:bg-blue-200 transition-colors"
+                            >
+                              Book Full Detail
+                            </button>
+                          </div>
+                        </>
+                      );
+                    }
+                    // Show actual services from the detailer
+                    return services.map((service, index) => {
+                      const isPremium = service.category === 'Premium' || service.price > 50;
+                      return (
+                        <div 
+                          key={service.id}
+                          className={`border rounded-xl p-4 hover:bg-gray-50 transition-colors ${
+                            isPremium ? 'border-blue-200 bg-blue-50 hover:bg-blue-100' : 'border-gray-200'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <h5 className={`font-semibold ${
+                              isPremium ? 'text-blue-900' : 'text-gray-900'
+                            }`}>
+                              {service.name}
+                            </h5>
+                            <span className={`text-lg font-bold ${
+                              isPremium ? 'text-blue-900' : 'text-gray-900'
+                            }`}>
+                              ${service.price}
+                            </span>
+                          </div>
+                          <div className={`flex items-center text-sm mb-2 gap-3 ${
+                            isPremium ? 'text-blue-700' : 'text-gray-600'
+                          }`}>
+                            <span>⏱️ {service.duration} min</span>
+                            {service.category && (
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                isPremium ? 'bg-blue-200 text-blue-800' : 'bg-gray-200 text-gray-700'
+                              }`}>
+                                {service.category}
+                              </span>
+                            )}
+                            {index === 0 && (
+                              <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
+                                Most Popular
+                              </span>
+                            )}
+                          </div>
+                          <p className={`text-sm mb-3 ${
+                            isPremium ? 'text-blue-700' : 'text-gray-600'
+                          }`}>
+                            {service.description}
+                          </p>
+                          <button 
+                            onClick={() => handleBookService(service.id, service.name, service.price)}
+                            className={`w-full py-2 px-4 rounded-lg font-medium transition-colors ${
+                              isPremium 
+                                ? 'bg-blue-200 text-blue-900 hover:bg-blue-300' 
+                                : 'bg-blue-100 text-blue-900 hover:bg-blue-200'
+                            }`}
+                          >
+                            Book {service.name}
+                          </button>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               </div>
 
@@ -808,8 +868,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
               {/* Reviews Header */}
               <div className="text-center pb-4 border-b border-gray-200">
                 <div className="flex items-center justify-center gap-2 mb-2">
-                  <Star className="h-6 w-6 fill-yellow-400 text-yellow-400" />
-                  <span className="text-2xl font-bold">{selectedDetailer.rating}</span>
+                  <StarRating rating={selectedDetailer.rating} size="lg" showNumber />
                 </div>
                 <p className="text-gray-600">{selectedDetailer.reviewCount} total reviews</p>
               </div>
@@ -842,16 +901,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <h4 className="font-semibold text-gray-900">{review.name}</h4>
-                      <div className="flex items-center gap-1">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`h-4 w-4 ${
-                              i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'
-                            }`}
-                          />
-                        ))}
-                      </div>
+                      <StarRating rating={review.rating} size="md" />
                     </div>
                     <span className="text-sm text-gray-500">{review.date}</span>
                   </div>
@@ -880,8 +930,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                 
                 {/* Rating and Favorite */}
                 <div className="flex items-center justify-center gap-2 mb-2">
-                  <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                  <span className="text-lg font-semibold">{selectedDetailer.rating}</span>
+                  <StarRating rating={selectedDetailer.rating} size="lg" showNumber />
                   <span 
                     className="text-gray-500 cursor-pointer hover:text-blue-600"
                     onClick={() => handleShowReviews(selectedDetailer)}
@@ -919,51 +968,105 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
               <div>
                 <h4 className="text-xl font-bold text-gray-900 mb-4">Services</h4>
                 <div className="space-y-3">
-                  {/* Express Wash */}
-                  <div className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center justify-between mb-2">
-                      <h5 className="font-semibold text-gray-900">Express Wash</h5>
-                      <span className="text-lg font-bold text-gray-900">$20</span>
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600 mb-2">
-                      <span>⏱️ 20 min</span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-3">Basic exterior wash and dry</p>
-                    <button className="w-full bg-blue-100 text-blue-900 py-2 px-4 rounded-lg font-medium hover:bg-blue-200 transition-colors">
-                      Book Express Wash
-                    </button>
-                  </div>
-
-                  {/* Interior Deep Clean */}
-                  <div className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center justify-between mb-2">
-                      <h5 className="font-semibold text-gray-900">Interior Deep Clean</h5>
-                      <span className="text-lg font-bold text-gray-900">$35</span>
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600 mb-2">
-                      <span>⏱️ 45 min</span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-3">Complete interior vacuum, wipe down, and sanitization</p>
-                    <button className="w-full bg-blue-100 text-blue-900 py-2 px-4 rounded-lg font-medium hover:bg-blue-200 transition-colors">
-                      Book Interior Deep Clean
-                    </button>
-                  </div>
-
-                  {/* Premium Package */}
-                  <div className="border border-blue-200 bg-blue-50 rounded-xl p-4 hover:bg-blue-100 transition-colors">
-                    <div className="flex items-center justify-between mb-2">
-                      <h5 className="font-semibold text-blue-900">Premium Package</h5>
-                      <span className="text-lg font-bold text-blue-900">$65</span>
-                    </div>
-                    <div className="flex items-center text-sm text-blue-700 mb-2">
-                      <span>⏱️ 90 min</span>
-                      <span className="ml-2 bg-blue-200 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">Most Popular</span>
-                    </div>
-                    <p className="text-sm text-blue-700 mb-3">Exterior wash, interior deep clean, wax, and tire shine</p>
-                    <button className="w-full bg-blue-200 text-blue-900 py-2 px-4 rounded-lg font-medium hover:bg-blue-300 transition-colors">
-                      Book Premium Package
-                    </button>
-                  </div>
+                  {(() => {
+                    const services = getActiveServicesByDetailer(selectedDetailer.id);
+                    if (services.length === 0) {
+                      // Show default services if none are configured
+                      return (
+                        <>
+                          <div className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition-colors">
+                            <div className="flex items-center justify-between mb-2">
+                              <h5 className="font-semibold text-gray-900">Express Wash</h5>
+                              <span className="text-lg font-bold text-gray-900">$20</span>
+                            </div>
+                            <div className="flex items-center text-sm text-gray-600 mb-2">
+                              <span>⏱️ 20 min</span>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-3">Basic exterior wash and dry</p>
+                            <button 
+                              onClick={() => handleBookService('default-1', 'Express Wash', 20)}
+                              className="w-full bg-blue-100 text-blue-900 py-2 px-4 rounded-lg font-medium hover:bg-blue-200 transition-colors"
+                            >
+                              Book Express Wash
+                            </button>
+                          </div>
+                          <div className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition-colors">
+                            <div className="flex items-center justify-between mb-2">
+                              <h5 className="font-semibold text-gray-900">Full Detail</h5>
+                              <span className="text-lg font-bold text-gray-900">$65</span>
+                            </div>
+                            <div className="flex items-center text-sm text-gray-600 mb-2">
+                              <span>⏱️ 90 min</span>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-3">Complete interior and exterior detailing</p>
+                            <button 
+                              onClick={() => handleBookService('default-2', 'Full Detail', 65)}
+                              className="w-full bg-blue-100 text-blue-900 py-2 px-4 rounded-lg font-medium hover:bg-blue-200 transition-colors"
+                            >
+                              Book Full Detail
+                            </button>
+                          </div>
+                        </>
+                      );
+                    }
+                    // Show actual services from the detailer
+                    return services.map((service, index) => {
+                      const isPremium = service.category === 'Premium' || service.price > 50;
+                      return (
+                        <div 
+                          key={service.id}
+                          className={`border rounded-xl p-4 hover:bg-gray-50 transition-colors ${
+                            isPremium ? 'border-blue-200 bg-blue-50 hover:bg-blue-100' : 'border-gray-200'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <h5 className={`font-semibold ${
+                              isPremium ? 'text-blue-900' : 'text-gray-900'
+                            }`}>
+                              {service.name}
+                            </h5>
+                            <span className={`text-lg font-bold ${
+                              isPremium ? 'text-blue-900' : 'text-gray-900'
+                            }`}>
+                              ${service.price}
+                            </span>
+                          </div>
+                          <div className={`flex items-center text-sm mb-2 gap-3 ${
+                            isPremium ? 'text-blue-700' : 'text-gray-600'
+                          }`}>
+                            <span>⏱️ {service.duration} min</span>
+                            {service.category && (
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                isPremium ? 'bg-blue-200 text-blue-800' : 'bg-gray-200 text-gray-700'
+                              }`}>
+                                {service.category}
+                              </span>
+                            )}
+                            {index === 0 && (
+                              <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
+                                Most Popular
+                              </span>
+                            )}
+                          </div>
+                          <p className={`text-sm mb-3 ${
+                            isPremium ? 'text-blue-700' : 'text-gray-600'
+                          }`}>
+                            {service.description}
+                          </p>
+                          <button 
+                            onClick={() => handleBookService(service.id, service.name, service.price)}
+                            className={`w-full py-2 px-4 rounded-lg font-medium transition-colors ${
+                              isPremium 
+                                ? 'bg-blue-200 text-blue-900 hover:bg-blue-300' 
+                                : 'bg-blue-100 text-blue-900 hover:bg-blue-200'
+                            }`}
+                          >
+                            Book {service.name}
+                          </button>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               </div>
 

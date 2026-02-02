@@ -1,10 +1,54 @@
+"use client";
+
 import { AppShell } from "@/components/AppShell";
-import { Settings, Clock, MapPin } from "lucide-react";
+import { Settings, Clock, MapPin, Package, QrCode } from "lucide-react";
+import { ServiceManager } from "@/components/detailer/ServiceManager";
+import { QRCodeManager } from "@/components/detailer/QRCodeManager";
+import { useState } from "react";
 
 export default function DetailerAccountPage() {
+  const [activeTab, setActiveTab] = useState<'profile' | 'services' | 'qrcode'>('profile');
+
   return (
     <AppShell title="Business Settings">
-      <div className="space-y-6">
+      {/* Tab Navigation */}
+      <div className="flex gap-2 mb-6 border-b border-gray-200">
+        <button
+          onClick={() => setActiveTab('profile')}
+          className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+            activeTab === 'profile'
+              ? 'text-blue-600 border-blue-600'
+              : 'text-gray-600 border-transparent hover:text-gray-900'
+          }`}
+        >
+          Business Profile
+        </button>
+        <button
+          onClick={() => setActiveTab('services')}
+          className={`px-4 py-2 font-medium transition-colors border-b-2 flex items-center gap-2 ${
+            activeTab === 'services'
+              ? 'text-blue-600 border-blue-600'
+              : 'text-gray-600 border-transparent hover:text-gray-900'
+          }`}
+        >
+          <Package className="h-4 w-4" />
+          Services & Pricing
+        </button>
+        <button
+          onClick={() => setActiveTab('qrcode')}
+          className={`px-4 py-2 font-medium transition-colors border-b-2 flex items-center gap-2 ${
+            activeTab === 'qrcode'
+              ? 'text-blue-600 border-blue-600'
+              : 'text-gray-600 border-transparent hover:text-gray-900'
+          }`}
+        >
+          <QrCode className="h-4 w-4" />
+          QR Code
+        </button>
+      </div>
+
+      {activeTab === 'profile' ? (
+        <div className="space-y-6">
         <div className="bg-white rounded-xl p-6 border border-gray-200">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Business Profile</h2>
           <div className="space-y-4">
@@ -44,6 +88,11 @@ export default function DetailerAccountPage() {
           </div>
         </div>
       </div>
+      ) : activeTab === 'services' ? (
+        <ServiceManager />
+      ) : (
+        <QRCodeManager />
+      )}
     </AppShell>
   );
 }

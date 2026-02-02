@@ -1,0 +1,425 @@
+"use client";
+
+import { useState } from 'react';
+import { Plus, Edit2, Trash2, DollarSign, Clock, ToggleLeft, ToggleRight, Save, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAppStore, Service } from '@/lib/store';
+
+export function ServiceManager() {
+  const { 
+    activeDetailerId, 
+    services, 
+    addService, 
+    updateService, 
+    deleteService, 
+    toggleServiceActive,
+    getServicesByDetailer 
+  } = useAppStore();
+  
+  const [isAddingService, setIsAddingService] = useState(false);
+  const [editingService, setEditingService] = useState<string | null>(null);
+  const [newService, setNewService] = useState({
+    name: '',
+    description: '',
+    price: '',
+    duration: '30',
+    category: 'Exterior'
+  });
+  const [editForm, setEditForm] = useState<Partial<Service>>({});
+
+  const detailerServices = getServicesByDetailer(activeDetailerId);
+
+  const categories = ['Exterior', 'Interior', 'Premium', 'Specialty', 'Add-on'];
+
+  const handleAddService = () => {
+    if (!newService.name || !newService.description || !newService.price) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    addService({
+      detailerId: activeDetailerId,
+      name: newService.name,
+      description: newService.description,
+      price: parseFloat(newService.price),
+      duration: parseInt(newService.duration),
+      category: newService.category,
+      isActive: true
+    });
+
+    // Reset form
+    setNewService({
+      name: '',
+      description: '',
+      price: '',
+      duration: '30',
+      category: 'Exterior'
+    });
+    setIsAddingService(false);
+  };
+
+  const handleUpdateService = (serviceId: string) => {
+    if (!editForm.name || !editForm.description || editForm.price === undefined) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    updateService(serviceId, {
+      name: editForm.name,
+      description: editForm.description,
+      price: editForm.price,
+      duration: editForm.duration,
+      category: editForm.category
+    });
+
+    setEditingService(null);
+    setEditForm({});
+  };
+
+  const handleDeleteService = (serviceId: string) => {
+    if (confirm('Are you sure you want to delete this service?')) {
+      deleteService(serviceId);
+    }
+  };
+
+  const startEditing = (service: Service) => {
+    setEditingService(service.id);
+    setEditForm({
+      name: service.name,
+      description: service.description,
+      price: service.price,
+      duration: service.duration,
+      category: service.category
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Service Management</h2>
+          <p className="text-gray-600 mt-1">Add and manage the services you offer</p>
+        </div>
+        <button
+          onClick={() => setIsAddingService(true)}
+          className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-600 transition-colors"
+        >
+          <Plus className="h-5 w-5" />
+          Add Service
+        </button>
+      </div>
+
+      {/* Add Service Form */}
+      <AnimatePresence>
+        {isAddingService && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="bg-blue-50 border border-blue-200 rounded-xl p-6"
+          >
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Service</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Service Name *
+                </label>
+                <input
+                  type="text"
+                  value={newService.name}
+                  onChange={(e) => setNewService({ ...newService, name: e.target.value })}
+                  placeholder="e.g., Premium Wash"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Category
+                </label>
+                <select
+                  value={newService.category}
+                  onChange={(e) => setNewService({ ...newService, category: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {categories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Price ($) *
+                </label>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="number"
+                    value={newService.price}
+                    onChange={(e) => setNewService({ ...newService, price: e.target.value })}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Duration (minutes)
+                </label>
+                <div className="relative">
+                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="number"
+                    value={newService.duration}
+                    onChange={(e) => setNewService({ ...newService, duration: e.target.value })}
+                    placeholder="30"
+                    min="15"
+                    step="15"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description *
+                </label>
+                <textarea
+                  value={newService.description}
+                  onChange={(e) => setNewService({ ...newService, description: e.target.value })}
+                  placeholder="Describe what this service includes..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setIsAddingService(false)}
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddService}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+              >
+                <Save className="h-4 w-4" />
+                Add Service
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Services List */}
+      <div className="space-y-4">
+        {detailerServices.length === 0 ? (
+          <div className="text-center py-12 bg-gray-50 rounded-xl">
+            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Plus className="h-8 w-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No services yet</h3>
+            <p className="text-gray-600">Add your first service to start accepting bookings</p>
+          </div>
+        ) : (
+          detailerServices.map((service) => (
+            <motion.div
+              key={service.id}
+              layout
+              className={`bg-white border rounded-xl p-6 ${
+                !service.isActive ? 'opacity-60' : ''
+              }`}
+            >
+              {editingService === service.id ? (
+                // Edit Mode
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Service Name
+                      </label>
+                      <input
+                        type="text"
+                        value={editForm.name}
+                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Category
+                      </label>
+                      <select
+                        value={editForm.category}
+                        onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      >
+                        {categories.map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Price ($)
+                      </label>
+                      <input
+                        type="number"
+                        value={editForm.price}
+                        onChange={(e) => setEditForm({ ...editForm, price: parseFloat(e.target.value) })}
+                        step="0.01"
+                        min="0"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Duration (minutes)
+                      </label>
+                      <input
+                        type="number"
+                        value={editForm.duration}
+                        onChange={(e) => setEditForm({ ...editForm, duration: parseInt(e.target.value) })}
+                        min="15"
+                        step="15"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Description
+                      </label>
+                      <textarea
+                        value={editForm.description}
+                        onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                        rows={2}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3">
+                    <button
+                      onClick={() => {
+                        setEditingService(null);
+                        setEditForm({});
+                      }}
+                      className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => handleUpdateService(service.id)}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2"
+                    >
+                      <Save className="h-4 w-4" />
+                      Save Changes
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                // View Mode
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                          {service.name}
+                          {service.category && (
+                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                              {service.category}
+                            </span>
+                          )}
+                        </h3>
+                        <p className="text-gray-600 mt-1">{service.description}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-6 mt-4">
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4 text-gray-400" />
+                        <span className="text-xl font-bold text-gray-900">${service.price}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-gray-400" />
+                        <span className="text-gray-600">{service.duration} min</span>
+                      </div>
+                      <button
+                        onClick={() => toggleServiceActive(service.id)}
+                        className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                          service.isActive
+                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {service.isActive ? (
+                          <>
+                            <ToggleRight className="h-4 w-4" />
+                            Active
+                          </>
+                        ) : (
+                          <>
+                            <ToggleLeft className="h-4 w-4" />
+                            Inactive
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 ml-4">
+                    <button
+                      onClick={() => startEditing(service)}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    >
+                      <Edit2 className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteService(service.id)}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          ))
+        )}
+      </div>
+
+      {/* Summary Stats */}
+      {detailerServices.length > 0 && (
+        <div className="bg-gray-50 rounded-xl p-6 grid grid-cols-3 gap-4">
+          <div>
+            <p className="text-sm text-gray-600">Total Services</p>
+            <p className="text-2xl font-bold text-gray-900">{detailerServices.length}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Active Services</p>
+            <p className="text-2xl font-bold text-green-600">
+              {detailerServices.filter(s => s.isActive).length}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Average Price</p>
+            <p className="text-2xl font-bold text-gray-900">
+              ${(detailerServices.reduce((sum, s) => sum + s.price, 0) / detailerServices.length).toFixed(2)}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

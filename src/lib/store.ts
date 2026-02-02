@@ -26,6 +26,29 @@ export interface SavedAddress {
   lastUsed?: string;
 }
 
+export interface Service {
+  id: string;
+  detailerId: string;
+  name: string;
+  description: string;
+  price: number;
+  duration: number; // in minutes
+  category?: string; // e.g., "Exterior", "Interior", "Premium"
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Rating {
+  id: string;
+  appointmentId: string;
+  customerId: string;
+  detailerId: string;
+  rating: number; // 1-5
+  comment?: string;
+  createdAt: string;
+}
+
 export interface Appointment {
   id: string;
   customerId: string;
@@ -45,6 +68,16 @@ export interface Appointment {
   status: 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
   bookedAt: string;
   notes?: string;
+  completedAt?: string;
+  rating?: Rating;
+  awaitingRating?: boolean; // True when business marks complete, awaiting customer rating
+}
+
+interface DetailerQRCode {
+  detailerId: string;
+  qrCodeData: string; // Base64 encoded QR code image
+  businessUrl: string; // URL the QR code points to
+  generatedAt: string;
 }
 
 interface AppState {
@@ -80,6 +113,25 @@ interface AppState {
   getSavedAddressesByCustomer: (customerId: string) => SavedAddress[];
   setDefaultAddress: (id: string) => void;
   updateAddressLastUsed: (id: string) => void;
+  // Ratings storage
+  ratings: Rating[];
+  markAppointmentCompleted: (appointmentId: string) => void;
+  addRating: (appointmentId: string, rating: number, comment?: string) => void;
+  getDetailerAverageRating: (detailerId: string) => number;
+  getAppointmentsAwaitingRating: (customerId: string) => Appointment[];
+  dismissRatingPrompt: (appointmentId: string) => void;
+  // Service management
+  services: Service[];
+  addService: (service: Omit<Service, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  updateService: (id: string, updates: Partial<Service>) => void;
+  deleteService: (id: string) => void;
+  toggleServiceActive: (id: string) => void;
+  getServicesByDetailer: (detailerId: string) => Service[];
+  getActiveServicesByDetailer: (detailerId: string) => Service[];
+  // QR Code management
+  detailerQRCodes: DetailerQRCode[];
+  generateQRCode: (detailerId: string, businessName: string) => Promise<void>;
+  getQRCodeByDetailer: (detailerId: string) => DetailerQRCode | undefined;
 }
 
 export const useAppStore = create<AppState>()(
@@ -336,7 +388,186 @@ export const useAppStore = create<AppState>()(
           addr.id === id ? { ...addr, lastUsed: new Date().toISOString() } : addr
         )
       })),
+      // Ratings implementation
+      ratings: [
+        // Sample ratings for demo
+        {
+          id: "rating_1",
+          appointmentId: "apt_sample_2",
+          customerId: "cust_1",
+          detailerId: "det_1",
+          rating: 5,
+          comment: "Excellent service! Very professional and thorough.",
+          createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+        }
+      ],
+      markAppointmentCompleted: (appointmentId) => set((state) => ({
+        appointments: state.appointments.map(apt =>
+          apt.id === appointmentId
+            ? { 
+                ...apt, 
+                status: 'completed' as const, 
+                completedAt: new Date().toISOString(),
+                awaitingRating: true 
+              }
+            : apt
+        )
+      })),
+      addRating: (appointmentId, rating, comment) => set((state) => {
+        const appointment = state.appointments.find(apt => apt.id === appointmentId);
+        if (!appointment) return state;
+        
+        const newRating: Rating = {
+          id: `rating_${Date.now()}`,
+          appointmentId,
+          customerId: appointment.customerId,
+          detailerId: appointment.detailerId,
+          rating,
+          comment,
+          createdAt: new Date().toISOString()
+        };
+        
+        return {
+          ratings: [...state.ratings, newRating],
+          appointments: state.appointments.map(apt =>
+            apt.id === appointmentId
+              ? { ...apt, rating: newRating, awaitingRating: false }
+              : apt
+          )
+        };
+      }),
+      getDetailerAverageRating: (detailerId) => {
+        const state = useAppStore.getState();
+        const detailerRatings = state.ratings.filter(r => r.detailerId === detailerId);
+        if (detailerRatings.length === 0) return 4.5; // Default rating for demo
+        const sum = detailerRatings.reduce((acc, r) => acc + r.rating, 0);
+        return sum / detailerRatings.length;
+      },
+      getAppointmentsAwaitingRating: (customerId) => {
+        const state = useAppStore.getState();
+        return state.appointments.filter(
+          apt => apt.customerId === customerId && apt.awaitingRating === true
+        );
+      },
+      dismissRatingPrompt: (appointmentId) => set((state) => ({
+        appointments: state.appointments.map(apt =>
+          apt.id === appointmentId
+            ? { ...apt, awaitingRating: false }
+            : apt
+        )
+      })),
+      // Service management implementation
+      services: [
+        // Sample services for demo purposes
+        {
+          id: "svc_1",
+          detailerId: "det_1",
+          name: "Express Wash",
+          description: "Quick exterior wash and dry - perfect for maintaining your car's shine",
+          price: 25,
+          duration: 30,
+          category: "Exterior",
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: "svc_2",
+          detailerId: "det_1",
+          name: "Interior Deep Clean",
+          description: "Complete interior vacuum, wipe down, and sanitization",
+          price: 45,
+          duration: 60,
+          category: "Interior",
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: "svc_3",
+          detailerId: "det_1",
+          name: "Premium Package",
+          description: "Full exterior wash, interior deep clean, wax, and tire shine",
+          price: 85,
+          duration: 120,
+          category: "Premium",
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+      addService: (service) => set((state) => {
+        const newService: Service = {
+          ...service,
+          id: `svc_${Date.now()}`,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        return { services: [...state.services, newService] };
+      }),
+      updateService: (id, updates) => set((state) => ({
+        services: state.services.map(service =>
+          service.id === id
+            ? { ...service, ...updates, updatedAt: new Date().toISOString() }
+            : service
+        )
+      })),
+      deleteService: (id) => set((state) => ({
+        services: state.services.filter(service => service.id !== id)
+      })),
+      toggleServiceActive: (id) => set((state) => ({
+        services: state.services.map(service =>
+          service.id === id
+            ? { ...service, isActive: !service.isActive, updatedAt: new Date().toISOString() }
+            : service
+        )
+      })),
+      getServicesByDetailer: (detailerId: string) => {
+        const state = useAppStore.getState();
+        return state.services.filter(service => service.detailerId === detailerId);
+      },
+      getActiveServicesByDetailer: (detailerId: string) => {
+        const state = useAppStore.getState();
+        return state.services.filter(
+          service => service.detailerId === detailerId && service.isActive
+        );
+      },
+      // QR Code implementation
+      detailerQRCodes: [],
+      generateQRCode: async (detailerId: string, businessName: string) => {
+        // Dynamic import to avoid SSR issues
+        const QRCode = (await import('qrcode')).default;
+        
+        // Generate URL for the detailer's booking page
+        const businessUrl = `${typeof window !== 'undefined' ? window.location.origin : 'https://tumaro.app'}/book/${detailerId}`;
+        
+        // Generate QR code as base64 data URL
+        const qrCodeData = await QRCode.toDataURL(businessUrl, {
+          width: 400,
+          margin: 2,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          },
+          errorCorrectionLevel: 'M'
+        });
+        
+        const newQRCode: DetailerQRCode = {
+          detailerId,
+          qrCodeData,
+          businessUrl,
+          generatedAt: new Date().toISOString()
+        };
+        
+        set((state) => ({
+          detailerQRCodes: [...state.detailerQRCodes.filter(qr => qr.detailerId !== detailerId), newQRCode]
+        }));
+      },
+      getQRCodeByDetailer: (detailerId: string) => {
+        const state = useAppStore.getState();
+        return state.detailerQRCodes.find(qr => qr.detailerId === detailerId);
+      },
     }),
-    { name: "app_state_v5" }
+    { name: "app_state_v6" }
   )
 );
