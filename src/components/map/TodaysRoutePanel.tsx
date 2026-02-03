@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Phone, MessageCircle, Clock, MapPin, Navigation, Send, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Phone, MessageCircle, Clock, MapPin, Navigation, Send, ChevronDown, ChevronUp, DollarSign } from 'lucide-react';
 import type { Appointment } from '@/lib/store';
+import { useAppStore } from '@/lib/store';
 
 interface TodaysRoutePanelProps {
   isOpen: boolean;
@@ -11,12 +12,17 @@ interface TodaysRoutePanelProps {
   appointments: Appointment[];
   etaMinutes: number[]; // ETA in minutes between consecutive jobs
   onJobClick: (appointment: Appointment) => void;
+  onFitAllMarkers?: () => void;
 }
 
-export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, onJobClick }: TodaysRoutePanelProps) {
+export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, onJobClick, onFitAllMarkers }: TodaysRoutePanelProps) {
   const [expandedChatId, setExpandedChatId] = useState<string | null>(null);
-  const [chatMessages, setChatMessages] = useState<Record<string, { text: string; fromMe: boolean }[]>>({});
   const [chatInput, setChatInput] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const { activeDetailerId, addChatMessage, getChatMessages } = useAppStore();
+
+  const totalEarnings = appointments.reduce((sum, apt) => sum + apt.price, 0);
 
   const formatTimeRemaining = (scheduledDate: string, scheduledTime: string) => {
     const appointmentTime = new Date(`${scheduledDate} ${scheduledTime}`);
@@ -29,13 +35,14 @@ export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, on
     return `${minutes}m`;
   };
 
-  const handleSendMessage = (appointmentId: string, customerName: string) => {
+  const getMessages = (apt: Appointment) => {
+    return getChatMessages(activeDetailerId, apt.customerId);
+  };
+
+  const handleSendMessage = (apt: Appointment) => {
     if (!chatInput.trim()) return;
-    const newMsg = { text: chatInput.trim(), fromMe: true };
-    setChatMessages(prev => ({
-      ...prev,
-      [appointmentId]: [...(prev[appointmentId] || []), newMsg]
-    }));
+    const newMsg = { text: chatInput.trim(), fromMe: true, timestamp: new Date().toISOString() };
+    addChatMessage(activeDetailerId, apt.customerId, newMsg);
     setChatInput('');
 
     // Simulated response
@@ -46,13 +53,15 @@ export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, on
         `Sounds good, thanks for letting me know.`,
         `Great, I'll make sure the car is accessible.`,
       ];
-      const reply = { text: responses[Math.floor(Math.random() * responses.length)], fromMe: false };
-      setChatMessages(prev => ({
-        ...prev,
-        [appointmentId]: [...(prev[appointmentId] || []), reply]
-      }));
+      const reply = { text: responses[Math.floor(Math.random() * responses.length)], fromMe: false, timestamp: new Date().toISOString() };
+      addChatMessage(activeDetailerId, apt.customerId, reply);
     }, 1500);
   };
+
+  // Auto-scroll chat to bottom when messages change
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [expandedChatId]);
 
   return (
     <AnimatePresence>
@@ -66,20 +75,30 @@ export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, on
           style={{ maxHeight: '100%' }}
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-yellow-300 to-yellow-400 text-gray-800 px-5 py-4 flex items-center justify-between flex-shrink-0">
-            <div>
+          <div className="text-gray-800 px-5 py-4 flex items-center justify-between flex-shrink-0" style={{ background: 'linear-gradient(to right, #B7E892, #a5d880)' }}>
+            <div
+              className="cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={onFitAllMarkers}
+            >
               <h2 className="text-lg font-bold flex items-center gap-2">
                 <Navigation className="h-5 w-5" />
                 Today&apos;s Route
               </h2>
               <p className="text-gray-600 text-sm">{appointments.length} job{appointments.length !== 1 ? 's' : ''} remaining</p>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-yellow-500/30 rounded-full transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-3">
+              {/* Total earnings */}
+              <div className="flex items-center gap-1 px-3 py-1.5 bg-white/60 rounded-full">
+                <DollarSign className="h-4 w-4 text-green-700" />
+                <span className="text-sm font-bold text-green-800">{totalEarnings.toFixed(2)}</span>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-black/10 rounded-full transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </div>
 
           {/* Job List */}
@@ -91,7 +110,9 @@ export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, on
                 <p className="text-sm text-center mt-1">All caught up! Enjoy the rest of your day.</p>
               </div>
             ) : (
-              appointments.map((apt, index) => (
+              appointments.map((apt, index) => {
+                const messages = getMessages(apt);
+                return (
                 <div key={apt.id}>
                   {/* ETA between jobs */}
                   {index > 0 && etaMinutes[index - 1] !== undefined && (
@@ -115,7 +136,7 @@ export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, on
                       {/* Job number and time */}
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-yellow-300 text-gray-800 flex items-center justify-center text-xs font-bold">
+                          <div className="w-7 h-7 rounded-full text-gray-800 flex items-center justify-center text-xs font-bold" style={{ backgroundColor: '#B7E892' }}>
                             {index + 1}
                           </div>
                           <span className="font-semibold text-gray-900">{apt.serviceName}</span>
@@ -173,6 +194,11 @@ export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, on
                       >
                         <MessageCircle className="h-3.5 w-3.5" />
                         Message
+                        {messages.length > 0 && (
+                          <span className="ml-0.5 w-4 h-4 rounded-full bg-blue-500 text-white text-[10px] flex items-center justify-center">
+                            {messages.length}
+                          </span>
+                        )}
                         {expandedChatId === apt.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                       </button>
                     </div>
@@ -190,12 +216,12 @@ export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, on
                           <div className="px-5 pb-4 bg-gray-50 border-t border-gray-100">
                             {/* Messages */}
                             <div className="max-h-40 overflow-y-auto py-2 space-y-2">
-                              {(!chatMessages[apt.id] || chatMessages[apt.id].length === 0) && (
+                              {messages.length === 0 && (
                                 <p className="text-xs text-gray-400 text-center py-2">
                                   Send a message to {apt.customerName || 'the customer'}
                                 </p>
                               )}
-                              {(chatMessages[apt.id] || []).map((msg, i) => (
+                              {messages.map((msg, i) => (
                                 <div key={i} className={`flex ${msg.fromMe ? 'justify-end' : 'justify-start'}`}>
                                   <div className={`max-w-[80%] px-3 py-1.5 rounded-xl text-xs ${
                                     msg.fromMe
@@ -206,6 +232,7 @@ export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, on
                                   </div>
                                 </div>
                               ))}
+                              <div ref={chatEndRef} />
                             </div>
                             {/* Input */}
                             <div className="flex items-center gap-2 mt-2">
@@ -216,14 +243,14 @@ export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, on
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter' && !e.shiftKey) {
                                     e.preventDefault();
-                                    handleSendMessage(apt.id, apt.customerName || 'Customer');
+                                    handleSendMessage(apt);
                                   }
                                 }}
                                 placeholder={`Message ${apt.customerName || 'customer'}...`}
-                                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-white"
+                                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-white"
                               />
                               <button
-                                onClick={() => handleSendMessage(apt.id, apt.customerName || 'Customer')}
+                                onClick={() => handleSendMessage(apt)}
                                 disabled={!chatInput.trim()}
                                 className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                               >
@@ -236,7 +263,8 @@ export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, on
                     </AnimatePresence>
                   </div>
                 </div>
-              ))
+                );
+              })
             )}
           </div>
         </motion.div>

@@ -83,6 +83,12 @@ interface DetailerQRCode {
   generatedAt: string;
 }
 
+export interface ChatMessage {
+  text: string;
+  fromMe: boolean;
+  timestamp: string;
+}
+
 interface AppState {
   role: Role;
   setRole: (r: Role) => void;
@@ -91,6 +97,10 @@ interface AppState {
   setActiveCustomerId: (id: string) => void;
   setActiveDetailerId: (id: string) => void;
   switchToTestAccount: () => void;
+  // Chat persistence
+  chatLogs: Record<string, ChatMessage[]>; // keyed by "{detailerId}_{customerId}"
+  addChatMessage: (detailerId: string, customerId: string, message: ChatMessage) => void;
+  getChatMessages: (detailerId: string, customerId: string) => ChatMessage[];
   // Location persistence
   userLocation: [number, number] | null;
   setUserLocation: (location: [number, number] | null) => void;
@@ -150,6 +160,21 @@ export const useAppStore = create<AppState>()(
       switchToTestAccount: () => set((state) => ({
         activeCustomerId: state.activeCustomerId === "cust_1" ? "cust_2" : "cust_1"
       })),
+      // Chat persistence
+      chatLogs: {},
+      addChatMessage: (detailerId, customerId, message) => set((state) => {
+        const key = `${detailerId}_${customerId}`;
+        return {
+          chatLogs: {
+            ...state.chatLogs,
+            [key]: [...(state.chatLogs[key] || []), message],
+          }
+        };
+      }),
+      getChatMessages: (detailerId, customerId) => {
+        const state = useAppStore.getState();
+        return state.chatLogs[`${detailerId}_${customerId}`] || [];
+      },
       // Location persistence
       userLocation: null,
       setUserLocation: (userLocation) => set({ userLocation }),
@@ -697,6 +722,6 @@ export const useAppStore = create<AppState>()(
         return state.detailerQRCodes.find(qr => qr.detailerId === detailerId);
       },
     }),
-    { name: "app_state_v6" }
+    { name: "app_state_v7" }
   )
 );

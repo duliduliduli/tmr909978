@@ -32,13 +32,19 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
   const mapboxStyle = process.env.NEXT_PUBLIC_MAPBOX_STYLE;
 
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const [isLocationPermissionDenied, setIsLocationPermissionDenied] = useState(false);
   const [isLocationShuffled, setIsLocationShuffled] = useState(false);
   const [showRoute, setShowRoute] = useState(false);
   const [etaMinutes, setEtaMinutes] = useState<number[]>([]);
 
-  // Get today's appointments for the active detailer
-  const todaysAppointments = useAppStore.getState().getTodaysAppointments(activeDetailerId);
+  // Track client mount to avoid hydration mismatch
+  useEffect(() => { setIsMounted(true); }, []);
+
+  // Get today's appointments for the active detailer (only on client)
+  const todaysAppointments = isMounted
+    ? useAppStore.getState().getTodaysAppointments(activeDetailerId)
+    : [];
 
   // Initialize map
   useEffect(() => {
@@ -322,9 +328,11 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
     m.fitBounds(bounds, { padding: { top: 80, bottom: 80, left: 400, right: 80 }, maxZoom: 14, duration: 1500 });
 
     // Fetch route from Mapbox Directions API
-    if (todaysAppointments.length >= 2) {
+    // Need at least 2 waypoints: user location + 1 appointment, or 2+ appointments
+    const hasEnoughWaypoints = todaysAppointments.length >= 2 || (todaysAppointments.length >= 1 && userLocation);
+    if (hasEnoughWaypoints) {
       const waypoints = todaysAppointments.map(apt => `${apt.longitude},${apt.latitude}`);
-      // Optionally prepend user location as starting point
+      // Prepend user location as starting point
       if (userLocation) {
         waypoints.unshift(`${userLocation[0]},${userLocation[1]}`);
       }
@@ -356,7 +364,7 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
             source: 'route',
             layout: { 'line-join': 'round', 'line-cap': 'round' },
             paint: {
-              'line-color': '#3B82F6',
+              'line-color': '#32CD32',
               'line-width': 10,
               'line-opacity': 0.25,
               'line-blur': 4
@@ -370,7 +378,7 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
             source: 'route',
             layout: { 'line-join': 'round', 'line-cap': 'round' },
             paint: {
-              'line-color': '#3B82F6',
+              'line-color': '#32CD32',
               'line-width': 4,
               'line-opacity': 0.9
             }
@@ -398,12 +406,12 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
             const el = document.createElement('div');
             el.style.cssText = `
               background: white;
-              border: 2px solid #3B82F6;
+              border: 2px solid #32CD32;
               border-radius: 12px;
               padding: 2px 8px;
               font-size: 11px;
               font-weight: 600;
-              color: #1D4ED8;
+              color: #228B22;
               white-space: nowrap;
               box-shadow: 0 2px 6px rgba(0,0,0,0.15);
               pointer-events: none;
@@ -423,6 +431,14 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
 
     setShowRoute(true);
   }, [isLoaded, todaysAppointments, userLocation, mapboxToken, clearRouteFromMap]);
+
+  const fitAllMarkers = useCallback(() => {
+    if (!map.current || todaysAppointments.length === 0) return;
+    const bounds = new mapboxgl.LngLatBounds();
+    todaysAppointments.forEach(apt => bounds.extend([apt.longitude, apt.latitude]));
+    if (userLocation) bounds.extend(userLocation);
+    map.current.fitBounds(bounds, { padding: { top: 80, bottom: 80, left: 400, right: 80 }, maxZoom: 14, duration: 1500 });
+  }, [todaysAppointments, userLocation]);
 
   const deactivateRoute = useCallback(() => {
     clearRouteFromMap();
@@ -511,14 +527,15 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
           onClick={showRoute ? deactivateRoute : activateRoute}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg font-semibold text-sm transition-all ${
             showRoute
-              ? 'bg-yellow-300 text-gray-800 hover:bg-yellow-400'
+              ? 'text-gray-800 hover:opacity-90'
               : 'bg-white text-gray-800 hover:bg-gray-50 border border-gray-200'
           }`}
+          style={showRoute ? { backgroundColor: '#B7E892' } : undefined}
         >
-          <Navigation className={`h-4 w-4 ${showRoute ? 'text-gray-800' : 'text-yellow-500'}`} />
+          <Navigation className={`h-4 w-4 ${showRoute ? 'text-gray-800' : 'text-gray-600'}`} style={!showRoute ? { color: '#B7E892' } : undefined} />
           {showRoute ? 'Close Route' : "Today's Route"}
           {!showRoute && todaysAppointments.length > 0 && (
-            <span className="ml-1 w-5 h-5 rounded-full bg-yellow-300 text-gray-800 text-xs flex items-center justify-center">
+            <span className="ml-1 w-5 h-5 rounded-full text-gray-800 text-xs flex items-center justify-center" style={{ backgroundColor: '#B7E892' }}>
               {todaysAppointments.length}
             </span>
           )}
@@ -542,6 +559,7 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
         appointments={todaysAppointments}
         etaMinutes={etaMinutes}
         onJobClick={handleJobClick}
+        onFitAllMarkers={fitAllMarkers}
       />
     </div>
   );
