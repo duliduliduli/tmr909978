@@ -12,13 +12,13 @@ export default function DetailerAccountPage() {
   return (
     <AppShell title="Business Settings">
       {/* Tab Navigation */}
-      <div className="flex gap-2 mb-6 border-b border-gray-200">
+      <div className="flex gap-2 mb-6 border-b border-brand-700">
         <button
           onClick={() => setActiveTab('profile')}
           className={`px-4 py-2 font-medium transition-colors border-b-2 ${
             activeTab === 'profile'
-              ? 'text-blue-600 border-blue-600'
-              : 'text-gray-600 border-transparent hover:text-gray-900'
+              ? 'text-white border-white'
+              : 'text-gray-400 border-transparent hover:text-gray-200'
           }`}
         >
           Business Profile
@@ -27,8 +27,8 @@ export default function DetailerAccountPage() {
           onClick={() => setActiveTab('services')}
           className={`px-4 py-2 font-medium transition-colors border-b-2 flex items-center gap-2 ${
             activeTab === 'services'
-              ? 'text-blue-600 border-blue-600'
-              : 'text-gray-600 border-transparent hover:text-gray-900'
+              ? 'text-white border-white'
+              : 'text-gray-400 border-transparent hover:text-gray-200'
           }`}
         >
           <Package className="h-4 w-4" />
@@ -38,8 +38,8 @@ export default function DetailerAccountPage() {
           onClick={() => setActiveTab('qrcode')}
           className={`px-4 py-2 font-medium transition-colors border-b-2 flex items-center gap-2 ${
             activeTab === 'qrcode'
-              ? 'text-blue-600 border-blue-600'
-              : 'text-gray-600 border-transparent hover:text-gray-900'
+              ? 'text-white border-white'
+              : 'text-gray-400 border-transparent hover:text-gray-200'
           }`}
         >
           <QrCode className="h-4 w-4" />
