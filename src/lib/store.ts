@@ -194,7 +194,7 @@ export const useAppStore = create<AppState>()(
           serviceName: "Basic Wash",
           serviceDescription: "Exterior wash & dry",
           price: 25,
-          scheduledDate: new Date().toISOString().split('T')[0], // Today
+          scheduledDate: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(), // Today (local timezone)
           scheduledTime: "10:00 AM",
           duration: 30,
           address: "123 Main St, Los Angeles, CA 90012",
@@ -216,7 +216,7 @@ export const useAppStore = create<AppState>()(
           serviceName: "Full Detail",
           serviceDescription: "Interior & exterior detail",
           price: 120,
-          scheduledDate: new Date().toISOString().split('T')[0], // Today
+          scheduledDate: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(), // Today (local timezone)
           scheduledTime: "11:30 AM",
           duration: 180,
           address: "456 Wilshire Blvd, Beverly Hills, CA 90212",
@@ -238,7 +238,7 @@ export const useAppStore = create<AppState>()(
           serviceName: "Paint Correction",
           serviceDescription: "Paint correction & ceramic coating",
           price: 300,
-          scheduledDate: new Date().toISOString().split('T')[0], // Today
+          scheduledDate: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(), // Today (local timezone)
           scheduledTime: "3:00 PM",
           duration: 240,
           address: "789 Sunset Blvd, West Hollywood, CA 90069",
@@ -260,7 +260,7 @@ export const useAppStore = create<AppState>()(
           serviceName: "Basic Wash",
           serviceDescription: "Exterior wash & dry",
           price: 25,
-          scheduledDate: new Date().toISOString().split('T')[0], // Today
+          scheduledDate: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(), // Today (local timezone)
           scheduledTime: "6:00 PM",
           duration: 30,
           address: "321 Melrose Ave, Los Angeles, CA 90048",
@@ -431,8 +431,8 @@ export const useAppStore = create<AppState>()(
       },
       getTodaysAppointments: (detailerId: string) => {
         const state = useAppStore.getState();
-        const today = new Date().toISOString().split('T')[0];
         const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         return state.appointments
           .filter(apt => {
             const isToday = apt.scheduledDate === today;
@@ -722,6 +722,6 @@ export const useAppStore = create<AppState>()(
         return state.detailerQRCodes.find(qr => qr.detailerId === detailerId);
       },
     }),
-    { name: "app_state_v7" }
+    { name: "app_state_v8" }
   )
 );

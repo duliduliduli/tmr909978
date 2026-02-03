@@ -103,21 +103,17 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
       // Apply matte styling after map loads
       const mapInstance = map.current;
       if (mapInstance) {
-        // Hide traffic layers for clean matte look
-        const trafficLayers = [
-          'traffic', 'traffic-primary', 'traffic-secondary', 'traffic-tertiary',
-          'traffic-trunk', 'traffic-motorway', 'traffic-street'
-        ];
-        
-        trafficLayers.forEach(layer => {
-          try {
-            if (mapInstance.getLayer(layer)) {
-              mapInstance.setLayoutProperty(layer, 'visibility', 'none');
+        // Hide ALL traffic layers for clean matte look
+        const style = mapInstance.getStyle();
+        if (style && style.layers) {
+          style.layers.forEach((layer: any) => {
+            if (layer.id && layer.id.toLowerCase().includes('traffic')) {
+              try {
+                mapInstance.setLayoutProperty(layer.id, 'visibility', 'none');
+              } catch (e) { /* ignore */ }
             }
-          } catch (e) {
-            // Layer doesn't exist, continue
-          }
-        });
+          });
+        }
         
         console.log('🎨 Matte styling applied - traffic layers hidden');
       }
