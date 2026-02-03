@@ -6,16 +6,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore, Service } from '@/lib/store';
 
 export function ServiceManager() {
-  const { 
-    activeDetailerId, 
-    services, 
-    addService, 
-    updateService, 
-    deleteService, 
+  const {
+    activeDetailerId,
+    services,
+    addService,
+    updateService,
+    deleteService,
     toggleServiceActive,
-    getServicesByDetailer 
+    getServicesByDetailer
   } = useAppStore();
-  
+
   const [isAddingService, setIsAddingService] = useState(false);
   const [editingService, setEditingService] = useState<string | null>(null);
   const [newService, setNewService] = useState({
@@ -98,12 +98,12 @@ export function ServiceManager() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Service Management</h2>
-          <p className="text-gray-600 mt-1">Add and manage the services you offer</p>
+          <h2 className="text-2xl font-bold text-gray-100">Service Management</h2>
+          <p className="text-gray-400 mt-1">Add and manage the services you offer</p>
         </div>
         <button
           onClick={() => setIsAddingService(true)}
-          className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-600 transition-colors"
+          className="bg-teal-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-teal-600 transition-colors"
         >
           <Plus className="h-5 w-5" />
           Add Service
@@ -117,12 +117,12 @@ export function ServiceManager() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="bg-blue-50 border border-blue-200 rounded-xl p-6"
+            className="bg-brand-800 border border-brand-700 rounded-xl p-6"
           >
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Service</h3>
+            <h3 className="text-lg font-semibold text-gray-100 mb-4">Add New Service</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-300 mb-1">
                   Service Name *
                 </label>
                 <input
@@ -130,18 +130,18 @@ export function ServiceManager() {
                   value={newService.name}
                   onChange={(e) => setNewService({ ...newService, name: e.target.value })}
                   placeholder="e.g., Premium Wash"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-brand-600 rounded-lg bg-brand-900 text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-300 mb-1">
                   Category
                 </label>
                 <select
                   value={newService.category}
                   onChange={(e) => setNewService({ ...newService, category: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-brand-600 rounded-lg bg-brand-900 text-gray-100 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 >
                   {categories.map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
@@ -150,11 +150,11 @@ export function ServiceManager() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-300 mb-1">
                   Price ($) *
                 </label>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                   <input
                     type="number"
                     value={newService.price}
@@ -162,17 +162,17 @@ export function ServiceManager() {
                     placeholder="0.00"
                     step="0.01"
                     min="0"
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-3 py-2 border border-brand-600 rounded-lg bg-brand-900 text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-300 mb-1">
                   Duration (minutes)
                 </label>
                 <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                   <input
                     type="number"
                     value={newService.duration}
@@ -180,13 +180,13 @@ export function ServiceManager() {
                     placeholder="30"
                     min="15"
                     step="15"
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-3 py-2 border border-brand-600 rounded-lg bg-brand-900 text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   />
                 </div>
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-300 mb-1">
                   Description *
                 </label>
                 <textarea
@@ -194,7 +194,7 @@ export function ServiceManager() {
                   onChange={(e) => setNewService({ ...newService, description: e.target.value })}
                   placeholder="Describe what this service includes..."
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  className="w-full px-3 py-2 border border-brand-600 rounded-lg bg-brand-900 text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
                 />
               </div>
             </div>
@@ -202,13 +202,13 @@ export function ServiceManager() {
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => setIsAddingService(false)}
-                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 text-gray-300 bg-brand-900 border border-brand-600 rounded-lg hover:bg-brand-800 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleAddService}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors flex items-center gap-2"
               >
                 <Save className="h-4 w-4" />
                 Add Service
@@ -221,19 +221,19 @@ export function ServiceManager() {
       {/* Services List */}
       <div className="space-y-4">
         {detailerServices.length === 0 ? (
-          <div className="text-center py-12 bg-gray-50 rounded-xl">
-            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Plus className="h-8 w-8 text-gray-400" />
+          <div className="text-center py-12 bg-brand-900 rounded-xl border border-brand-700">
+            <div className="w-16 h-16 bg-brand-800 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Plus className="h-8 w-8 text-gray-500" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No services yet</h3>
-            <p className="text-gray-600">Add your first service to start accepting bookings</p>
+            <h3 className="text-lg font-medium text-gray-200 mb-2">No services yet</h3>
+            <p className="text-gray-400">Add your first service to start accepting bookings</p>
           </div>
         ) : (
           detailerServices.map((service) => (
             <motion.div
               key={service.id}
               layout
-              className={`bg-white border rounded-xl p-6 ${
+              className={`bg-brand-900 border border-brand-700 rounded-xl p-6 ${
                 !service.isActive ? 'opacity-60' : ''
               }`}
             >
@@ -242,25 +242,25 @@ export function ServiceManager() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
                         Service Name
                       </label>
                       <input
                         type="text"
                         value={editForm.name}
                         onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-brand-600 rounded-lg bg-brand-800 text-gray-100 focus:ring-2 focus:ring-teal-500"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
                         Category
                       </label>
                       <select
                         value={editForm.category}
                         onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-brand-600 rounded-lg bg-brand-800 text-gray-100 focus:ring-2 focus:ring-teal-500"
                       >
                         {categories.map(cat => (
                           <option key={cat} value={cat}>{cat}</option>
@@ -269,7 +269,7 @@ export function ServiceManager() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
                         Price ($)
                       </label>
                       <input
@@ -278,12 +278,12 @@ export function ServiceManager() {
                         onChange={(e) => setEditForm({ ...editForm, price: parseFloat(e.target.value) })}
                         step="0.01"
                         min="0"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-brand-600 rounded-lg bg-brand-800 text-gray-100 focus:ring-2 focus:ring-teal-500"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
                         Duration (minutes)
                       </label>
                       <input
@@ -292,19 +292,19 @@ export function ServiceManager() {
                         onChange={(e) => setEditForm({ ...editForm, duration: parseInt(e.target.value) })}
                         min="15"
                         step="15"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-brand-600 rounded-lg bg-brand-800 text-gray-100 focus:ring-2 focus:ring-teal-500"
                       />
                     </div>
 
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
                         Description
                       </label>
                       <textarea
                         value={editForm.description}
                         onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                         rows={2}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
+                        className="w-full px-3 py-2 border border-brand-600 rounded-lg bg-brand-800 text-gray-100 focus:ring-2 focus:ring-teal-500 resize-none"
                       />
                     </div>
                   </div>
@@ -315,13 +315,13 @@ export function ServiceManager() {
                         setEditingService(null);
                         setEditForm({});
                       }}
-                      className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                      className="px-4 py-2 text-gray-300 bg-brand-900 border border-brand-600 rounded-lg hover:bg-brand-800"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={() => handleUpdateService(service.id)}
-                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2"
+                      className="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 flex items-center gap-2"
                     >
                       <Save className="h-4 w-4" />
                       Save Changes
@@ -334,33 +334,33 @@ export function ServiceManager() {
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                        <h3 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
                           {service.name}
                           {service.category && (
-                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                            <span className="text-xs bg-brand-800 text-gray-300 px-2 py-1 rounded-full border border-brand-600">
                               {service.category}
                             </span>
                           )}
                         </h3>
-                        <p className="text-gray-600 mt-1">{service.description}</p>
+                        <p className="text-gray-400 mt-1">{service.description}</p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-6 mt-4">
                       <div className="flex items-center gap-2">
-                        <DollarSign className="h-4 w-4 text-gray-400" />
-                        <span className="text-xl font-bold text-gray-900">${service.price}</span>
+                        <DollarSign className="h-4 w-4 text-gray-500" />
+                        <span className="text-xl font-bold text-gray-100">${service.price}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-gray-400" />
-                        <span className="text-gray-600">{service.duration} min</span>
+                        <Clock className="h-4 w-4 text-gray-500" />
+                        <span className="text-gray-300">{service.duration} min</span>
                       </div>
                       <button
                         onClick={() => toggleServiceActive(service.id)}
                         className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                           service.isActive
-                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            ? 'bg-green-900/40 text-green-400 hover:bg-green-900/60 border border-green-700/50'
+                            : 'bg-brand-800 text-gray-400 hover:bg-brand-700 border border-brand-600'
                         }`}
                       >
                         {service.isActive ? (
@@ -381,13 +381,13 @@ export function ServiceManager() {
                   <div className="flex items-center gap-2 ml-4">
                     <button
                       onClick={() => startEditing(service)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      className="p-2 text-gray-400 hover:text-gray-200 hover:bg-brand-800 rounded-lg transition-colors"
                     >
                       <Edit2 className="h-5 w-5" />
                     </button>
                     <button
                       onClick={() => handleDeleteService(service.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/30 rounded-lg transition-colors"
                     >
                       <Trash2 className="h-5 w-5" />
                     </button>
@@ -401,20 +401,20 @@ export function ServiceManager() {
 
       {/* Summary Stats */}
       {detailerServices.length > 0 && (
-        <div className="bg-gray-50 rounded-xl p-6 grid grid-cols-3 gap-4">
+        <div className="bg-brand-900 border border-brand-700 rounded-xl p-6 grid grid-cols-3 gap-4">
           <div>
-            <p className="text-sm text-gray-600">Total Services</p>
-            <p className="text-2xl font-bold text-gray-900">{detailerServices.length}</p>
+            <p className="text-sm text-gray-400">Total Services</p>
+            <p className="text-2xl font-bold text-gray-100">{detailerServices.length}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-600">Active Services</p>
-            <p className="text-2xl font-bold text-green-600">
+            <p className="text-sm text-gray-400">Active Services</p>
+            <p className="text-2xl font-bold text-green-400">
               {detailerServices.filter(s => s.isActive).length}
             </p>
           </div>
           <div>
-            <p className="text-sm text-gray-600">Average Price</p>
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-sm text-gray-400">Average Price</p>
+            <p className="text-2xl font-bold text-gray-100">
               ${(detailerServices.reduce((sum, s) => sum + s.price, 0) / detailerServices.length).toFixed(2)}
             </p>
           </div>

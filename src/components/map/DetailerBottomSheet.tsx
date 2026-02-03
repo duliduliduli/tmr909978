@@ -39,7 +39,7 @@ type SortOption = 'distance' | 'rating' | 'popularity';
 const getSheetHeights = () => {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const bottomNavHeight = isMobile ? 80 : 0; // Account for mobile bottom navigation
-  const topOffset = 60;
+  const topOffset = 90; // Leave room for rounded top corners to be visible
   
   return {
     collapsed: 140, // Reduced to avoid overlapping map controls
@@ -349,7 +349,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
       >
         {/* Drag Handle - now with mouse drag support */}
         <div 
-          className="flex justify-center py-3 cursor-grab active:cursor-grabbing"
+          className="flex justify-center py-2 cursor-grab active:cursor-grabbing"
           onMouseDown={(e) => {
             const startY = e.clientY;
             const handleMouseMove = (moveEvent: MouseEvent) => {
@@ -379,8 +379,8 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
         </div>
 
         {/* Header */}
-        <div className="px-6 pb-4 flex-shrink-0">
-          <div className="flex items-center justify-between mb-4">
+        <div className="px-6 pb-2 flex-shrink-0">
+          <div className="flex items-center justify-between mb-2">
             {viewState === 'list' ? (
               <div>
                 <h2 className="text-xl font-bold text-gray-900">
@@ -437,12 +437,12 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
 
           {/* Controls - only show when expanded and in list view */}
           {sheetState === 'expanded' && viewState === 'list' && (
-            <div className="space-y-4">
+            <div className="space-y-2">
               {/* Radius Slider */}
-              <div className="bg-gray-50 rounded-2xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">Search radius</span>
-                  <span className="text-sm font-bold text-gray-900">{radiusMiles} miles</span>
+              <div className="bg-gray-50 rounded-xl px-3 py-2">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-medium text-gray-700">Search radius</span>
+                  <span className="text-xs font-bold text-gray-900">{radiusMiles} miles</span>
                 </div>
                 <input
                   type="range"
@@ -450,7 +450,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                   max="65"
                   value={radiusMiles}
                   onChange={(e) => setRadiusMiles(Number(e.target.value))}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
                 />
               </div>
 
@@ -464,13 +464,13 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                   <button
                     key={value}
                     onClick={() => setSortBy(value as SortOption)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                       sortBy === value
                         ? 'bg-blue-200 text-blue-900'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-3.5 w-3.5" />
                     {label}
                   </button>
                 ))}
