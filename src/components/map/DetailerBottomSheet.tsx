@@ -38,14 +38,16 @@ type SortOption = 'distance' | 'rating' | 'popularity';
 
 const getSheetHeights = () => {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-  const bottomNavHeight = isMobile ? 80 : 0; // Account for mobile bottom navigation
-  const topOffset = 90; // Leave room for rounded top corners to be visible
-  
+  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
+  const bottomNavHeight = isMobile ? 80 : 0;
+  // Desktop needs more offset to stay below the top nav/header
+  const topOffset = isDesktop ? 160 : 100;
+
   return {
-    collapsed: 140, // Reduced to avoid overlapping map controls
-    expanded: typeof window !== 'undefined' 
-      ? window.innerHeight - topOffset - bottomNavHeight 
-      : 600, // Expand to near full height, accounting for bottom nav on mobile
+    collapsed: isMobile ? 100 : 140, // Shorter peek on mobile
+    expanded: typeof window !== 'undefined'
+      ? window.innerHeight - topOffset - bottomNavHeight
+      : 600,
   };
 };
 
@@ -337,19 +339,23 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
         style={{ 
           height: sheetHeights[sheetState],
           y: y,
-          maxHeight: typeof window !== 'undefined' && window.innerWidth < 768 
-            ? 'calc(100vh - 80px)' // Account for mobile bottom nav
-            : '100vh',
+          maxHeight: typeof window !== 'undefined' && window.innerWidth < 768
+            ? 'calc(100vh - 160px)' // Account for mobile header + bottom nav
+            : 'calc(100vh - 160px)', // Account for desktop header
         }}
-        drag="y"
-        dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={0.1}
-        onDragEnd={handleDragEnd}
-        dragPropagation={false}
       >
-        {/* Drag Handle - now with mouse drag support */}
-        <div 
-          className="flex justify-center py-2 cursor-grab active:cursor-grabbing"
+        {/* Drag Handle + Header zone - only this area responds to swipe/drag */}
+        <motion.div
+          className="flex flex-col cursor-grab active:cursor-grabbing"
+          drag="y"
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={0.1}
+          onDragEnd={handleDragEnd}
+          dragPropagation={false}
+          style={{ touchAction: 'none' }}
+        >
+        <div
+          className="flex justify-center py-2"
           onMouseDown={(e) => {
             const startY = e.clientY;
             const handleMouseMove = (moveEvent: MouseEvent) => {
@@ -478,6 +484,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
             </div>
           )}
         </div>
+        </motion.div>
 
         {/* Content Area - Added pb-20 for mobile to account for bottom nav */}
         <div className="flex-1 min-h-0 overflow-hidden px-6 pb-6 md:pb-6 flex flex-col">
