@@ -259,11 +259,11 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
       type: 'circle',
       source: 'jobs',
       paint: {
-        'circle-color': '#FFEE8C',
-        'circle-radius': 10,
+        'circle-color': '#FFD700',
+        'circle-radius': 12,
         'circle-stroke-width': 3,
-        'circle-stroke-color': '#D4A017',
-        'circle-opacity': 0.95
+        'circle-stroke-color': '#FF8C00',
+        'circle-opacity': 1
       }
     });
 
@@ -364,9 +364,9 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
             source: 'route',
             layout: { 'line-join': 'round', 'line-cap': 'round' },
             paint: {
-              'line-color': '#32CD32',
-              'line-width': 10,
-              'line-opacity': 0.25,
+              'line-color': '#00FF55',
+              'line-width': 12,
+              'line-opacity': 0.4,
               'line-blur': 4
             }
           }, 'job-markers'); // Insert below markers
@@ -378,9 +378,9 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
             source: 'route',
             layout: { 'line-join': 'round', 'line-cap': 'round' },
             paint: {
-              'line-color': '#32CD32',
-              'line-width': 4,
-              'line-opacity': 0.9
+              'line-color': '#00FF55',
+              'line-width': 5,
+              'line-opacity': 1
             }
           }, 'job-markers');
 
@@ -406,12 +406,12 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
             const el = document.createElement('div');
             el.style.cssText = `
               background: white;
-              border: 2px solid #32CD32;
+              border: 2px solid #00FF55;
               border-radius: 12px;
               padding: 2px 8px;
               font-size: 11px;
               font-weight: 600;
-              color: #228B22;
+              color: #00AA33;
               white-space: nowrap;
               box-shadow: 0 2px 6px rgba(0,0,0,0.15);
               pointer-events: none;
