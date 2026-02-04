@@ -181,21 +181,42 @@ export const useAppStore = create<AppState>()(
       mapViewState: null,
       setMapViewState: (mapViewState) => set({ mapViewState }),
       // Appointments storage
-      appointments: [
-        // Today's appointments for detailer "det_1" (Alex Johnson) - for demo purposes
+      appointments: (() => {
+        // Helper: generate a date/time offset from now by `hoursFromNow` hours
+        const futureSlot = (hoursFromNow: number) => {
+          const d = new Date(Date.now() + hoursFromNow * 60 * 60 * 1000);
+          const date = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+          const h = d.getHours();
+          const m = d.getMinutes();
+          const ampm = h >= 12 ? 'PM' : 'AM';
+          const h12 = h % 12 || 12;
+          const time = `${h12}:${String(m).padStart(2,'0')} ${ampm}`;
+          return { date, time };
+        };
+        const todayStr = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
+        const slot1 = futureSlot(0.5);
+        const slot2 = futureSlot(1.5);
+        const slot3 = futureSlot(3);
+        const slot4 = futureSlot(5);
+        const slot5 = futureSlot(7);
+        const slot6 = futureSlot(9);
+        const slot7 = futureSlot(10.5);
+        const slot8 = futureSlot(12);
+        return [
+        // Today's appointments for detailer "det_1" (Premium Auto Spa) - always upcoming
         {
           id: "apt_today_1",
           customerId: "cust_1",
           customerName: "John Smith",
           detailerId: "det_1",
           detailerName: "Alex Johnson",
-          businessName: "Mobile Shine Pro",
+          businessName: "Premium Auto Spa",
           serviceId: "s1",
           serviceName: "Basic Wash",
           serviceDescription: "Exterior wash & dry",
           price: 25,
-          scheduledDate: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(), // Today (local timezone)
-          scheduledTime: "10:00 AM",
+          scheduledDate: slot1.date,
+          scheduledTime: slot1.time,
           duration: 30,
           address: "123 Main St, Los Angeles, CA 90012",
           latitude: 34.0522,
@@ -211,13 +232,13 @@ export const useAppStore = create<AppState>()(
           customerName: "Maria Garcia",
           detailerId: "det_1",
           detailerName: "Alex Johnson",
-          businessName: "Mobile Shine Pro",
+          businessName: "Premium Auto Spa",
           serviceId: "s2",
           serviceName: "Full Detail",
           serviceDescription: "Interior & exterior detail",
           price: 120,
-          scheduledDate: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(), // Today (local timezone)
-          scheduledTime: "11:30 AM",
+          scheduledDate: slot2.date,
+          scheduledTime: slot2.time,
           duration: 180,
           address: "456 Wilshire Blvd, Beverly Hills, CA 90212",
           latitude: 34.0656,
@@ -233,13 +254,13 @@ export const useAppStore = create<AppState>()(
           customerName: "David Park",
           detailerId: "det_1",
           detailerName: "Alex Johnson",
-          businessName: "Mobile Shine Pro",
+          businessName: "Premium Auto Spa",
           serviceId: "s3",
           serviceName: "Paint Correction",
           serviceDescription: "Paint correction & ceramic coating",
           price: 300,
-          scheduledDate: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(), // Today (local timezone)
-          scheduledTime: "3:00 PM",
+          scheduledDate: slot3.date,
+          scheduledTime: slot3.time,
           duration: 240,
           address: "789 Sunset Blvd, West Hollywood, CA 90069",
           latitude: 34.0901,
@@ -255,13 +276,13 @@ export const useAppStore = create<AppState>()(
           customerName: "Lisa Chen",
           detailerId: "det_1",
           detailerName: "Alex Johnson",
-          businessName: "Mobile Shine Pro",
+          businessName: "Premium Auto Spa",
           serviceId: "s1",
           serviceName: "Basic Wash",
           serviceDescription: "Exterior wash & dry",
           price: 25,
-          scheduledDate: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(), // Today (local timezone)
-          scheduledTime: "6:00 PM",
+          scheduledDate: slot4.date,
+          scheduledTime: slot4.time,
           duration: 30,
           address: "321 Melrose Ave, Los Angeles, CA 90048",
           latitude: 34.0838,
@@ -269,6 +290,94 @@ export const useAppStore = create<AppState>()(
           phone: "(555) 222-3344",
           status: "confirmed" as const,
           bookedAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        },
+        {
+          id: "apt_today_5",
+          customerId: "cust_5",
+          customerName: "Ryan Mitchell",
+          detailerId: "det_1",
+          detailerName: "Alex Johnson",
+          businessName: "Premium Auto Spa",
+          serviceId: "s2",
+          serviceName: "Full Detail",
+          serviceDescription: "Interior & exterior detail",
+          price: 120,
+          scheduledDate: slot5.date,
+          scheduledTime: slot5.time,
+          duration: 150,
+          address: "900 N La Cienega Blvd, West Hollywood, CA 90069",
+          latitude: 34.0855,
+          longitude: -118.3782,
+          phone: "(555) 333-4455",
+          status: "scheduled" as const,
+          bookedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+          notes: "Silver Mercedes GLE, apartment complex - buzz #204"
+        },
+        {
+          id: "apt_today_6",
+          customerId: "cust_6",
+          customerName: "Samantha Brooks",
+          detailerId: "det_1",
+          detailerName: "Alex Johnson",
+          businessName: "Premium Auto Spa",
+          serviceId: "s4",
+          serviceName: "Interior Clean",
+          serviceDescription: "Deep interior vacuum, wipe-down & conditioning",
+          price: 75,
+          scheduledDate: slot6.date,
+          scheduledTime: slot6.time,
+          duration: 90,
+          address: "1420 N Highland Ave, Hollywood, CA 90028",
+          latitude: 34.0985,
+          longitude: -118.3385,
+          phone: "(555) 666-7788",
+          status: "confirmed" as const,
+          bookedAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+          notes: "Blue Range Rover Sport, pet hair removal needed"
+        },
+        {
+          id: "apt_today_7",
+          customerId: "cust_7",
+          customerName: "Trevor Nguyen",
+          detailerId: "det_1",
+          detailerName: "Alex Johnson",
+          businessName: "Premium Auto Spa",
+          serviceId: "s1",
+          serviceName: "Basic Wash",
+          serviceDescription: "Exterior wash & dry",
+          price: 25,
+          scheduledDate: slot7.date,
+          scheduledTime: slot7.time,
+          duration: 30,
+          address: "2200 W Olympic Blvd, Los Angeles, CA 90006",
+          latitude: 34.0488,
+          longitude: -118.2811,
+          phone: "(555) 888-9900",
+          status: "scheduled" as const,
+          bookedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+          notes: "Gray Honda Civic, street parking near the coffee shop"
+        },
+        {
+          id: "apt_today_8",
+          customerId: "cust_8",
+          customerName: "Angela Rivera",
+          detailerId: "det_1",
+          detailerName: "Alex Johnson",
+          businessName: "Premium Auto Spa",
+          serviceId: "s2",
+          serviceName: "Full Detail",
+          serviceDescription: "Interior & exterior detail",
+          price: 120,
+          scheduledDate: slot8.date,
+          scheduledTime: slot8.time,
+          duration: 180,
+          address: "3000 Los Feliz Blvd, Los Angeles, CA 90039",
+          latitude: 34.1189,
+          longitude: -118.2637,
+          phone: "(555) 112-2334",
+          status: "scheduled" as const,
+          bookedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+          notes: "White Audi Q7, please text on arrival"
         },
         // Sample upcoming appointment (future day)
         {
@@ -300,7 +409,7 @@ export const useAppStore = create<AppState>()(
           customerName: "John Smith",
           detailerId: "det_1",
           detailerName: "Alex Johnson",
-          businessName: "Mobile Shine Pro",
+          businessName: "Premium Auto Spa",
           serviceId: "s2",
           serviceName: "Full Detail",
           serviceDescription: "Interior & exterior detail",
@@ -404,7 +513,7 @@ export const useAppStore = create<AppState>()(
           bookedAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(),
           notes: "Cancelled due to weather conditions"
         }
-      ],
+      ]; })(),
       addAppointment: (appointment) => set((state) => ({ 
         appointments: [...state.appointments, appointment] 
       })),
