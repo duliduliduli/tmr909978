@@ -148,13 +148,21 @@ interface AppState {
   getQRCodeByDetailer: (detailerId: string) => DetailerQRCode | undefined;
 }
 
+// Helper to get date strings relative to today
+const getRelativeDate = (daysOffset: number): string => {
+  const d = new Date();
+  d.setDate(d.getDate() + daysOffset);
+  return d.toISOString().split('T')[0];
+};
+const todayStr = getRelativeDate(0);
+
 export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
       role: "customer",
       setRole: (role) => set({ role }),
       activeCustomerId: "cust_1",
-      activeDetailerId: "det_1", 
+      activeDetailerId: "det_1",
       setActiveCustomerId: (id) => set({ activeCustomerId: id }),
       setActiveDetailerId: (id) => set({ activeDetailerId: id }),
       switchToTestAccount: () => set((state) => ({
@@ -194,7 +202,7 @@ export const useAppStore = create<AppState>()(
           serviceName: "Basic Wash",
           serviceDescription: "Exterior wash & dry",
           price: 25,
-          scheduledDate: "2026-02-03",
+          scheduledDate: todayStr,
           scheduledTime: "10:00 AM",
           duration: 30,
           address: "123 Main St, Los Angeles, CA 90012",
@@ -216,7 +224,7 @@ export const useAppStore = create<AppState>()(
           serviceName: "Full Detail",
           serviceDescription: "Interior & exterior detail",
           price: 120,
-          scheduledDate: "2026-02-03",
+          scheduledDate: todayStr,
           scheduledTime: "11:30 AM",
           duration: 180,
           address: "456 Wilshire Blvd, Beverly Hills, CA 90212",
@@ -238,7 +246,7 @@ export const useAppStore = create<AppState>()(
           serviceName: "Paint Correction",
           serviceDescription: "Paint correction & ceramic coating",
           price: 300,
-          scheduledDate: "2026-02-03",
+          scheduledDate: todayStr,
           scheduledTime: "1:00 PM",
           duration: 240,
           address: "789 Sunset Blvd, West Hollywood, CA 90069",
@@ -260,7 +268,7 @@ export const useAppStore = create<AppState>()(
           serviceName: "Basic Wash",
           serviceDescription: "Exterior wash & dry",
           price: 25,
-          scheduledDate: "2026-02-03",
+          scheduledDate: todayStr,
           scheduledTime: "2:30 PM",
           duration: 30,
           address: "321 Melrose Ave, Los Angeles, CA 90048",
@@ -281,7 +289,7 @@ export const useAppStore = create<AppState>()(
           serviceName: "Full Detail",
           serviceDescription: "Interior & exterior detail",
           price: 120,
-          scheduledDate: "2026-02-03",
+          scheduledDate: todayStr,
           scheduledTime: "4:00 PM",
           duration: 150,
           address: "900 N La Cienega Blvd, West Hollywood, CA 90069",
@@ -303,7 +311,7 @@ export const useAppStore = create<AppState>()(
           serviceName: "Interior Clean",
           serviceDescription: "Deep interior vacuum, wipe-down & conditioning",
           price: 75,
-          scheduledDate: "2026-02-03",
+          scheduledDate: todayStr,
           scheduledTime: "5:30 PM",
           duration: 90,
           address: "1420 N Highland Ave, Hollywood, CA 90028",
@@ -325,7 +333,7 @@ export const useAppStore = create<AppState>()(
           serviceName: "Basic Wash",
           serviceDescription: "Exterior wash & dry",
           price: 25,
-          scheduledDate: "2026-02-03",
+          scheduledDate: todayStr,
           scheduledTime: "7:00 PM",
           duration: 30,
           address: "2200 W Olympic Blvd, Los Angeles, CA 90006",
@@ -347,7 +355,7 @@ export const useAppStore = create<AppState>()(
           serviceName: "Full Detail",
           serviceDescription: "Interior & exterior detail",
           price: 120,
-          scheduledDate: "2026-02-03",
+          scheduledDate: todayStr,
           scheduledTime: "8:30 PM",
           duration: 180,
           address: "3000 Los Feliz Blvd, Los Angeles, CA 90039",
@@ -357,6 +365,94 @@ export const useAppStore = create<AppState>()(
           status: "scheduled" as const,
           bookedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
           notes: "White Audi Q7, please text on arrival"
+        },
+        // Upcoming appointments for det_1 (Premium Auto Spa) on future days
+        {
+          id: "apt_upcoming_det1_1",
+          customerId: "cust_2",
+          customerName: "Maria Garcia",
+          detailerId: "det_1",
+          detailerName: "Alex Johnson",
+          businessName: "Premium Auto Spa",
+          serviceId: "s2",
+          serviceName: "Full Detail",
+          serviceDescription: "Interior & exterior detail",
+          price: 120,
+          scheduledDate: getRelativeDate(1),
+          scheduledTime: "10:00 AM",
+          duration: 180,
+          address: "456 Wilshire Blvd, Beverly Hills, CA 90212",
+          latitude: 34.0656,
+          longitude: -118.3976,
+          phone: "(555) 444-5566",
+          status: "confirmed" as const,
+          bookedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+          notes: "Black BMW X5, recurring weekly detail"
+        },
+        {
+          id: "apt_upcoming_det1_2",
+          customerId: "cust_3",
+          customerName: "David Park",
+          detailerId: "det_1",
+          detailerName: "Alex Johnson",
+          businessName: "Premium Auto Spa",
+          serviceId: "s1",
+          serviceName: "Basic Wash",
+          serviceDescription: "Exterior wash & dry",
+          price: 25,
+          scheduledDate: getRelativeDate(2),
+          scheduledTime: "9:00 AM",
+          duration: 30,
+          address: "789 Sunset Blvd, West Hollywood, CA 90069",
+          latitude: 34.0901,
+          longitude: -118.3868,
+          phone: "(555) 777-8899",
+          status: "scheduled" as const,
+          bookedAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+          notes: "Red Porsche 911"
+        },
+        {
+          id: "apt_upcoming_det1_3",
+          customerId: "cust_4",
+          customerName: "Lisa Chen",
+          detailerId: "det_1",
+          detailerName: "Alex Johnson",
+          businessName: "Premium Auto Spa",
+          serviceId: "s3",
+          serviceName: "Paint Correction",
+          serviceDescription: "Paint correction & ceramic coating",
+          price: 300,
+          scheduledDate: getRelativeDate(3),
+          scheduledTime: "11:00 AM",
+          duration: 240,
+          address: "321 Melrose Ave, Los Angeles, CA 90048",
+          latitude: 34.0838,
+          longitude: -118.3614,
+          phone: "(555) 222-3344",
+          status: "confirmed" as const,
+          bookedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        },
+        {
+          id: "apt_upcoming_det1_4",
+          customerId: "cust_5",
+          customerName: "Ryan Mitchell",
+          detailerId: "det_1",
+          detailerName: "Alex Johnson",
+          businessName: "Premium Auto Spa",
+          serviceId: "s2",
+          serviceName: "Full Detail",
+          serviceDescription: "Interior & exterior detail",
+          price: 120,
+          scheduledDate: getRelativeDate(5),
+          scheduledTime: "2:00 PM",
+          duration: 150,
+          address: "900 N La Cienega Blvd, West Hollywood, CA 90069",
+          latitude: 34.0855,
+          longitude: -118.3782,
+          phone: "(555) 333-4455",
+          status: "scheduled" as const,
+          bookedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+          notes: "Silver Mercedes GLE"
         },
         // Sample upcoming appointment (future day)
         {
@@ -810,6 +906,6 @@ export const useAppStore = create<AppState>()(
         return state.detailerQRCodes.find(qr => qr.detailerId === detailerId);
       },
     }),
-    { name: "app_state_v8" }
+    { name: "app_state_v9" }
   )
 );

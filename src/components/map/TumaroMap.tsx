@@ -577,13 +577,9 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
   return (
     <div className={`relative w-full h-full ${className}`}>
       {/* Map container */}
-      <div 
-        ref={mapContainer} 
-        className="w-full h-full"
-        style={{ 
-          minHeight: '400px',
-          height: '100%'
-        }}
+      <div
+        ref={mapContainer}
+        className="absolute inset-0"
       />
 
       {/* Custom Controls */}

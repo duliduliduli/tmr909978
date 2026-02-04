@@ -506,8 +506,7 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
       {/* Map container */}
       <div
         ref={mapContainer}
-        className="w-full h-full"
-        style={{ minHeight: '400px', height: '100%' }}
+        className="absolute inset-0"
       />
 
       {/* Map Controls */}

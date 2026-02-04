@@ -120,7 +120,7 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
           </div>
         </aside>
 
-        <main className="ml-72 w-full min-h-screen bg-brand-950 relative">
+        <main className={`ml-72 w-full bg-brand-950 relative ${fullWidth ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
           {/* Header */}
           <header className="sticky top-0 z-10 h-20 px-8 flex items-center justify-between bg-brand-950/80 backdrop-blur-md border-b border-brand-800/50">
             {/* No logo in desktop header - it's already in sidebar */}
@@ -146,7 +146,7 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
             </div>
           </header>
 
-          <div className={fullWidth ? "" : "p-8 max-w-7xl mx-auto"}>
+          <div className={fullWidth ? "h-[calc(100vh-5rem)]" : "p-8 max-w-7xl mx-auto"}>
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -160,15 +160,15 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
       </div>
 
       {/* Mobile layout */}
-      <div className="lg:hidden flex flex-col min-h-screen">
-        <header className="sticky top-0 z-20 h-16 px-4 flex items-center justify-between bg-brand-950/90 backdrop-blur-md border-b border-brand-800">
-          <img 
-            src="/tumaro-logo.png" 
-            alt="Tumaro" 
+      <div className={`lg:hidden flex flex-col ${fullWidth ? 'h-[100dvh] overflow-hidden' : 'min-h-screen'}`}>
+        <header className="flex-shrink-0 z-20 h-16 px-4 flex items-center justify-between bg-brand-950/90 backdrop-blur-md border-b border-brand-800">
+          <img
+            src="/tumaro-logo.png"
+            alt="Tumaro"
             className="h-5 object-contain"
           />
           <div className="flex items-center gap-3">
-            <Link 
+            <Link
               href={`${base}/help`}
               className="h-8 w-8 rounded-full bg-brand-900 border border-brand-800 flex items-center justify-center text-brand-300 hover:border-brand-600 hover:text-accent-DEFAULT transition-colors"
             >
@@ -184,7 +184,7 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
           </div>
         </header>
 
-        <div className={`flex-1 pb-20 ${fullWidth ? 'overflow-hidden relative' : 'overflow-y-auto'}`}>
+        <div className={`flex-1 min-h-0 ${fullWidth ? 'overflow-hidden relative' : 'pb-20 overflow-y-auto'}`}>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

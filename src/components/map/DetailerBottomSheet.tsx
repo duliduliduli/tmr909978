@@ -37,14 +37,17 @@ type ViewState = 'list' | 'profile' | 'chat' | 'reviews' | 'single';
 type SortOption = 'distance' | 'rating' | 'popularity';
 
 const getSheetHeights = () => {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+  // On mobile the sheet is already offset by bottom-20 (80px) via CSS,
+  // so we only need to account for the header gap at the top.
+  const topOffset = isMobile ? 80 : 160; // header clearance
+  // On mobile, the sheet sits above the nav (bottom-20), so available space
+  // is viewport height minus the nav (80px) minus top offset.
+  // On desktop, no bottom nav.
   const bottomNavHeight = isMobile ? 80 : 0;
-  // Desktop needs more offset to stay below the top nav/header
-  const topOffset = isDesktop ? 160 : 100;
 
   return {
-    collapsed: isMobile ? 100 : 140, // Shorter peek on mobile
+    collapsed: isMobile ? 80 : 120,
     expanded: typeof window !== 'undefined'
       ? window.innerHeight - topOffset - bottomNavHeight
       : 600,
@@ -331,17 +334,14 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
     <>
       <motion.div
         ref={sheetRef}
-        className="absolute bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl rounded-t-3xl shadow-2xl z-40 flex flex-col md:left-0 md:right-0"
+        className="absolute bottom-20 lg:bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl rounded-t-3xl shadow-2xl z-40 flex flex-col"
         initial={{ y: `calc(100% - ${sheetHeights.collapsed}px)` }}
         animate={{ y: `calc(100% - ${sheetHeights[sheetState]}px)` }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        style={{ 
+        style={{
           height: sheetHeights[sheetState],
           y: y,
-          maxHeight: typeof window !== 'undefined' && window.innerWidth < 768
-            ? 'calc(100vh - 160px)' // Account for mobile header + bottom nav
-            : 'calc(100vh - 160px)', // Account for desktop header
         }}
       >
         {/* Drag Handle + Header zone - only this area responds to swipe/drag */}

@@ -43,14 +43,14 @@
 /* Ensure proper bounds for mobile */
 @media (max-width: 1024px) {
   .mapboxgl-map {
-    min-height: calc(100vh - 160px) !important;
-    width: 100vw !important;
+    width: 100% !important;
+    height: 100% !important;
   }
-  
+
   .mapboxgl-canvas-container,
   .mapboxgl-canvas {
-    min-height: calc(100vh - 160px) !important;
-    width: 100vw !important;
+    width: 100% !important;
+    height: 100% !important;
   }
 }
 
