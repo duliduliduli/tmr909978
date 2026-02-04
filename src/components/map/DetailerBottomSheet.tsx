@@ -220,6 +220,16 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
     setFilteredDetailers(filtered);
   }, [detailers, radiusMiles, sortBy, userLocation]);
 
+  // Collapse the sheet and always reset to the list view
+  const collapseSheet = () => {
+    setSheetState('collapsed');
+    setViewState('list');
+    setSelectedDetailer(null);
+    if (selectedDetailerFromMap && onClearMapSelection) {
+      onClearMapSelection();
+    }
+  };
+
   // Handle drag gesture
   const handleDragEnd = (event: any, info: PanInfo) => {
     const offset = info.offset.y;
@@ -227,30 +237,16 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
 
     if (velocity > 500) {
       // Fast swipe down
-      if (sheetState === 'expanded') {
-        if (viewState === 'single') {
-          // Go back to detailers list but keep expanded
-          handleBackToList();
-        } else {
-          setSheetState('collapsed');
-        }
-      }
+      if (sheetState === 'expanded') collapseSheet();
     } else if (velocity < -500) {
       // Fast swipe up
       if (sheetState === 'collapsed') setSheetState('expanded');
     } else {
       // Slow drag - snap to nearest state
-      if (offset > 50) {
-        if (sheetState === 'expanded') {
-          if (viewState === 'single') {
-            // Go back to detailers list but keep expanded
-            handleBackToList();
-          } else {
-            setSheetState('collapsed');
-          }
-        }
-      } else if (offset < -50) {
-        if (sheetState === 'collapsed') setSheetState('expanded');
+      if (offset > 50 && sheetState === 'expanded') {
+        collapseSheet();
+      } else if (offset < -50 && sheetState === 'collapsed') {
+        setSheetState('expanded');
       }
     }
   };
@@ -424,19 +420,14 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
             <button
               onClick={() => {
                 if (sheetState === 'expanded') {
-                  if (viewState === 'single') {
-                    // Go back to detailers list but keep expanded
-                    handleBackToList();
-                  } else {
-                    setSheetState('collapsed');
-                  }
+                  collapseSheet();
                 } else {
                   setSheetState('expanded');
                 }
               }}
               className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
             >
-              {sheetState === 'expanded' ? 
+              {sheetState === 'expanded' ?
                 <ChevronDown className="h-5 w-5 text-gray-600" /> :
                 <ChevronUp className="h-5 w-5 text-gray-600" />
               }
