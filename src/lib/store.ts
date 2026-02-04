@@ -181,29 +181,8 @@ export const useAppStore = create<AppState>()(
       mapViewState: null,
       setMapViewState: (mapViewState) => set({ mapViewState }),
       // Appointments storage
-      appointments: (() => {
-        // Helper: generate a date/time offset from now by `hoursFromNow` hours
-        const futureSlot = (hoursFromNow: number) => {
-          const d = new Date(Date.now() + hoursFromNow * 60 * 60 * 1000);
-          const date = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-          const h = d.getHours();
-          const m = d.getMinutes();
-          const ampm = h >= 12 ? 'PM' : 'AM';
-          const h12 = h % 12 || 12;
-          const time = `${h12}:${String(m).padStart(2,'0')} ${ampm}`;
-          return { date, time };
-        };
-        const todayStr = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
-        const slot1 = futureSlot(0.5);
-        const slot2 = futureSlot(1.5);
-        const slot3 = futureSlot(3);
-        const slot4 = futureSlot(5);
-        const slot5 = futureSlot(7);
-        const slot6 = futureSlot(9);
-        const slot7 = futureSlot(10.5);
-        const slot8 = futureSlot(12);
-        return [
-        // Today's appointments for detailer "det_1" (Premium Auto Spa) - always upcoming
+      appointments: [
+        // Today's appointments for detailer "det_1" (Premium Auto Spa)
         {
           id: "apt_today_1",
           customerId: "cust_1",
@@ -215,8 +194,8 @@ export const useAppStore = create<AppState>()(
           serviceName: "Basic Wash",
           serviceDescription: "Exterior wash & dry",
           price: 25,
-          scheduledDate: slot1.date,
-          scheduledTime: slot1.time,
+          scheduledDate: "2026-02-03",
+          scheduledTime: "10:00 AM",
           duration: 30,
           address: "123 Main St, Los Angeles, CA 90012",
           latitude: 34.0522,
@@ -237,8 +216,8 @@ export const useAppStore = create<AppState>()(
           serviceName: "Full Detail",
           serviceDescription: "Interior & exterior detail",
           price: 120,
-          scheduledDate: slot2.date,
-          scheduledTime: slot2.time,
+          scheduledDate: "2026-02-03",
+          scheduledTime: "11:30 AM",
           duration: 180,
           address: "456 Wilshire Blvd, Beverly Hills, CA 90212",
           latitude: 34.0656,
@@ -259,8 +238,8 @@ export const useAppStore = create<AppState>()(
           serviceName: "Paint Correction",
           serviceDescription: "Paint correction & ceramic coating",
           price: 300,
-          scheduledDate: slot3.date,
-          scheduledTime: slot3.time,
+          scheduledDate: "2026-02-03",
+          scheduledTime: "1:00 PM",
           duration: 240,
           address: "789 Sunset Blvd, West Hollywood, CA 90069",
           latitude: 34.0901,
@@ -281,8 +260,8 @@ export const useAppStore = create<AppState>()(
           serviceName: "Basic Wash",
           serviceDescription: "Exterior wash & dry",
           price: 25,
-          scheduledDate: slot4.date,
-          scheduledTime: slot4.time,
+          scheduledDate: "2026-02-03",
+          scheduledTime: "2:30 PM",
           duration: 30,
           address: "321 Melrose Ave, Los Angeles, CA 90048",
           latitude: 34.0838,
@@ -302,8 +281,8 @@ export const useAppStore = create<AppState>()(
           serviceName: "Full Detail",
           serviceDescription: "Interior & exterior detail",
           price: 120,
-          scheduledDate: slot5.date,
-          scheduledTime: slot5.time,
+          scheduledDate: "2026-02-03",
+          scheduledTime: "4:00 PM",
           duration: 150,
           address: "900 N La Cienega Blvd, West Hollywood, CA 90069",
           latitude: 34.0855,
@@ -324,8 +303,8 @@ export const useAppStore = create<AppState>()(
           serviceName: "Interior Clean",
           serviceDescription: "Deep interior vacuum, wipe-down & conditioning",
           price: 75,
-          scheduledDate: slot6.date,
-          scheduledTime: slot6.time,
+          scheduledDate: "2026-02-03",
+          scheduledTime: "5:30 PM",
           duration: 90,
           address: "1420 N Highland Ave, Hollywood, CA 90028",
           latitude: 34.0985,
@@ -346,8 +325,8 @@ export const useAppStore = create<AppState>()(
           serviceName: "Basic Wash",
           serviceDescription: "Exterior wash & dry",
           price: 25,
-          scheduledDate: slot7.date,
-          scheduledTime: slot7.time,
+          scheduledDate: "2026-02-03",
+          scheduledTime: "7:00 PM",
           duration: 30,
           address: "2200 W Olympic Blvd, Los Angeles, CA 90006",
           latitude: 34.0488,
@@ -368,8 +347,8 @@ export const useAppStore = create<AppState>()(
           serviceName: "Full Detail",
           serviceDescription: "Interior & exterior detail",
           price: 120,
-          scheduledDate: slot8.date,
-          scheduledTime: slot8.time,
+          scheduledDate: "2026-02-03",
+          scheduledTime: "8:30 PM",
           duration: 180,
           address: "3000 Los Feliz Blvd, Los Angeles, CA 90039",
           latitude: 34.1189,
@@ -513,7 +492,7 @@ export const useAppStore = create<AppState>()(
           bookedAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(),
           notes: "Cancelled due to weather conditions"
         }
-      ]; })(),
+      ],
       addAppointment: (appointment) => set((state) => ({ 
         appointments: [...state.appointments, appointment] 
       })),
