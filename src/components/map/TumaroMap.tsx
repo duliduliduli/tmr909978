@@ -88,7 +88,7 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
     
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: mapboxStyle || 'mapbox://styles/mapbox/streets-v12', // Use streets style for less bright appearance
+      style: mapboxStyle || 'mapbox://styles/mapbox/dark-v11',
       center: initialCenter,
       zoom: initialZoom,
       pitch: 0,

@@ -57,7 +57,7 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: mapboxStyle || 'mapbox://styles/mapbox/light-v11',
+      style: mapboxStyle || 'mapbox://styles/mapbox/dark-v11',
       center: initialCenter,
       zoom: initialZoom,
       pitch: 0,
