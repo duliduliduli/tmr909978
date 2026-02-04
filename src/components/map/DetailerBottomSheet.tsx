@@ -38,18 +38,20 @@ type SortOption = 'distance' | 'rating' | 'popularity';
 
 const getSheetHeights = () => {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
-  // On mobile the sheet is already offset by bottom-20 (80px) via CSS,
-  // so we only need to account for the header gap at the top.
-  const topOffset = isMobile ? 80 : 160; // header clearance
-  // On mobile, the sheet sits above the nav (bottom-20), so available space
-  // is viewport height minus the nav (80px) minus top offset.
-  // On desktop, no bottom nav.
-  const bottomNavHeight = isMobile ? 80 : 0;
+  // The sheet lives inside the map container which already stops at the nav bar
+  // (on mobile, the nav is part of the flex layout, not overlapping).
+  // We just need some top clearance so the expanded sheet doesn't cover the header.
+  const topOffset = isMobile ? 80 : 160;
 
   return {
     collapsed: isMobile ? 80 : 120,
     expanded: typeof window !== 'undefined'
-      ? window.innerHeight - topOffset - bottomNavHeight
+      ? (isMobile
+          // On mobile: map container height ≈ viewport - header(64) - nav(80).
+          // We subtract topOffset from that for header clearance when expanded.
+          ? window.innerHeight - 64 - 80 - 20
+          // On desktop: viewport - desktop header offset
+          : window.innerHeight - topOffset)
       : 600,
   };
 };
@@ -334,7 +336,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
     <>
       <motion.div
         ref={sheetRef}
-        className="absolute bottom-20 lg:bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl rounded-t-3xl shadow-2xl z-40 flex flex-col"
+        className="absolute bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl rounded-t-3xl shadow-2xl z-40 flex flex-col"
         initial={{ y: `calc(100% - ${sheetHeights.collapsed}px)` }}
         animate={{ y: `calc(100% - ${sheetHeights[sheetState]}px)` }}
         exit={{ y: "100%" }}

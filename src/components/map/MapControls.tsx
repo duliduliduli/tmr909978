@@ -22,7 +22,7 @@ export function MapControls({
   isLocationShuffled
 }: MapControlsProps) {
   return (
-    <div className="absolute bottom-[180px] right-4 z-30 flex flex-col gap-2 lg:bottom-[160px] lg:right-6">
+    <div className="absolute bottom-24 right-4 z-30 flex flex-col gap-2 lg:bottom-[160px] lg:right-6">
       {/* Control pill */}
       <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
         {/* Zoom In */}

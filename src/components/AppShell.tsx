@@ -40,7 +40,7 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
   const isActive = (tabHref: string) => pathname.includes(tabHref);
 
   return (
-    <div className="min-h-screen bg-brand-950 text-brand-50 font-sans">
+    <div className={cx("bg-brand-950 text-brand-50 font-sans", fullWidth ? "h-screen overflow-hidden" : "min-h-screen")}>
       {/* Desktop sidebar */}
       <div className="hidden lg:flex">
         <aside className="fixed left-0 top-0 h-screen w-72 bg-brand-900 border-r border-brand-800 shadow-2xl z-20">
@@ -160,7 +160,13 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
       </div>
 
       {/* Mobile layout */}
-      <div className={`lg:hidden flex flex-col ${fullWidth ? 'h-[100dvh] overflow-hidden' : 'min-h-screen'}`}>
+      <div
+        className={cx(
+          "lg:hidden flex flex-col",
+          fullWidth ? "fixed inset-0 z-0" : "min-h-screen"
+        )}
+        style={fullWidth ? { touchAction: 'none', overscrollBehavior: 'none' } : undefined}
+      >
         <header className="flex-shrink-0 z-20 h-16 px-4 flex items-center justify-between bg-brand-950/90 backdrop-blur-md border-b border-brand-800">
           <img
             src="/tumaro-logo.png"
@@ -184,7 +190,10 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
           </div>
         </header>
 
-        <div className={`flex-1 min-h-0 ${fullWidth ? 'overflow-hidden relative' : 'pb-20 overflow-y-auto'}`}>
+        <div className={cx(
+          "flex-1 min-h-0",
+          fullWidth ? "overflow-hidden relative" : "pb-20 overflow-y-auto"
+        )}>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -195,7 +204,12 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
           </motion.div>
         </div>
 
-        <nav className="fixed bottom-0 left-0 right-0 h-20 bg-brand-900/90 backdrop-blur-lg border-t border-brand-800 z-50 pb-safe">
+        {/* For fullWidth (map) pages: nav is part of flex layout so content ends at nav top.
+            For normal pages: nav is fixed overlay with pb-20 padding on content. */}
+        <nav className={cx(
+          "h-20 bg-brand-900/90 backdrop-blur-lg border-t border-brand-800 pb-safe",
+          fullWidth ? "flex-shrink-0 z-20" : "fixed bottom-0 left-0 right-0 z-50"
+        )}>
           <div className="grid grid-cols-5 h-full relative">
             {bottomNavItems.map((it) => {
               const Icon = it.icon;
