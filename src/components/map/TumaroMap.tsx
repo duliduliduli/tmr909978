@@ -44,7 +44,7 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
   const [selectedDetailerId, setSelectedDetailerId] = useState<string | null>(null);
   const [isLocationPermissionDenied, setIsLocationPermissionDenied] = useState(false);
   const [isLocationShuffled, setIsLocationShuffled] = useState(false);
-  const [showBottomSheet, setShowBottomSheet] = useState(false);
+  const [showBottomSheet, setShowBottomSheet] = useState(true);
 
   // Get selected detailer data
   const selectedDetailer = selectedDetailerId && detailers 
@@ -122,11 +122,6 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
       
       // Fetch detailers after map is loaded
       fetchDetailers();
-      
-      // Show bottom sheet after a delay
-      setTimeout(() => {
-        setShowBottomSheet(true);
-      }, 1500);
       
       // Set max bounds to prevent showing empty areas (Los Angeles region)
       const bounds = new mapboxgl.LngLatBounds(
@@ -595,12 +590,12 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
 
       {/* Note: Detailer selection now handled by bottom sheet */}
 
-      {/* Loading indicator */}
+      {/* Loading overlay — dims the map until fully loaded */}
       {!isLoaded && (
-        <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+        <div className="absolute inset-0 bg-brand-950/60 backdrop-blur-sm z-10 flex items-center justify-center transition-opacity duration-500">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-400 mx-auto"></div>
-            <p className="mt-2 text-gray-300">Loading map...</p>
+            <div className="animate-spin rounded-full h-6 w-6 border-2 border-white/20 border-t-white/80 mx-auto"></div>
+            <p className="mt-3 text-sm text-white/70 font-medium">Loading map...</p>
           </div>
         </div>
       )}

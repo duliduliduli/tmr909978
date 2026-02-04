@@ -566,12 +566,12 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
         </button>
       </div>
 
-      {/* Loading indicator */}
+      {/* Loading overlay — dims the map until fully loaded */}
       {!isLoaded && (
-        <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+        <div className="absolute inset-0 bg-brand-950/60 backdrop-blur-sm z-10 flex items-center justify-center transition-opacity duration-500">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-400 mx-auto"></div>
-            <p className="mt-2 text-gray-300">Loading map...</p>
+            <div className="animate-spin rounded-full h-6 w-6 border-2 border-white/20 border-t-white/80 mx-auto"></div>
+            <p className="mt-3 text-sm text-white/70 font-medium">Loading map...</p>
           </div>
         </div>
       )}
