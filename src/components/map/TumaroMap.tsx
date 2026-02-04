@@ -375,11 +375,11 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
       source: 'detailers',
       filter: ['!', ['has', 'point_count']],
       paint: {
-        'circle-color': '#14B8A6',
-        'circle-radius': 8,
-        'circle-stroke-width': 2,
+        'circle-color': '#00FF66',
+        'circle-radius': 10,
+        'circle-stroke-width': 3,
         'circle-stroke-color': '#ffffff',
-        'circle-opacity': 0.9
+        'circle-opacity': 1
       }
     });
     
@@ -393,9 +393,9 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
         'circle-color': [
           'step',
           ['get', 'point_count'],
-          '#14B8A6',
-          10, '#059669',
-          20, '#047857'
+          '#00FF66',
+          10, '#00DD55',
+          20, '#00BB44'
         ],
         'circle-radius': [
           'step',
@@ -529,7 +529,7 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
     el.style.width = '16px';
     el.style.height = '16px';
     el.style.borderRadius = '50%';
-    el.style.border = '4px solid #14B8A6';
+    el.style.border = '4px solid #00FF66';
     el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
     
     customerMarkerRef.current = new mapboxgl.Marker(el)

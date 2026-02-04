@@ -189,7 +189,7 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
     el.style.width = '16px';
     el.style.height = '16px';
     el.style.borderRadius = '50%';
-    el.style.border = '4px solid #14B8A6';
+    el.style.border = '4px solid #00FF66';
     el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
 
     detailerMarkerRef.current = new mapboxgl.Marker(el)
