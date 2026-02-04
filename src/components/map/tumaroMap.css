@@ -1,6 +1,6 @@
-/* Darken the map for less brightness */
+/* Lighten the dark map style for better visibility */
 .mapboxgl-canvas {
-  filter: brightness(0.85) contrast(1.1) !important;
+  filter: brightness(1.4) contrast(0.95) !important;
 }
 
 /* Hide Mapbox logo and attribution */
