@@ -114,14 +114,14 @@ export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, on
                 const messages = getMessages(apt);
                 return (
                 <div key={apt.id}>
-                  {/* ETA between jobs */}
-                  {index > 0 && etaMinutes[index - 1] !== undefined && (
+                  {/* ETA to this job (index 0 = from current location, index 1+ = between jobs) */}
+                  {etaMinutes[index] !== undefined && (
                     <div className="flex items-center gap-2 px-5 py-2 bg-blue-50 border-y border-blue-100">
                       <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center">
                         <Clock className="h-3 w-3 text-blue-600" />
                       </div>
                       <span className="text-xs font-medium text-blue-700">
-                        {etaMinutes[index - 1]} min drive
+                        {index === 0 ? `${etaMinutes[0]} min from current location` : `${etaMinutes[index]} min drive`}
                       </span>
                       <div className="flex-1 border-t border-dashed border-blue-200" />
                     </div>

@@ -384,24 +384,49 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
             }
           }, 'job-markers');
 
-          // Parse ETAs from legs
+          // Parse ETAs from ALL legs including user location -> first job
           const legs = route.legs || [];
-          // If we prepended user location, first leg is user -> first job
-          const startIndex = userLocation ? 1 : 0;
           const etas: number[] = [];
-          for (let i = startIndex; i < legs.length; i++) {
+          for (let i = 0; i < legs.length; i++) {
             etas.push(Math.round(legs[i].duration / 60));
           }
           setEtaMinutes(etas);
 
-          // Add ETA markers between jobs on the map
+          // Add ETA markers on the map for each leg
           for (let i = 0; i < etas.length; i++) {
-            const fromApt = todaysAppointments[i];
-            const toApt = todaysAppointments[i + 1];
-            if (!fromApt || !toApt) continue;
+            let fromLng: number, fromLat: number;
+            let toLng: number, toLat: number;
 
-            const midLng = (fromApt.longitude + toApt.longitude) / 2;
-            const midLat = (fromApt.latitude + toApt.latitude) / 2;
+            if (userLocation) {
+              if (i === 0) {
+                // First leg: user location -> first appointment
+                fromLng = userLocation[0];
+                fromLat = userLocation[1];
+                toLng = todaysAppointments[0].longitude;
+                toLat = todaysAppointments[0].latitude;
+              } else {
+                // Subsequent legs: appointment[i-1] -> appointment[i]
+                const fromApt = todaysAppointments[i - 1];
+                const toApt = todaysAppointments[i];
+                if (!fromApt || !toApt) continue;
+                fromLng = fromApt.longitude;
+                fromLat = fromApt.latitude;
+                toLng = toApt.longitude;
+                toLat = toApt.latitude;
+              }
+            } else {
+              // No user location: appointment[i] -> appointment[i+1]
+              const fromApt = todaysAppointments[i];
+              const toApt = todaysAppointments[i + 1];
+              if (!fromApt || !toApt) continue;
+              fromLng = fromApt.longitude;
+              fromLat = fromApt.latitude;
+              toLng = toApt.longitude;
+              toLat = toApt.latitude;
+            }
+
+            const midLng = (fromLng + toLng) / 2;
+            const midLat = (fromLat + toLat) / 2;
 
             const el = document.createElement('div');
             el.style.cssText = `
