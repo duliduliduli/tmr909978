@@ -95,7 +95,7 @@ export function CustomerMap() {
       setIsLoading(false);
       getCurrentLocation();
       // Show bottom sheet after a short delay
-      setTimeout(() => setShowBottomSheet(true), 1500);
+      setTimeout(() => setShowBottomSheet(true), 400);
     });
 
     // Add navigation controls

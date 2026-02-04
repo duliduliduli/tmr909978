@@ -329,7 +329,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
     <>
       <motion.div
         ref={sheetRef}
-        className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl z-40 flex flex-col md:left-0 md:right-0"
+        className="absolute bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl rounded-t-3xl shadow-2xl z-40 flex flex-col md:left-0 md:right-0"
         initial={{ y: `calc(100% - ${sheetHeights.collapsed}px)` }}
         animate={{ y: `calc(100% - ${sheetHeights[sheetState]}px)` }}
         exit={{ y: "100%" }}
@@ -488,7 +488,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                 <motion.div
                   key={detailer.id}
                   onClick={() => handleProfileClick(detailer)}
-                  className="flex-shrink-0 w-64 bg-white border border-gray-200 rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow"
+                  className="flex-shrink-0 w-64 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
