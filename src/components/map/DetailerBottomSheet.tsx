@@ -290,9 +290,8 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
     setViewState('reviews');
   };
   
-  const handleBookService = (serviceId: string, serviceName: string, price: number) => {
-    // Navigate to booking flow with pre-selected service
-    router.push(`/customer/booking?detailerId=${selectedDetailer?.id}&serviceId=${serviceId}`);
+  const handleBookService = () => {
+    router.push(`/customer/booking?detailerId=${selectedDetailer?.id}`);
   };
 
   const handleSendMessage = () => {
@@ -626,9 +625,9 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
 
           {viewState === 'profile' && selectedDetailer && (
             // Profile View - Same as Single View with booking
-            <div 
-              className="space-y-6 flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y pb-20" 
-              onMouseDown={(e) => e.stopPropagation()} 
+            <div
+              className="space-y-6 flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y pb-20"
+              onMouseDown={(e) => e.stopPropagation()}
               onTouchStart={(e) => e.stopPropagation()}
               onTouchMove={(e) => e.stopPropagation()}
             >
@@ -640,11 +639,11 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                   className="w-24 h-24 rounded-2xl mx-auto mb-4 object-cover"
                 />
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">{selectedDetailer.name}</h3>
-                
+
                 {/* Rating and Favorite */}
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <StarRating rating={selectedDetailer.rating} size="lg" showNumber />
-                  <span 
+                  <span
                     className="text-gray-500 cursor-pointer hover:text-blue-600"
                     onClick={() => handleShowReviews(selectedDetailer)}
                   >
@@ -684,7 +683,6 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                   {(() => {
                     const services = getActiveServicesByDetailer(selectedDetailer.id);
                     if (services.length === 0) {
-                      // Show default services if none are configured
                       return (
                         <>
                           <div className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition-colors">
@@ -695,13 +693,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                             <div className="flex items-center text-sm text-gray-600 mb-2">
                               <span>⏱️ 20 min</span>
                             </div>
-                            <p className="text-sm text-gray-600 mb-3">Basic exterior wash and dry</p>
-                            <button 
-                              onClick={() => handleBookService('default-1', 'Express Wash', 20)}
-                              className="w-full bg-blue-100 text-blue-900 py-2 px-4 rounded-lg font-medium hover:bg-blue-200 transition-colors"
-                            >
-                              Book Express Wash
-                            </button>
+                            <p className="text-sm text-gray-600">Basic exterior wash and dry</p>
                           </div>
                           <div className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition-colors">
                             <div className="flex items-center justify-between mb-2">
@@ -711,22 +703,15 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                             <div className="flex items-center text-sm text-gray-600 mb-2">
                               <span>⏱️ 90 min</span>
                             </div>
-                            <p className="text-sm text-gray-600 mb-3">Complete interior and exterior detailing</p>
-                            <button 
-                              onClick={() => handleBookService('default-2', 'Full Detail', 65)}
-                              className="w-full bg-blue-100 text-blue-900 py-2 px-4 rounded-lg font-medium hover:bg-blue-200 transition-colors"
-                            >
-                              Book Full Detail
-                            </button>
+                            <p className="text-sm text-gray-600">Complete interior and exterior detailing</p>
                           </div>
                         </>
                       );
                     }
-                    // Show actual services from the detailer
                     return services.map((service, index) => {
                       const isPremium = service.category === 'Premium' || service.price > 50;
                       return (
-                        <div 
+                        <div
                           key={service.id}
                           className={`border rounded-xl p-4 hover:bg-gray-50 transition-colors ${
                             isPremium ? 'border-blue-200 bg-blue-50 hover:bg-blue-100' : 'border-gray-200'
@@ -761,26 +746,24 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                               </span>
                             )}
                           </div>
-                          <p className={`text-sm mb-3 ${
+                          <p className={`text-sm ${
                             isPremium ? 'text-blue-700' : 'text-gray-600'
                           }`}>
                             {service.description}
                           </p>
-                          <button 
-                            onClick={() => handleBookService(service.id, service.name, service.price)}
-                            className={`w-full py-2 px-4 rounded-lg font-medium transition-colors ${
-                              isPremium 
-                                ? 'bg-blue-200 text-blue-900 hover:bg-blue-300' 
-                                : 'bg-blue-100 text-blue-900 hover:bg-blue-200'
-                            }`}
-                          >
-                            Book {service.name}
-                          </button>
                         </div>
                       );
                     });
                   })()}
                 </div>
+
+                {/* Single Book Service Button */}
+                <button
+                  onClick={() => handleBookService()}
+                  className="w-full bg-blue-500 text-white py-3 px-4 rounded-xl font-semibold hover:bg-blue-600 transition-colors mt-4"
+                >
+                  Book Service
+                </button>
               </div>
 
               {/* Action Buttons */}
@@ -913,9 +896,9 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
 
           {viewState === 'single' && selectedDetailer && (
             // Single Detailer View (from map marker click)
-            <div 
-              className="space-y-6 flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y pb-20" 
-              onMouseDown={(e) => e.stopPropagation()} 
+            <div
+              className="space-y-6 flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y pb-20"
+              onMouseDown={(e) => e.stopPropagation()}
               onTouchStart={(e) => e.stopPropagation()}
               onTouchMove={(e) => e.stopPropagation()}
             >
@@ -927,11 +910,11 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                   className="w-24 h-24 rounded-2xl mx-auto mb-4 object-cover"
                 />
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">{selectedDetailer.name}</h3>
-                
+
                 {/* Rating and Favorite */}
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <StarRating rating={selectedDetailer.rating} size="lg" showNumber />
-                  <span 
+                  <span
                     className="text-gray-500 cursor-pointer hover:text-blue-600"
                     onClick={() => handleShowReviews(selectedDetailer)}
                   >
@@ -971,7 +954,6 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                   {(() => {
                     const services = getActiveServicesByDetailer(selectedDetailer.id);
                     if (services.length === 0) {
-                      // Show default services if none are configured
                       return (
                         <>
                           <div className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition-colors">
@@ -982,13 +964,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                             <div className="flex items-center text-sm text-gray-600 mb-2">
                               <span>⏱️ 20 min</span>
                             </div>
-                            <p className="text-sm text-gray-600 mb-3">Basic exterior wash and dry</p>
-                            <button 
-                              onClick={() => handleBookService('default-1', 'Express Wash', 20)}
-                              className="w-full bg-blue-100 text-blue-900 py-2 px-4 rounded-lg font-medium hover:bg-blue-200 transition-colors"
-                            >
-                              Book Express Wash
-                            </button>
+                            <p className="text-sm text-gray-600">Basic exterior wash and dry</p>
                           </div>
                           <div className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition-colors">
                             <div className="flex items-center justify-between mb-2">
@@ -998,22 +974,15 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                             <div className="flex items-center text-sm text-gray-600 mb-2">
                               <span>⏱️ 90 min</span>
                             </div>
-                            <p className="text-sm text-gray-600 mb-3">Complete interior and exterior detailing</p>
-                            <button 
-                              onClick={() => handleBookService('default-2', 'Full Detail', 65)}
-                              className="w-full bg-blue-100 text-blue-900 py-2 px-4 rounded-lg font-medium hover:bg-blue-200 transition-colors"
-                            >
-                              Book Full Detail
-                            </button>
+                            <p className="text-sm text-gray-600">Complete interior and exterior detailing</p>
                           </div>
                         </>
                       );
                     }
-                    // Show actual services from the detailer
                     return services.map((service, index) => {
                       const isPremium = service.category === 'Premium' || service.price > 50;
                       return (
-                        <div 
+                        <div
                           key={service.id}
                           className={`border rounded-xl p-4 hover:bg-gray-50 transition-colors ${
                             isPremium ? 'border-blue-200 bg-blue-50 hover:bg-blue-100' : 'border-gray-200'
@@ -1048,26 +1017,24 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                               </span>
                             )}
                           </div>
-                          <p className={`text-sm mb-3 ${
+                          <p className={`text-sm ${
                             isPremium ? 'text-blue-700' : 'text-gray-600'
                           }`}>
                             {service.description}
                           </p>
-                          <button 
-                            onClick={() => handleBookService(service.id, service.name, service.price)}
-                            className={`w-full py-2 px-4 rounded-lg font-medium transition-colors ${
-                              isPremium 
-                                ? 'bg-blue-200 text-blue-900 hover:bg-blue-300' 
-                                : 'bg-blue-100 text-blue-900 hover:bg-blue-200'
-                            }`}
-                          >
-                            Book {service.name}
-                          </button>
                         </div>
                       );
                     });
                   })()}
                 </div>
+
+                {/* Single Book Service Button */}
+                <button
+                  onClick={() => handleBookService()}
+                  className="w-full bg-blue-500 text-white py-3 px-4 rounded-xl font-semibold hover:bg-blue-600 transition-colors mt-4"
+                >
+                  Book Service
+                </button>
               </div>
 
               {/* Action Buttons */}

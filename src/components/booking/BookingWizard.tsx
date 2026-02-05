@@ -1,24 +1,38 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { Calendar, Clock, MapPin, Car, CreditCard, Check } from 'lucide-react';
-import { ServiceSelectionStep } from './steps/ServiceSelectionStep';
+import { useState } from 'react';
+import { Car, Clock, MapPin, CreditCard, Check } from 'lucide-react';
+import { VehicleSelectionStep } from './steps/VehicleInfoStep';
 import { SchedulingStep } from './steps/SchedulingStep';
 import { AddressStepEnhanced as AddressStep } from './steps/AddressStepEnhanced';
-import { VehicleInfoStep } from './steps/VehicleInfoStep';
 import { PaymentStep } from './steps/PaymentStep';
 import { ConfirmationStep } from './steps/ConfirmationStep';
 import { BookingProgress } from './BookingProgress';
+import type { BodyType } from '@/lib/store';
 
 interface BookingWizardProps {
   providerId?: string;
-  serviceId?: string;
   onComplete?: (bookingId: string) => void;
+}
+
+export interface BookingVehicle {
+  id: string;
+  bodyType: BodyType;
+  serviceId: string;
+  serviceName: string;
+  basePrice: number;
+  adjustedPrice: number;
+  luxuryCare: boolean;
+  make?: string;
+  model?: string;
+  year?: number;
+  color?: string;
+  licensePlate?: string;
+  specialNotes?: string;
 }
 
 export interface BookingData {
   providerId?: string;
-  serviceId?: string;
   scheduledStartTime?: string;
   serviceAddress?: {
     street: string;
@@ -28,6 +42,15 @@ export interface BookingData {
     latitude: number;
     longitude: number;
   };
+  vehicles: BookingVehicle[];
+  totalPrice?: number;
+  specialInstructions?: string;
+  addOnServices?: string[];
+  promotionCode?: string;
+  paymentMethodId?: string;
+  tipAmount?: number;
+  // Legacy fields kept for compatibility with existing step components
+  serviceId?: string;
   vehicleInfo?: {
     make: string;
     model: string;
@@ -37,41 +60,27 @@ export interface BookingData {
     licensePlate?: string;
     specialNotes?: string;
   };
-  specialInstructions?: string;
-  addOnServices?: string[];
-  promotionCode?: string;
-  paymentMethodId?: string;
-  tipAmount?: number;
 }
 
 const STEPS = [
-  { id: 'service', label: 'Service', icon: Car },
+  { id: 'vehicles', label: 'Cars', icon: Car },
   { id: 'schedule', label: 'Schedule', icon: Clock },
   { id: 'address', label: 'Address', icon: MapPin },
-  { id: 'vehicle', label: 'Vehicle', icon: Car },
   { id: 'payment', label: 'Payment', icon: CreditCard },
-  { id: 'confirmation', label: 'Confirmation', icon: Check }
+  { id: 'confirmation', label: 'Confirm', icon: Check }
 ];
 
-export function BookingWizard({ 
-  providerId, 
-  serviceId, 
-  onComplete 
+export function BookingWizard({
+  providerId,
+  onComplete
 }: BookingWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [bookingData, setBookingData] = useState<BookingData>({
     providerId,
-    serviceId
+    vehicles: [],
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Skip service selection if serviceId is provided
-  useEffect(() => {
-    if (serviceId && currentStep === 0) {
-      setCurrentStep(1);
-    }
-  }, [serviceId, currentStep]);
 
   const updateBookingData = (updates: Partial<BookingData>) => {
     setBookingData(prev => ({ ...prev, ...updates }));
@@ -92,15 +101,14 @@ export function BookingWizard({
 
   const canProceedToNext = () => {
     switch (currentStep) {
-      case 0: // Service
-        return !!bookingData.serviceId;
-      case 1: // Schedule  
+      case 0: // Cars
+        return bookingData.vehicles.length > 0 &&
+          bookingData.vehicles.every(v => v.serviceId && v.bodyType);
+      case 1: // Schedule
         return !!bookingData.scheduledStartTime;
       case 2: // Address
         return !!bookingData.serviceAddress;
-      case 3: // Vehicle
-        return !!bookingData.vehicleInfo?.make && !!bookingData.vehicleInfo?.model;
-      case 4: // Payment
+      case 3: // Payment
         return !!bookingData.paymentMethodId;
       default:
         return true;
@@ -120,16 +128,14 @@ export function BookingWizard({
 
     switch (currentStep) {
       case 0:
-        return <ServiceSelectionStep {...stepProps} />;
+        return <VehicleSelectionStep {...stepProps} />;
       case 1:
         return <SchedulingStep {...stepProps} />;
       case 2:
         return <AddressStep {...stepProps} />;
       case 3:
-        return <VehicleInfoStep {...stepProps} />;
-      case 4:
         return <PaymentStep {...stepProps} />;
-      case 5:
+      case 4:
         return <ConfirmationStep {...stepProps} onComplete={onComplete} />;
       default:
         return null;
@@ -147,9 +153,9 @@ export function BookingWizard({
       </div>
 
       {/* Progress Bar */}
-      <BookingProgress 
-        steps={STEPS} 
-        currentStep={currentStep} 
+      <BookingProgress
+        steps={STEPS}
+        currentStep={currentStep}
         completedSteps={currentStep}
       />
 
@@ -198,7 +204,7 @@ export function BookingWizard({
             {isLoading ? 'Processing...' : 'Continue'}
           </button>
         ) : (
-          <div className="w-20" /> // Spacer for last step
+          <div className="w-20" />
         )}
       </div>
     </div>

@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { CheckCircle, Calendar, MapPin, Car, CreditCard, Star } from 'lucide-react';
+import { CheckCircle, Calendar, MapPin, Car, CreditCard, Star, Sparkles } from 'lucide-react';
 import { BookingData } from '../BookingWizard';
 import { useAppStore, type Appointment } from '@/lib/store';
-import { mockDetailers } from '@/lib/mockData';
 
 interface ConfirmationStepProps {
   bookingData: BookingData;
@@ -17,11 +16,16 @@ interface ConfirmationStepProps {
   onComplete?: (bookingId: string) => void;
 }
 
+const BODY_TYPE_LABELS: Record<string, string> = {
+  car: 'Car',
+  van: 'Van',
+  truck: 'Truck',
+  suv: 'SUV',
+};
+
 export function ConfirmationStep({
   bookingData,
   onComplete,
-  isLoading,
-  setIsLoading,
   setError
 }: ConfirmationStepProps) {
   const [bookingId, setBookingId] = useState<string | null>(null);
@@ -37,55 +41,60 @@ export function ConfirmationStep({
     setError(null);
 
     try {
-      // Simulate booking creation
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Generate mock booking ID
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
       const mockBookingId = `TUM${Date.now()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       setBookingId(mockBookingId);
-      
-      // Create appointment object and save to store
-      if (bookingData.selectedDetailer && bookingData.selectedService && bookingData.scheduledStartTime) {
-        const detailer = mockDetailers.find(d => d.id === bookingData.selectedDetailer);
-        const service = detailer?.services.find(s => s.id === bookingData.selectedService);
-        
-        if (detailer && service) {
-          const appointmentDate = new Date(bookingData.scheduledStartTime);
-          const appointment: Appointment = {
-            id: mockBookingId,
-            customerId: activeCustomerId,
-            customerName: 'John Smith',
-            detailerId: detailer.id,
-            detailerName: detailer.name,
-            businessName: detailer.businessName,
-            serviceId: service.id,
-            serviceName: service.name,
-            serviceDescription: service.description,
-            price: service.price,
-            scheduledDate: appointmentDate.toISOString().split('T')[0],
-            scheduledTime: appointmentDate.toLocaleTimeString('en-US', {
+
+      // Create one appointment per vehicle
+      if (bookingData.vehicles.length > 0 && bookingData.providerId) {
+        const addressStr = bookingData.serviceAddress
+          ? `${bookingData.serviceAddress.street}, ${bookingData.serviceAddress.city}, ${bookingData.serviceAddress.state}`
+          : 'Address not specified';
+
+        const scheduledDate = bookingData.scheduledStartTime
+          ? new Date(bookingData.scheduledStartTime).toISOString().split('T')[0]
+          : new Date().toISOString().split('T')[0];
+
+        const scheduledTime = bookingData.scheduledStartTime
+          ? new Date(bookingData.scheduledStartTime).toLocaleTimeString('en-US', {
               hour: 'numeric',
               minute: '2-digit',
               hour12: true
-            }),
-            duration: service.duration,
-            address: bookingData.serviceAddress ?
-              `${bookingData.serviceAddress.street}, ${bookingData.serviceAddress.city}, ${bookingData.serviceAddress.state}` :
-              'Address not specified',
-            latitude: bookingData.serviceAddress?.latitude || detailer.location.lat,
-            longitude: bookingData.serviceAddress?.longitude || detailer.location.lng,
-            phone: detailer.phone,
+            })
+          : '12:00 PM';
+
+        bookingData.vehicles.forEach((vehicle, index) => {
+          const vehicleLabel = vehicle.make && vehicle.model
+            ? `${vehicle.make} ${vehicle.model}`
+            : `${BODY_TYPE_LABELS[vehicle.bodyType]} #${index + 1}`;
+
+          const appointment: Appointment = {
+            id: `${mockBookingId}_v${index}`,
+            customerId: activeCustomerId,
+            customerName: 'Customer',
+            detailerId: bookingData.providerId!,
+            detailerName: '',
+            businessName: '',
+            serviceId: vehicle.serviceId,
+            serviceName: vehicle.serviceName,
+            serviceDescription: `${vehicle.serviceName} for ${vehicleLabel}${vehicle.luxuryCare ? ' (Luxury Care)' : ''}`,
+            price: vehicle.adjustedPrice,
+            scheduledDate,
+            scheduledTime,
+            duration: 60,
+            address: addressStr,
+            latitude: bookingData.serviceAddress?.latitude || 34.0522,
+            longitude: bookingData.serviceAddress?.longitude || -118.2437,
+            phone: '',
             status: 'scheduled',
             bookedAt: new Date().toISOString(),
-            notes: bookingData.specialInstructions
+            notes: vehicle.specialNotes || undefined,
           };
-          
-          // Save appointment to global store
           addAppointment(appointment);
-        }
+        });
       }
-      
-      // Call completion handler
+
       onComplete?.(mockBookingId);
     } catch (error: any) {
       setError('Failed to create booking. Please try again.');
@@ -109,13 +118,6 @@ export function ConfirmationStep({
       month: 'long',
       day: 'numeric'
     });
-  };
-
-  const formatPrice = (cents: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(cents / 100);
   };
 
   if (isCreatingBooking) {
@@ -148,6 +150,8 @@ export function ConfirmationStep({
     );
   }
 
+  const totalPrice = bookingData.totalPrice || bookingData.vehicles.reduce((sum, v) => sum + v.adjustedPrice, 0);
+
   return (
     <div className="space-y-6">
       {/* Success Header */}
@@ -158,7 +162,9 @@ export function ConfirmationStep({
           </div>
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Confirmed!</h2>
-        <p className="text-gray-600">Your appointment has been successfully scheduled.</p>
+        <p className="text-gray-600">
+          {bookingData.vehicles.length} vehicle{bookingData.vehicles.length !== 1 ? 's' : ''} scheduled for service.
+        </p>
         <div className="mt-4 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
           Booking #{bookingId}
         </div>
@@ -166,39 +172,61 @@ export function ConfirmationStep({
 
       {/* Booking Details */}
       <div className="space-y-4">
-        {/* Service Details */}
+        {/* Schedule & Location */}
         <div className="bg-gray-50 rounded-lg p-4">
-          <h3 className="font-medium text-gray-900 mb-3">Service Details</h3>
+          <h3 className="font-medium text-gray-900 mb-3">Appointment Details</h3>
           <div className="space-y-2">
-            <div className="flex items-center text-sm">
-              <Star className="h-4 w-4 text-yellow-500 mr-2" />
-              <span className="font-medium">Premium Exterior Detail</span>
-            </div>
-            <div className="flex items-center text-sm text-gray-600">
-              <Calendar className="h-4 w-4 mr-2" />
-              <span>
-                {bookingData.scheduledStartTime && formatDate(bookingData.scheduledStartTime)} at{' '}
-                {bookingData.scheduledStartTime && formatTime(bookingData.scheduledStartTime)}
-              </span>
-            </div>
-            <div className="flex items-start text-sm text-gray-600">
-              <MapPin className="h-4 w-4 mr-2 mt-0.5" />
-              <span>
-                {bookingData.serviceAddress ? 
-                  `${bookingData.serviceAddress.street}, ${bookingData.serviceAddress.city}, ${bookingData.serviceAddress.state}` :
-                  'Address not specified'
-                }
-              </span>
-            </div>
-            {bookingData.vehicleInfo && (
+            {bookingData.scheduledStartTime && (
               <div className="flex items-center text-sm text-gray-600">
-                <Car className="h-4 w-4 mr-2" />
+                <Calendar className="h-4 w-4 mr-2" />
                 <span>
-                  {bookingData.vehicleInfo.year} {bookingData.vehicleInfo.make} {bookingData.vehicleInfo.model}
-                  {bookingData.vehicleInfo.color && ` (${bookingData.vehicleInfo.color})`}
+                  {formatDate(bookingData.scheduledStartTime)} at {formatTime(bookingData.scheduledStartTime)}
                 </span>
               </div>
             )}
+            <div className="flex items-start text-sm text-gray-600">
+              <MapPin className="h-4 w-4 mr-2 mt-0.5" />
+              <span>
+                {bookingData.serviceAddress
+                  ? `${bookingData.serviceAddress.street}, ${bookingData.serviceAddress.city}, ${bookingData.serviceAddress.state}`
+                  : 'Address not specified'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Vehicles Summary */}
+        <div className="bg-gray-50 rounded-lg p-4">
+          <h3 className="font-medium text-gray-900 mb-3 flex items-center">
+            <Car className="h-4 w-4 mr-2" />
+            Vehicles
+          </h3>
+          <div className="space-y-3">
+            {bookingData.vehicles.map((vehicle, index) => (
+              <div key={vehicle.id} className="flex items-center justify-between py-2 border-b border-gray-200 last:border-0">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-xs font-bold">
+                      {index + 1}
+                    </span>
+                    <span className="text-sm font-medium text-gray-900">
+                      {vehicle.make && vehicle.model
+                        ? `${vehicle.make} ${vehicle.model}`
+                        : `${BODY_TYPE_LABELS[vehicle.bodyType]}`}
+                    </span>
+                  </div>
+                  <div className="ml-8 flex items-center gap-2 mt-0.5">
+                    <span className="text-xs text-gray-500">{vehicle.serviceName}</span>
+                    {vehicle.luxuryCare && (
+                      <span className="text-xs text-amber-600 flex items-center gap-0.5">
+                        <Sparkles className="h-3 w-3" /> Luxury
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <span className="text-sm font-bold text-gray-900">${vehicle.adjustedPrice.toFixed(2)}</span>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -209,26 +237,19 @@ export function ConfirmationStep({
             Payment Summary
           </h3>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Service</span>
-              <span className="text-gray-900">$75.00</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Tax</span>
-              <span className="text-gray-900">$6.56</span>
-            </div>
-            {bookingData.tipAmount && bookingData.tipAmount > 0 && (
-              <div className="flex justify-between">
-                <span className="text-gray-600">Tip</span>
-                <span className="text-gray-900">{formatPrice(bookingData.tipAmount)}</span>
+            {bookingData.vehicles.map((vehicle, index) => (
+              <div key={vehicle.id} className="flex justify-between">
+                <span className="text-gray-600">
+                  {vehicle.serviceName} ({BODY_TYPE_LABELS[vehicle.bodyType]})
+                  {vehicle.luxuryCare ? ' + Luxury' : ''}
+                </span>
+                <span className="text-gray-900">${vehicle.adjustedPrice.toFixed(2)}</span>
               </div>
-            )}
+            ))}
             <div className="border-t pt-2 mt-2">
               <div className="flex justify-between font-medium">
-                <span className="text-gray-900">Total Charged</span>
-                <span className="text-gray-900">
-                  {formatPrice(8156 + (bookingData.tipAmount || 0))}
-                </span>
+                <span className="text-gray-900">Total</span>
+                <span className="text-gray-900 text-lg">${totalPrice.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -238,20 +259,12 @@ export function ConfirmationStep({
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <h3 className="font-medium text-blue-900 mb-2">What Happens Next?</h3>
           <ul className="space-y-1 text-sm text-blue-800">
-            <li>• Your provider will be notified and will confirm the appointment</li>
-            <li>• You'll receive SMS and email notifications with updates</li>
-            <li>• The provider will arrive at your scheduled time</li>
-            <li>• Payment will be processed after service completion</li>
+            <li>Your provider will be notified and will confirm the appointment</li>
+            <li>You will receive notifications with updates</li>
+            <li>The provider will arrive at your scheduled time</li>
+            <li>Payment will be processed after service completion</li>
           </ul>
         </div>
-
-        {/* Special Instructions */}
-        {bookingData.specialInstructions && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <h3 className="font-medium text-yellow-900 mb-2">Special Instructions</h3>
-            <p className="text-sm text-yellow-800">{bookingData.specialInstructions}</p>
-          </div>
-        )}
       </div>
 
       {/* Action Buttons */}
@@ -259,7 +272,7 @@ export function ConfirmationStep({
         <button className="w-full bg-teal-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-teal-700 transition-colors">
           View Booking Details
         </button>
-        
+
         <div className="grid grid-cols-2 gap-3">
           <button className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
             Add to Calendar

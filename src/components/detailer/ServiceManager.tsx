@@ -1,9 +1,16 @@
 "use client";
 
 import { useState } from 'react';
-import { Plus, Edit2, Trash2, DollarSign, Clock, ToggleLeft, ToggleRight, Save, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, DollarSign, Clock, ToggleLeft, ToggleRight, Save, X, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAppStore, Service } from '@/lib/store';
+import { useAppStore, Service, DEFAULT_BODY_TYPE_MULTIPLIERS } from '@/lib/store';
+
+const BODY_TYPE_LABELS: Record<string, string> = {
+  car: 'Car',
+  van: 'Van',
+  truck: 'Truck',
+  suv: 'SUV',
+};
 
 export function ServiceManager() {
   const {
@@ -23,7 +30,9 @@ export function ServiceManager() {
     description: '',
     price: '',
     duration: '30',
-    category: 'Exterior'
+    category: 'Exterior',
+    bodyTypeMultipliers: { ...DEFAULT_BODY_TYPE_MULTIPLIERS },
+    luxuryCareSurchargePercent: 0,
   });
   const [editForm, setEditForm] = useState<Partial<Service>>({});
 
@@ -44,7 +53,9 @@ export function ServiceManager() {
       price: parseFloat(newService.price),
       duration: parseInt(newService.duration),
       category: newService.category,
-      isActive: true
+      isActive: true,
+      bodyTypeMultipliers: newService.bodyTypeMultipliers,
+      luxuryCareSurchargePercent: newService.luxuryCareSurchargePercent,
     });
 
     // Reset form
@@ -53,7 +64,9 @@ export function ServiceManager() {
       description: '',
       price: '',
       duration: '30',
-      category: 'Exterior'
+      category: 'Exterior',
+      bodyTypeMultipliers: { ...DEFAULT_BODY_TYPE_MULTIPLIERS },
+      luxuryCareSurchargePercent: 0,
     });
     setIsAddingService(false);
   };
@@ -69,7 +82,9 @@ export function ServiceManager() {
       description: editForm.description,
       price: editForm.price,
       duration: editForm.duration,
-      category: editForm.category
+      category: editForm.category,
+      bodyTypeMultipliers: editForm.bodyTypeMultipliers,
+      luxuryCareSurchargePercent: editForm.luxuryCareSurchargePercent,
     });
 
     setEditingService(null);
@@ -89,9 +104,83 @@ export function ServiceManager() {
       description: service.description,
       price: service.price,
       duration: service.duration,
-      category: service.category
+      category: service.category,
+      bodyTypeMultipliers: service.bodyTypeMultipliers ? { ...service.bodyTypeMultipliers } : { ...DEFAULT_BODY_TYPE_MULTIPLIERS },
+      luxuryCareSurchargePercent: service.luxuryCareSurchargePercent ?? 0,
     });
   };
+
+  const BodyTypeMultiplierFields = ({
+    multipliers,
+    onChange,
+  }: {
+    multipliers: { car: number; van: number; truck: number; suv: number };
+    onChange: (updated: { car: number; van: number; truck: number; suv: number }) => void;
+  }) => (
+    <div className="md:col-span-2">
+      <label className="block text-sm font-medium text-gray-300 mb-1">
+        Body Type Price Multipliers
+      </label>
+      <p className="text-xs text-gray-500 mb-3">
+        Set price multipliers for different vehicle types (1.0 = base price)
+      </p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {(['car', 'van', 'truck', 'suv'] as const).map((type) => (
+          <div key={type} className="bg-brand-800 border border-brand-600 rounded-lg p-3">
+            <label className="block text-xs text-gray-400 mb-1">{BODY_TYPE_LABELS[type]}</label>
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                value={multipliers[type]}
+                onChange={(e) =>
+                  onChange({
+                    ...multipliers,
+                    [type]: parseFloat(e.target.value) || 1.0,
+                  })
+                }
+                step="0.05"
+                min="0.5"
+                max="3.0"
+                className="w-full px-2 py-1.5 border border-brand-600 rounded bg-brand-900 text-gray-100 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              />
+              <span className="text-xs text-gray-500">x</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const LuxuryCareField = ({
+    value,
+    onChange,
+  }: {
+    value: number;
+    onChange: (v: number) => void;
+  }) => (
+    <div className="md:col-span-2">
+      <label className="block text-sm font-medium text-gray-300 mb-1">
+        <span className="flex items-center gap-1.5">
+          <Sparkles className="h-4 w-4 text-amber-400" />
+          Luxury Care Surcharge (%)
+        </span>
+      </label>
+      <p className="text-xs text-gray-500 mb-2">
+        Extra percentage charged when customer selects Luxury Care
+      </p>
+      <div className="relative w-32">
+        <input
+          type="number"
+          value={value}
+          onChange={(e) => onChange(parseInt(e.target.value) || 0)}
+          min="0"
+          max="100"
+          className="w-full px-3 py-2 border border-brand-600 rounded-lg bg-brand-900 text-gray-100 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+        />
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">%</span>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -197,6 +286,18 @@ export function ServiceManager() {
                   className="w-full px-3 py-2 border border-brand-600 rounded-lg bg-brand-900 text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
                 />
               </div>
+
+              {/* Body Type Multipliers */}
+              <BodyTypeMultiplierFields
+                multipliers={newService.bodyTypeMultipliers}
+                onChange={(updated) => setNewService({ ...newService, bodyTypeMultipliers: updated })}
+              />
+
+              {/* Luxury Care Surcharge */}
+              <LuxuryCareField
+                value={newService.luxuryCareSurchargePercent}
+                onChange={(v) => setNewService({ ...newService, luxuryCareSurchargePercent: v })}
+              />
             </div>
 
             <div className="flex justify-end gap-3 mt-6">
@@ -307,6 +408,18 @@ export function ServiceManager() {
                         className="w-full px-3 py-2 border border-brand-600 rounded-lg bg-brand-800 text-gray-100 focus:ring-2 focus:ring-teal-500 resize-none"
                       />
                     </div>
+
+                    {/* Body Type Multipliers - Edit Mode */}
+                    <BodyTypeMultiplierFields
+                      multipliers={editForm.bodyTypeMultipliers || { ...DEFAULT_BODY_TYPE_MULTIPLIERS }}
+                      onChange={(updated) => setEditForm({ ...editForm, bodyTypeMultipliers: updated })}
+                    />
+
+                    {/* Luxury Care Surcharge - Edit Mode */}
+                    <LuxuryCareField
+                      value={editForm.luxuryCareSurchargePercent ?? 0}
+                      onChange={(v) => setEditForm({ ...editForm, luxuryCareSurchargePercent: v })}
+                    />
                   </div>
 
                   <div className="flex justify-end gap-3">
@@ -376,6 +489,23 @@ export function ServiceManager() {
                         )}
                       </button>
                     </div>
+
+                    {/* Body Type Multipliers & Luxury Care Display */}
+                    {service.bodyTypeMultipliers && (
+                      <div className="flex flex-wrap items-center gap-2 mt-3">
+                        {(['car', 'van', 'truck', 'suv'] as const).map((type) => (
+                          <span key={type} className="text-xs text-gray-500 bg-brand-800 px-2 py-0.5 rounded border border-brand-700">
+                            {BODY_TYPE_LABELS[type]}: {service.bodyTypeMultipliers[type]}x
+                          </span>
+                        ))}
+                        {service.luxuryCareSurchargePercent > 0 && (
+                          <span className="text-xs text-amber-400 bg-amber-900/30 px-2 py-0.5 rounded border border-amber-700/50 flex items-center gap-1">
+                            <Sparkles className="h-3 w-3" />
+                            Luxury: +{service.luxuryCareSurchargePercent}%
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-2 ml-4">

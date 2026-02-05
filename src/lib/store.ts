@@ -26,6 +26,36 @@ export interface SavedAddress {
   lastUsed?: string;
 }
 
+export type BodyType = 'car' | 'van' | 'truck' | 'suv';
+
+export interface BodyTypeMultipliers {
+  car: number;
+  van: number;
+  truck: number;
+  suv: number;
+}
+
+export const DEFAULT_BODY_TYPE_MULTIPLIERS: BodyTypeMultipliers = {
+  car: 1.0,
+  van: 1.1,
+  truck: 1.15,
+  suv: 1.1,
+};
+
+export function calculateAdjustedPrice(
+  basePrice: number,
+  bodyType: BodyType,
+  multipliers: BodyTypeMultipliers,
+  luxuryCare: boolean,
+  luxurySurchargePercent: number
+): number {
+  let price = basePrice * multipliers[bodyType];
+  if (luxuryCare) {
+    price *= (1 + luxurySurchargePercent / 100);
+  }
+  return Math.round(price * 100) / 100;
+}
+
 export interface Service {
   id: string;
   detailerId: string;
@@ -37,6 +67,8 @@ export interface Service {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  bodyTypeMultipliers: BodyTypeMultipliers;
+  luxuryCareSurchargePercent: number;
 }
 
 export interface Rating {
@@ -808,6 +840,8 @@ export const useAppStore = create<AppState>()(
           isActive: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
+          bodyTypeMultipliers: { car: 1.0, van: 1.1, truck: 1.15, suv: 1.1 },
+          luxuryCareSurchargePercent: 20,
         },
         {
           id: "svc_2",
@@ -820,6 +854,8 @@ export const useAppStore = create<AppState>()(
           isActive: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
+          bodyTypeMultipliers: { car: 1.0, van: 1.1, truck: 1.15, suv: 1.1 },
+          luxuryCareSurchargePercent: 20,
         },
         {
           id: "svc_3",
@@ -832,10 +868,14 @@ export const useAppStore = create<AppState>()(
           isActive: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
+          bodyTypeMultipliers: { car: 1.0, van: 1.1, truck: 1.15, suv: 1.1 },
+          luxuryCareSurchargePercent: 25,
         },
       ],
       addService: (service) => set((state) => {
         const newService: Service = {
+          bodyTypeMultipliers: { ...DEFAULT_BODY_TYPE_MULTIPLIERS },
+          luxuryCareSurchargePercent: 0,
           ...service,
           id: `svc_${Date.now()}`,
           createdAt: new Date().toISOString(),
@@ -906,6 +946,6 @@ export const useAppStore = create<AppState>()(
         return state.detailerQRCodes.find(qr => qr.detailerId === detailerId);
       },
     }),
-    { name: "app_state_v9" }
+    { name: "app_state_v10" }
   )
 );
