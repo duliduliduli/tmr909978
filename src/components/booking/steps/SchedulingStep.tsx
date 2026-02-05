@@ -121,11 +121,11 @@ export function SchedulingStep({
   };
 
   const formatTime = (timeString: string) => {
-    return new Date(timeString).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
+    // Parse "HH:MM" format (e.g., "08:00", "14:30")
+    const [hours, minutes] = timeString.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12; // Convert 0 to 12, 13 to 1, etc.
+    return `${displayHours}:${String(minutes).padStart(2, '0')} ${period}`;
   };
 
   const isDateDisabled = (date: Date) => {
