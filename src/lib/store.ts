@@ -121,6 +121,17 @@ export interface ChatMessage {
   timestamp: string;
 }
 
+export interface Conversation {
+  id: string;
+  participantId: string; // detailerId if user is customer, customerId if user is detailer
+  participantName: string;
+  participantImage?: string;
+  lastMessage: string;
+  lastMessageTime: string;
+  unread: number;
+  isPinned: boolean;
+}
+
 interface AppState {
   role: Role;
   setRole: (r: Role) => void;
@@ -133,6 +144,13 @@ interface AppState {
   chatLogs: Record<string, ChatMessage[]>; // keyed by "{detailerId}_{customerId}"
   addChatMessage: (detailerId: string, customerId: string, message: ChatMessage) => void;
   getChatMessages: (detailerId: string, customerId: string) => ChatMessage[];
+  deleteConversation: (detailerId: string, customerId: string) => void;
+  // Conversation management
+  conversations: Conversation[];
+  getConversations: (userId: string, role: Role) => Conversation[];
+  togglePinConversation: (conversationId: string) => void;
+  deleteConversationById: (conversationId: string) => void;
+  markConversationRead: (conversationId: string) => void;
   // Location persistence
   userLocation: [number, number] | null;
   setUserLocation: (location: [number, number] | null) => void;
@@ -218,6 +236,61 @@ export const useAppStore = create<AppState>()(
         const state = useAppStore.getState();
         return state.chatLogs[`${detailerId}_${customerId}`] || [];
       },
+      deleteConversation: (detailerId, customerId) => set((state) => {
+        const key = `${detailerId}_${customerId}`;
+        const { [key]: _, ...rest } = state.chatLogs;
+        return { chatLogs: rest };
+      }),
+      // Conversation management
+      conversations: [
+        {
+          id: 'conv_1',
+          participantId: 'det_1',
+          participantName: 'Mobile Shine Pro',
+          participantImage: '/images/detailers/detailer-1.webp',
+          lastMessage: 'Your appointment is confirmed for tomorrow!',
+          lastMessageTime: '2 hours ago',
+          unread: 2,
+          isPinned: true,
+        },
+        {
+          id: 'conv_2',
+          participantId: 'det_2',
+          participantName: 'Premium Auto Care',
+          participantImage: '/images/detailers/detailer-3.jpg',
+          lastMessage: 'Thanks for your business! Hope to see you again soon.',
+          lastMessageTime: '1 day ago',
+          unread: 0,
+          isPinned: false,
+        },
+        {
+          id: 'conv_3',
+          participantId: 'det_3',
+          participantName: 'Elite Detail Works',
+          participantImage: '/images/detailers/detailer-4.jpg',
+          lastMessage: 'We have a special promotion this week!',
+          lastMessageTime: '3 days ago',
+          unread: 1,
+          isPinned: false,
+        },
+      ],
+      getConversations: (userId, role) => {
+        const state = useAppStore.getState();
+        return state.conversations;
+      },
+      togglePinConversation: (conversationId) => set((state) => ({
+        conversations: state.conversations.map(conv =>
+          conv.id === conversationId ? { ...conv, isPinned: !conv.isPinned } : conv
+        ),
+      })),
+      deleteConversationById: (conversationId) => set((state) => ({
+        conversations: state.conversations.filter(conv => conv.id !== conversationId),
+      })),
+      markConversationRead: (conversationId) => set((state) => ({
+        conversations: state.conversations.map(conv =>
+          conv.id === conversationId ? { ...conv, unread: 0 } : conv
+        ),
+      })),
       // Location persistence
       userLocation: null,
       setUserLocation: (userLocation) => set({ userLocation }),

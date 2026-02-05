@@ -1,12 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { useAppStore } from "@/lib/store";
-import { Plus, QrCode, DollarSign, Clock } from "lucide-react";
-import { motion } from "framer-motion";
+import { QrCode, DollarSign, Clock, X, Download, Share2, Copy, Check, AlertCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function DetailerHome() {
-  const { activeDetailerId } = useAppStore();
+  const { activeDetailerId, getQRCodeByDetailer } = useAppStore();
   const todaysAppointments = useAppStore.getState().getTodaysAppointments(activeDetailerId);
+  const [showOnMap, setShowOnMap] = useState(true);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const qrCode = getQRCodeByDetailer(activeDetailerId);
 
   // Compute real stats from today's appointments
   const projectedEarnings = todaysAppointments.reduce((sum, apt) => sum + apt.price, 0);
@@ -51,52 +57,187 @@ export function DetailerHome() {
         <div className="absolute top-0 right-0 w-64 h-64 bg-accent-400/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
       </motion.div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-4">
-        <motion.button
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-brand-900 rounded-2xl p-6 border border-brand-800 hover:border-brand-700 hover:bg-brand-800 transition-all text-left group"
-        >
-          <div className="h-12 w-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-            <Plus className="h-6 w-6 text-emerald-500" />
-          </div>
-          <h3 className="font-bold text-lg text-white mb-1">Add Service</h3>
-          <p className="text-sm text-brand-400">Create new service offering</p>
-        </motion.button>
-
-        <motion.button
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-brand-900 rounded-2xl p-6 border border-brand-800 hover:border-brand-700 hover:bg-brand-800 transition-all text-left group"
-        >
-          <div className="h-12 w-12 bg-purple-500/10 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+      {/* Quick Actions - Just Share QR */}
+      <motion.button
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        onClick={() => setShowQRModal(true)}
+        className="w-full bg-brand-900 rounded-2xl p-6 border border-brand-800 hover:border-brand-700 hover:bg-brand-800 transition-all text-left group"
+      >
+        <div className="flex items-center gap-4">
+          <div className="h-12 w-12 bg-purple-500/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
             <QrCode className="h-6 w-6 text-purple-500" />
           </div>
-          <h3 className="font-bold text-lg text-white mb-1">Share QR</h3>
-          <p className="text-sm text-brand-400">Get more customers</p>
-        </motion.button>
-      </div>
+          <div>
+            <h3 className="font-bold text-lg text-white mb-1">Share QR Code</h3>
+            <p className="text-sm text-brand-400">Get more customers with your booking QR code</p>
+          </div>
+        </div>
+      </motion.button>
 
-      {/* Status Toggle */}
+      {/* Show on Map Toggle */}
       <div className="bg-brand-900 rounded-2xl p-5 border border-brand-800 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="h-10 w-10 bg-emerald-500/10 rounded-xl flex items-center justify-center">
-            <div className="h-3 w-3 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />
+          <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${showOnMap ? 'bg-emerald-500/10' : 'bg-brand-800'}`}>
+            <div className={`h-3 w-3 rounded-full ${showOnMap ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse' : 'bg-brand-600'}`} />
           </div>
           <div>
-            <h3 className="font-bold text-white">Available for bookings</h3>
-            <p className="text-sm text-brand-400">Customers can find you on the map</p>
+            <h3 className="font-bold text-white">Show on Map</h3>
+            <p className="text-sm text-brand-400">
+              {showOnMap ? 'Customers can find you on the map' : 'You are hidden from the map'}
+            </p>
           </div>
         </div>
 
         {/* Toggle Switch */}
-        <button className="w-14 h-8 bg-emerald-500/20 rounded-full relative transition-colors border border-emerald-500/30">
-          <div className="absolute right-1 top-1 w-6 h-6 bg-emerald-400 rounded-full shadow-lg" />
+        <button
+          onClick={() => setShowOnMap(!showOnMap)}
+          className={`w-14 h-8 rounded-full relative transition-colors ${
+            showOnMap
+              ? 'bg-emerald-500/20 border border-emerald-500/30'
+              : 'bg-brand-800 border border-brand-700'
+          }`}
+        >
+          <div className={`absolute top-1 w-6 h-6 rounded-full shadow-lg transition-all ${
+            showOnMap
+              ? 'right-1 bg-emerald-400'
+              : 'left-1 bg-brand-500'
+          }`} />
         </button>
       </div>
+
+      {/* QR Code Modal */}
+      <AnimatePresence>
+        {showQRModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowQRModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl w-full max-w-md overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="font-bold text-gray-900 text-lg">Share QR Code</h3>
+                <button
+                  onClick={() => setShowQRModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6">
+                {qrCode ? (
+                  <div className="text-center">
+                    <div className="bg-white p-4 rounded-xl inline-block shadow-lg border border-gray-200 mb-4">
+                      <img
+                        src={qrCode.qrCodeData}
+                        alt="Business QR Code"
+                        className="w-48 h-48"
+                      />
+                    </div>
+
+                    <p className="text-gray-600 text-sm mb-4">
+                      Customers can scan this to book with you instantly
+                    </p>
+
+                    {/* Booking URL */}
+                    <div className="flex items-center gap-2 mb-4">
+                      <input
+                        type="text"
+                        value={qrCode.businessUrl}
+                        readOnly
+                        className="flex-1 px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-600"
+                      />
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(qrCode.businessUrl);
+                          setCopied(true);
+                          setTimeout(() => setCopied(false), 2000);
+                        }}
+                        className="p-2 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors"
+                      >
+                        {copied ? (
+                          <Check className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <Copy className="h-4 w-4 text-gray-600" />
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3 justify-center">
+                      <button
+                        onClick={() => {
+                          const link = document.createElement('a');
+                          link.download = `tumaro-qr-${activeDetailerId}.png`;
+                          link.href = qrCode.qrCodeData;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+                      >
+                        <Download className="h-4 w-4" />
+                        Download
+                      </button>
+
+                      <button
+                        onClick={async () => {
+                          if (navigator.share) {
+                            try {
+                              await navigator.share({
+                                title: 'Book with us',
+                                text: 'Book your auto detailing service!',
+                                url: qrCode.businessUrl,
+                              });
+                            } catch (error) {
+                              console.error('Error sharing:', error);
+                            }
+                          }
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                      >
+                        <Share2 className="h-4 w-4" />
+                        Share
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <AlertCircle className="h-8 w-8 text-amber-600" />
+                    </div>
+                    <h4 className="font-semibold text-gray-900 mb-2">No QR Code Yet</h4>
+                    <p className="text-gray-600 text-sm mb-4">
+                      You need to create a QR code first. Go to Account &gt; QR Code to generate one.
+                    </p>
+                    <button
+                      onClick={() => {
+                        setShowQRModal(false);
+                        // Could navigate to QR code page here
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Go to QR Code Settings
+                    </button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

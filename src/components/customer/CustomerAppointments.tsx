@@ -24,6 +24,7 @@ export function CustomerAppointments() {
   const [showDetailerProfile, setShowDetailerProfile] = useState(false);
 
   const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
   // Filter appointments by role
   const roleFilteredAppointments = appointments.filter(apt => {
@@ -31,14 +32,19 @@ export function CustomerAppointments() {
     return apt.customerId === activeCustomerId;
   });
 
+  // Upcoming: Today's appointments (regardless of time) and future appointments that aren't completed/cancelled
   const upcomingAppointments = roleFilteredAppointments.filter(apt => {
-    const appointmentDateTime = new Date(`${apt.scheduledDate} ${apt.scheduledTime}`);
-    return appointmentDateTime > now && apt.status !== 'completed' && apt.status !== 'cancelled';
+    const isActive = apt.status !== 'completed' && apt.status !== 'cancelled';
+    const isToday = apt.scheduledDate === todayStr;
+    const isFuture = apt.scheduledDate > todayStr;
+    return isActive && (isToday || isFuture);
   });
 
+  // Past: Completed, cancelled, or appointments from before today
   const pastAppointments = roleFilteredAppointments.filter(apt => {
-    const appointmentDateTime = new Date(`${apt.scheduledDate} ${apt.scheduledTime}`);
-    return appointmentDateTime <= now || apt.status === 'completed' || apt.status === 'cancelled';
+    const isCompleted = apt.status === 'completed' || apt.status === 'cancelled';
+    const isPast = apt.scheduledDate < todayStr;
+    return isCompleted || isPast;
   });
 
   const getStatusColor = (status: Appointment['status']) => {
