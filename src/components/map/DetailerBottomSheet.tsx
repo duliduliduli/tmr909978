@@ -449,7 +449,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
         </motion.div>
 
         {/* Content Area - Added pb-20 for mobile to account for bottom nav */}
-        <div className="flex-1 min-h-0 overflow-hidden px-6 pb-6 md:pb-6 flex flex-col">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-6 pb-6 md:pb-6 flex flex-col">
           {viewState === 'list' && sheetState === 'collapsed' && (
             // Collapsed view - horizontal scroll
             <div className="flex gap-4 overflow-x-auto pb-2">
@@ -713,35 +713,38 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
 
           {viewState === 'chat' && selectedDetailer && (
             // Chat View
-            <div className="flex flex-col flex-1 pb-16">
+            <div className="flex flex-col flex-1 h-full relative">
               {/* Chat Messages */}
-              <div className="flex-1 space-y-4 overflow-y-auto mb-4">
-                {chatMessages.length === 0 && (
-                  <div className="text-center py-8">
-                    <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+              <div className="flex-1 overflow-y-auto pb-20">
+                {chatMessages.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full">
+                    <MessageCircle className="h-12 w-12 text-gray-300 mb-4" />
                     <p className="text-gray-500">Start a conversation with {selectedDetailer.name}</p>
                   </div>
-                )}
-                {chatMessages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-[80%] px-4 py-2 rounded-2xl ${
-                        message.sender === 'user'
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-100 text-gray-900'
-                      }`}
-                    >
-                      <p className="text-sm">{message.text}</p>
-                    </div>
+                ) : (
+                  <div className="space-y-4 p-2">
+                    {chatMessages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div
+                          className={`max-w-[80%] px-4 py-2 rounded-2xl ${
+                            message.sender === 'user'
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-gray-100 text-gray-900'
+                          }`}
+                        >
+                          <p className="text-sm">{message.text}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
 
-              {/* Chat Input */}
-              <div className="flex gap-2 items-end">
+              {/* Chat Input - Fixed to bottom */}
+              <div className="absolute bottom-4 left-0 right-0 flex gap-2 items-end bg-white/80 backdrop-blur-sm pt-2">
                 <div className="flex-1 relative">
                   <input
                     type="text"
@@ -820,10 +823,11 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
           {viewState === 'booking' && selectedDetailer && (
             // Inline Booking Wizard
             <div
-              className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y pb-20"
+              className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain touch-pan-y pb-20"
               onMouseDown={(e) => e.stopPropagation()}
               onTouchStart={(e) => e.stopPropagation()}
               onTouchMove={(e) => e.stopPropagation()}
+              style={{ overflowX: 'hidden' }}
             >
               <BookingWizard
                 providerId={selectedDetailer.id}

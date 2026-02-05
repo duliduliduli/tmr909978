@@ -145,7 +145,7 @@ export function BookingWizard({
   };
 
   return (
-    <div className={compact ? '' : 'max-w-2xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden'}>
+    <div className={compact ? 'overflow-x-hidden' : 'max-w-2xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden'}>
       {/* Header */}
       {!compact && (
         <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
