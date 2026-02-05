@@ -711,8 +711,8 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                       return (
                         <div
                           key={service.id}
-                          className={`border rounded-xl p-4 hover:bg-gray-50 transition-colors ${
-                            isPremium ? 'border-blue-200 bg-blue-50 hover:bg-blue-100' : 'border-gray-200'
+                          className={`border rounded-xl p-4 ${
+                            isPremium ? 'border-blue-200 bg-blue-50' : 'border-gray-200'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-2">
@@ -758,7 +758,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                 {/* Single Book Service Button */}
                 <button
                   onClick={() => handleBookService()}
-                  className="w-full bg-blue-500 text-white py-3 px-4 rounded-xl font-semibold hover:bg-blue-600 transition-colors mt-4"
+                  className="w-full bg-blue-500 text-white py-4 px-6 rounded-xl text-lg font-bold hover:bg-blue-600 transition-colors mt-6 shadow-lg"
                 >
                   Book Service
                 </button>
@@ -979,8 +979,8 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                       return (
                         <div
                           key={service.id}
-                          className={`border rounded-xl p-4 hover:bg-gray-50 transition-colors ${
-                            isPremium ? 'border-blue-200 bg-blue-50 hover:bg-blue-100' : 'border-gray-200'
+                          className={`border rounded-xl p-4 ${
+                            isPremium ? 'border-blue-200 bg-blue-50' : 'border-gray-200'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-2">
@@ -1026,7 +1026,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                 {/* Single Book Service Button */}
                 <button
                   onClick={() => handleBookService()}
-                  className="w-full bg-blue-500 text-white py-3 px-4 rounded-xl font-semibold hover:bg-blue-600 transition-colors mt-4"
+                  className="w-full bg-blue-500 text-white py-4 px-6 rounded-xl text-lg font-bold hover:bg-blue-600 transition-colors mt-6 shadow-lg"
                 >
                   Book Service
                 </button>
