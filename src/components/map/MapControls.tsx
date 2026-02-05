@@ -70,16 +70,16 @@ export function MapControls({
           disabled={!hasUserLocation}
           className={`flex items-center justify-center w-12 h-12 transition-colors ${
             !hasUserLocation
-              ? 'text-gray-400 cursor-not-allowed'
+              ? 'text-gray-300 cursor-not-allowed'
               : isLocationShuffled
               ? 'bg-purple-100 hover:bg-purple-200 text-purple-700'
-              : 'hover:bg-gray-50 text-purple-600'
+              : 'hover:bg-gray-50 text-gray-400'
           }`}
           title={
-            !hasUserLocation 
-              ? 'Need location first' 
-              : isLocationShuffled 
-              ? 'Return to original location' 
+            !hasUserLocation
+              ? 'Need location first'
+              : isLocationShuffled
+              ? 'Return to original location'
               : 'Shuffle location (demo)'
           }
         >

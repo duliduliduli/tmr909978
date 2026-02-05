@@ -44,6 +44,7 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
   const [selectedDetailerId, setSelectedDetailerId] = useState<string | null>(null);
   const [isLocationPermissionDenied, setIsLocationPermissionDenied] = useState(false);
   const [isLocationShuffled, setIsLocationShuffled] = useState(false);
+  const [originalLocation, setOriginalLocation] = useState<[number, number] | null>(null);
   const [showBottomSheet, setShowBottomSheet] = useState(true);
 
   // Get selected detailer data
@@ -291,30 +292,52 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
     );
   }, [userLocation, setUserLocation]);
 
-  // Scramble location (demo feature)
+  // Scramble location (demo feature) - toggles between original and scrambled
   const scrambleLocation = useCallback(() => {
     if (!userLocation) return;
-    
-    // Add random offset of 100-400 meters
-    const latOffset = (Math.random() - 0.5) * 0.007; // ~400m at latitude
-    const lngOffset = (Math.random() - 0.5) * 0.007;
-    
-    const scrambledLocation: [number, number] = [
-      userLocation[0] + lngOffset,
-      userLocation[1] + latOffset
-    ];
-    
-    setUserLocation(scrambledLocation);
-    setIsLocationShuffled(!isLocationShuffled);
-    
-    if (map.current) {
-      map.current.flyTo({
-        center: scrambledLocation,
-        zoom: 16,
-        duration: 1500
-      });
+
+    if (isLocationShuffled) {
+      // Currently shuffled - turn OFF and return to original location
+      if (originalLocation) {
+        setUserLocation(originalLocation);
+        if (map.current) {
+          map.current.flyTo({
+            center: originalLocation,
+            zoom: 16,
+            duration: 1500
+          });
+        }
+      }
+      setIsLocationShuffled(false);
+    } else {
+      // Currently not shuffled - turn ON and scramble to random location
+      // Store original location if not already stored
+      if (!originalLocation) {
+        setOriginalLocation(userLocation);
+      }
+
+      // Add random offset of 100-400 meters
+      const baseLocation = originalLocation || userLocation;
+      const latOffset = (Math.random() - 0.5) * 0.007; // ~400m at latitude
+      const lngOffset = (Math.random() - 0.5) * 0.007;
+
+      const scrambledLocation: [number, number] = [
+        baseLocation[0] + lngOffset,
+        baseLocation[1] + latOffset
+      ];
+
+      setUserLocation(scrambledLocation);
+      setIsLocationShuffled(true);
+
+      if (map.current) {
+        map.current.flyTo({
+          center: scrambledLocation,
+          zoom: 16,
+          duration: 1500
+        });
+      }
     }
-  }, [userLocation, setUserLocation, isLocationShuffled]);
+  }, [userLocation, setUserLocation, isLocationShuffled, originalLocation]);
 
   // Center map on user location
   const centerOnUser = useCallback(() => {
