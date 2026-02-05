@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, Edit3, Trash2, Plus, Home, Briefcase, Star, Car, X } from "lucide-react";
+import { MapPin, Edit3, Trash2, Plus, Home, Briefcase, Star, Car, X, HelpCircle, MessageCircle, FileText, Mail } from "lucide-react";
 import { mockCustomers, type Vehicle } from "@/lib/mockData";
 import { useAppStore } from "@/lib/store";
 
@@ -466,6 +466,57 @@ export function CustomerAccount() {
             </p>
           </div>
         )}
+      </div>
+
+      {/* Help & Support Section */}
+      <div className="bg-brand-900/50 border border-brand-800 rounded-xl p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="h-10 w-10 rounded-lg bg-purple-600 flex items-center justify-center">
+            <HelpCircle className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-white">Help & Support</h2>
+            <p className="text-sm text-brand-400">Get assistance when you need it</p>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <button className="w-full flex items-center gap-4 p-4 bg-brand-800/50 hover:bg-brand-800 rounded-lg border border-brand-700 transition-colors text-left">
+            <div className="h-10 w-10 rounded-lg bg-blue-600/20 flex items-center justify-center">
+              <FileText className="h-5 w-5 text-blue-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-medium text-white">FAQs</h3>
+              <p className="text-sm text-brand-400">Find answers to common questions</p>
+            </div>
+          </button>
+
+          <button className="w-full flex items-center gap-4 p-4 bg-brand-800/50 hover:bg-brand-800 rounded-lg border border-brand-700 transition-colors text-left">
+            <div className="h-10 w-10 rounded-lg bg-green-600/20 flex items-center justify-center">
+              <MessageCircle className="h-5 w-5 text-green-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-medium text-white">Live Chat Support</h3>
+              <p className="text-sm text-brand-400">Chat with our support team</p>
+            </div>
+          </button>
+
+          <button className="w-full flex items-center gap-4 p-4 bg-brand-800/50 hover:bg-brand-800 rounded-lg border border-brand-700 transition-colors text-left">
+            <div className="h-10 w-10 rounded-lg bg-amber-600/20 flex items-center justify-center">
+              <Mail className="h-5 w-5 text-amber-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-medium text-white">Email Support</h3>
+              <p className="text-sm text-brand-400">support@tumaro.com</p>
+            </div>
+          </button>
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-brand-800">
+          <p className="text-xs text-brand-500 text-center">
+            Need urgent help? Call us at (555) 123-WASH
+          </p>
+        </div>
       </div>
 
       {/* Vehicle Form Modal */}

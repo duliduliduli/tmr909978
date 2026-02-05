@@ -134,12 +134,6 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
                   {role === "customer" ? "Customer Mode" : "Detailer Mode"}
                 </span>
               </div>
-              <Link 
-                href={`${base}/help`}
-                className="h-10 w-10 rounded-full bg-brand-800 border border-brand-700 flex items-center justify-center text-brand-300 hover:border-brand-600 hover:text-accent-DEFAULT transition-colors cursor-pointer"
-              >
-                <HelpCircle className="h-5 w-5" />
-              </Link>
               <div className="h-10 w-10 rounded-full bg-brand-800 border border-brand-700 flex items-center justify-center text-brand-300 hover:border-brand-600 transition-colors cursor-pointer">
                 <User className="h-5 w-5" />
               </div>
@@ -174,12 +168,6 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
             className="h-5 object-contain"
           />
           <div className="flex items-center gap-3">
-            <Link
-              href={`${base}/help`}
-              className="h-8 w-8 rounded-full bg-brand-900 border border-brand-800 flex items-center justify-center text-brand-300 hover:border-brand-600 hover:text-accent-DEFAULT transition-colors"
-            >
-              <HelpCircle className="h-4 w-4" />
-            </Link>
             <button
               onClick={() => switchRole(role === "customer" ? "detailer" : "customer")}
               className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-900 border border-brand-800 text-xs font-medium text-brand-300"
