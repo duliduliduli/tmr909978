@@ -6,6 +6,7 @@ import { ChevronUp, ChevronDown, Star, Heart, MessageCircle, Phone, MapPin, Filt
 import { useAppStore } from '@/lib/store';
 import { StarRating } from '@/components/shared/StarRating';
 import { BookingWizard } from '@/components/booking/BookingWizard';
+import { mockDetailers as mockDetailersData } from '@/lib/mockData';
 
 interface Detailer {
   id: string;
@@ -98,91 +99,43 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
     }
   }, [selectedDetailerFromMap]);
 
-  // Mock detailer data
+  // Transform mockDetailers from mockData.ts to match our Detailer interface
   useEffect(() => {
-    const mockDetailers: Detailer[] = [
-      {
-        id: 'det_1',
-        name: 'Alex\'s Premium Detailing',
-        rating: 4.9,
-        reviewCount: 234,
-        distance: 2.3,
-        profileImage: '/images/detailers/detailer-1.webp',
-        specialties: ['Premium Wash', 'Ceramic Coating'],
-        price: '$$$',
-        availability: 'available',
-        phone: '+1234567890',
-        isFavorite: false,
-        popularity: 95,
-        latitude: 34.0522,
-        longitude: -118.2437,
-      },
-      {
-        id: 'det_2',
-        name: 'Maria\'s Mobile Detail',
-        rating: 4.7,
-        reviewCount: 189,
-        distance: 1.8,
-        profileImage: '/images/detailers/detailer-3.jpg',
-        specialties: ['Interior Deep Clean', 'Paint Protection'],
-        price: '$$',
-        availability: 'available',
-        phone: '+1234567891',
-        isFavorite: false,
-        popularity: 88,
-        latitude: 34.0623,
-        longitude: -118.2537,
-      },
-      {
-        id: 'det_3',
-        name: 'Elite Auto Spa',
-        rating: 4.8,
-        reviewCount: 156,
-        distance: 3.2,
-        profileImage: '/images/detailers/detailer-4.jpg',
-        specialties: ['Full Service', 'Wax & Polish'],
-        price: '$$',
-        availability: 'busy',
-        phone: '+1234567892',
-        isFavorite: false,
-        popularity: 82,
-        latitude: 34.0422,
-        longitude: -118.2637,
-      },
-      {
-        id: 'det_4',
-        name: 'Quick Shine Mobile',
-        rating: 4.5,
-        reviewCount: 98,
-        distance: 4.1,
-        profileImage: '/images/detailers/detailer-6.jpg',
-        specialties: ['Express Wash', 'Interior Vacuum'],
-        price: '$',
-        availability: 'available',
-        phone: '+1234567893',
-        isFavorite: false,
-        popularity: 75,
-        latitude: 34.0722,
-        longitude: -118.2337,
-      },
-      {
-        id: 'det_5',
-        name: 'Luxury Detail Co.',
-        rating: 4.9,
-        reviewCount: 287,
-        distance: 5.2,
-        profileImage: '/images/detailers/detailer-5.jpg',
-        specialties: ['Luxury Vehicles', 'Leather Treatment'],
-        price: '$$$$',
-        availability: 'offline',
-        phone: '+1234567894',
-        isFavorite: false,
-        popularity: 98,
-        latitude: 34.0322,
-        longitude: -118.2737,
-      },
+    const detailerImages = [
+      '/images/detailers/detailer-1.webp',
+      '/images/detailers/detailer-3.jpg',
+      '/images/detailers/detailer-4.jpg',
+      '/images/detailers/detailer-6.jpg',
+      '/images/detailers/detailer-5.jpg',
+      '/images/detailers/detailer-7.jpg',
     ];
-    setDetailers(mockDetailers);
+
+    const priceLevel = (services: { price: number }[]) => {
+      const avgPrice = services.reduce((sum, s) => sum + s.price, 0) / services.length;
+      if (avgPrice < 40) return '$';
+      if (avgPrice < 80) return '$$';
+      if (avgPrice < 150) return '$$$';
+      return '$$$$';
+    };
+
+    const transformed: Detailer[] = mockDetailersData.map((d, index) => ({
+      id: d.id,
+      name: d.businessName,
+      rating: d.rating,
+      reviewCount: d.reviewCount,
+      distance: Math.round((index + 1) * 1.5 * 10) / 10, // Mock distance based on index
+      profileImage: detailerImages[index] || detailerImages[0],
+      specialties: d.services.slice(0, 2).map(s => s.name),
+      price: priceLevel(d.services),
+      availability: index === 2 ? 'busy' : index === 4 ? 'offline' : 'available' as const,
+      phone: d.phone,
+      isFavorite: false,
+      popularity: Math.round(d.rating * 20),
+      latitude: d.location.lat,
+      longitude: d.location.lng,
+    }));
+
+    setDetailers(transformed);
   }, []);
 
   // Sync favorites with global store

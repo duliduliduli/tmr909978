@@ -1041,6 +1041,49 @@ export const useAppStore = create<AppState>()(
           bodyTypeMultipliers: { car: 1.0, van: 1.1, truck: 1.15, suv: 1.1 },
           luxuryCareSurchargePercent: 20,
         },
+        // det_6 - Test Drive Detailing (Emma Thompson)
+        {
+          id: "svc_16",
+          detailerId: "det_6",
+          name: "FREE Test Service",
+          description: "Complimentary test service for functionality testing",
+          price: 0,
+          duration: 30,
+          category: "Free",
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          bodyTypeMultipliers: { car: 1.0, van: 1.0, truck: 1.0, suv: 1.0 },
+          luxuryCareSurchargePercent: 0,
+        },
+        {
+          id: "svc_17",
+          detailerId: "det_6",
+          name: "Basic Exterior Wash",
+          description: "Simple exterior wash and rinse",
+          price: 25,
+          duration: 45,
+          category: "Basic",
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          bodyTypeMultipliers: { car: 1.0, van: 1.1, truck: 1.15, suv: 1.1 },
+          luxuryCareSurchargePercent: 15,
+        },
+        {
+          id: "svc_18",
+          detailerId: "det_6",
+          name: "Interior Vacuum",
+          description: "Full interior vacuum service",
+          price: 35,
+          duration: 60,
+          category: "Interior",
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          bodyTypeMultipliers: { car: 1.0, van: 1.1, truck: 1.15, suv: 1.1 },
+          luxuryCareSurchargePercent: 15,
+        },
       ],
       addService: (service) => set((state) => {
         const newService: Service = {
@@ -1117,7 +1160,7 @@ export const useAppStore = create<AppState>()(
       },
     }),
     {
-      name: "app_state_v11",
+      name: "app_state_v12",
       merge: (persistedState: any, currentState: AppState) => {
         const merged = { ...currentState, ...persistedState };
         // Refresh "today" appointment dates so they always match the current day
