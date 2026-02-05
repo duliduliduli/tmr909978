@@ -509,7 +509,8 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                     <img
                       src={detailer.profileImage}
                       alt={detailer.name}
-                      className="w-16 h-16 rounded-xl object-cover"
+                      className="w-16 h-16 rounded-xl object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => handleProfileClick(detailer)}
                     />
                     <div className="flex-1">
                       <div className="flex items-start justify-between mb-2">
@@ -602,41 +603,54 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
               onTouchMove={(e) => e.stopPropagation()}
             >
               {/* Business Header */}
-              <div className="text-center">
-                <img
-                  src={selectedDetailer.profileImage}
-                  alt={selectedDetailer.name}
-                  className="w-24 h-24 rounded-2xl mx-auto mb-4 object-cover"
-                />
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">{selectedDetailer.name}</h3>
-
-                {/* Rating and Favorite */}
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <StarRating rating={selectedDetailer.rating} size="lg" showNumber />
-                  <span
-                    className="text-gray-500 cursor-pointer hover:text-blue-600"
-                    onClick={() => handleShowReviews(selectedDetailer)}
-                  >
-                    ({selectedDetailer.reviewCount})
-                  </span>
-                  <button
-                    onClick={() => toggleFavorite(selectedDetailer.id)}
-                    className="ml-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
-                  >
-                    <Heart
-                      className={`h-5 w-5 ${
-                        isFavoriteDetailer(selectedDetailer.id)
-                          ? 'fill-red-500 text-red-500'
-                          : 'text-gray-400'
-                      }`}
-                    />
-                  </button>
+              <div className="space-y-3">
+                {/* Top Row: Profile Picture + Name */}
+                <div className="flex items-start gap-4">
+                  <img
+                    src={selectedDetailer.profileImage}
+                    alt={selectedDetailer.name}
+                    className="w-20 h-20 rounded-2xl object-cover flex-shrink-0"
+                  />
+                  <div className="flex-1 pt-1">
+                    <div className="flex items-start justify-between">
+                      <h3 className="text-xl font-bold text-gray-900">{selectedDetailer.name}</h3>
+                      <button
+                        onClick={() => toggleFavorite(selectedDetailer.id)}
+                        className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+                      >
+                        <Heart
+                          className={`h-5 w-5 ${
+                            isFavoriteDetailer(selectedDetailer.id)
+                              ? 'fill-red-500 text-red-500'
+                              : 'text-gray-400'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Business Hours */}
-                <div className="text-gray-600 mb-4">
-                  <p className="font-medium">Mon-Fri 7AM-7PM</p>
-                  <p className="text-sm">Sat 8AM-6PM • Sun 9AM-5PM</p>
+                {/* Bottom Row: Rating + Work Hours */}
+                <div className="flex items-center gap-4">
+                  {/* Rating on the left */}
+                  <div className="flex items-center gap-1.5">
+                    <StarRating rating={selectedDetailer.rating} size="md" showNumber />
+                    <span
+                      className="text-gray-500 text-sm cursor-pointer hover:text-blue-600"
+                      onClick={() => handleShowReviews(selectedDetailer)}
+                    >
+                      ({selectedDetailer.reviewCount})
+                    </span>
+                  </div>
+
+                  <div className="w-px h-4 bg-gray-300" />
+
+                  {/* Work Hours on the right */}
+                  <div className="text-gray-600 text-sm">
+                    <span className="font-medium">Mon-Fri 7AM-7PM</span>
+                    <span className="text-gray-400 mx-1">•</span>
+                    <span>Sat-Sun 8AM-5PM</span>
+                  </div>
                 </div>
               </div>
 
@@ -846,41 +860,54 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
               onTouchMove={(e) => e.stopPropagation()}
             >
               {/* Business Header */}
-              <div className="text-center">
-                <img
-                  src={selectedDetailer.profileImage}
-                  alt={selectedDetailer.name}
-                  className="w-24 h-24 rounded-2xl mx-auto mb-4 object-cover"
-                />
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">{selectedDetailer.name}</h3>
-
-                {/* Rating and Favorite */}
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <StarRating rating={selectedDetailer.rating} size="lg" showNumber />
-                  <span
-                    className="text-gray-500 cursor-pointer hover:text-blue-600"
-                    onClick={() => handleShowReviews(selectedDetailer)}
-                  >
-                    ({selectedDetailer.reviewCount})
-                  </span>
-                  <button
-                    onClick={() => toggleFavorite(selectedDetailer.id)}
-                    className="ml-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
-                  >
-                    <Heart
-                      className={`h-5 w-5 ${
-                        isFavoriteDetailer(selectedDetailer.id)
-                          ? 'fill-red-500 text-red-500'
-                          : 'text-gray-400'
-                      }`}
-                    />
-                  </button>
+              <div className="space-y-3">
+                {/* Top Row: Profile Picture + Name */}
+                <div className="flex items-start gap-4">
+                  <img
+                    src={selectedDetailer.profileImage}
+                    alt={selectedDetailer.name}
+                    className="w-20 h-20 rounded-2xl object-cover flex-shrink-0"
+                  />
+                  <div className="flex-1 pt-1">
+                    <div className="flex items-start justify-between">
+                      <h3 className="text-xl font-bold text-gray-900">{selectedDetailer.name}</h3>
+                      <button
+                        onClick={() => toggleFavorite(selectedDetailer.id)}
+                        className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+                      >
+                        <Heart
+                          className={`h-5 w-5 ${
+                            isFavoriteDetailer(selectedDetailer.id)
+                              ? 'fill-red-500 text-red-500'
+                              : 'text-gray-400'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Business Hours */}
-                <div className="text-gray-600 mb-4">
-                  <p className="font-medium">Mon-Fri 7AM-7PM</p>
-                  <p className="text-sm">Sat 8AM-6PM • Sun 9AM-5PM</p>
+                {/* Bottom Row: Rating + Work Hours */}
+                <div className="flex items-center gap-4">
+                  {/* Rating on the left */}
+                  <div className="flex items-center gap-1.5">
+                    <StarRating rating={selectedDetailer.rating} size="md" showNumber />
+                    <span
+                      className="text-gray-500 text-sm cursor-pointer hover:text-blue-600"
+                      onClick={() => handleShowReviews(selectedDetailer)}
+                    >
+                      ({selectedDetailer.reviewCount})
+                    </span>
+                  </div>
+
+                  <div className="w-px h-4 bg-gray-300" />
+
+                  {/* Work Hours on the right */}
+                  <div className="text-gray-600 text-sm">
+                    <span className="font-medium">Mon-Fri 7AM-7PM</span>
+                    <span className="text-gray-400 mx-1">•</span>
+                    <span>Sat-Sun 8AM-5PM</span>
+                  </div>
                 </div>
               </div>
 
