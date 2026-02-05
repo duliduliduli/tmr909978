@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { CreditCard, History, Coins, ChevronLeft, Building, Trash2, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BookingWizard } from "@/components/booking/BookingWizard";
+import { useTranslation } from "@/lib/i18n";
 
 interface CoinBalance {
   id: string;
@@ -58,6 +59,7 @@ const coinToDetailer: Record<string, string> = {
 };
 
 export function CustomerWallet() {
+  const { t } = useTranslation();
   const [coinBalances, setCoinBalances] = useState<CoinBalance[]>([]);
   const [totalCoinValue, setTotalCoinValue] = useState("0.00");
   const [isLoading, setIsLoading] = useState(true);
@@ -133,15 +135,15 @@ export function CustomerWallet() {
 
   const quickActions = [
     {
-      title: "Payment Methods",
-      description: "Manage cards and payment options",
+      title: t('customerWallet.paymentMethods'),
+      description: t('customerWallet.paymentMethodsDesc'),
       icon: CreditCard,
       color: "bg-blue-600",
       action: () => setCurrentView("payment-methods"),
     },
     {
-      title: "Transaction History",
-      description: "View all coin transactions",
+      title: t('customerWallet.transactionHistory'),
+      description: t('customerWallet.transactionHistoryDesc'),
       icon: History,
       color: "bg-purple-600",
       action: () => setCurrentView("transaction-history"),
@@ -173,12 +175,12 @@ export function CustomerWallet() {
         >
           <ChevronLeft className="h-5 w-5 text-brand-400" />
         </button>
-        <h1 className="text-2xl font-bold text-white">Payment Methods</h1>
+        <h1 className="text-2xl font-bold text-white">{t('customerWallet.paymentMethods')}</h1>
       </div>
 
       {/* Existing Payment Methods */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-white">Saved Cards</h2>
+        <h2 className="text-lg font-semibold text-white">{t('customerWallet.savedCards')}</h2>
         <div className="space-y-3">
           {paymentMethods.map((method, index) => (
             <motion.div
@@ -200,7 +202,7 @@ export function CustomerWallet() {
               <div className="flex items-center gap-2">
                 {method.isDefault && (
                   <span className="px-2 py-1 rounded-full bg-accent-DEFAULT/20 text-accent-DEFAULT text-xs">
-                    Default
+                    {t('customerWallet.default')}
                   </span>
                 )}
                 <button className="p-2 hover:bg-brand-700 rounded-lg transition-colors">
@@ -214,11 +216,11 @@ export function CustomerWallet() {
 
       {/* Add New Card Section */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-white">Add New Card</h2>
+        <h2 className="text-lg font-semibold text-white">{t('customerWallet.addNewCard')}</h2>
         <div className="p-4 rounded-xl bg-brand-900/50 border border-brand-800">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-brand-200 mb-2">Card Number</label>
+              <label className="block text-sm font-medium text-brand-200 mb-2">{t('customerWallet.cardNumber')}</label>
               <input
                 type="text"
                 placeholder="1234 5678 9012 3456"
@@ -227,7 +229,7 @@ export function CustomerWallet() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-brand-200 mb-2">Expiry Date</label>
+                <label className="block text-sm font-medium text-brand-200 mb-2">{t('customerWallet.expiryDate')}</label>
                 <input
                   type="text"
                   placeholder="MM/YY"
@@ -235,7 +237,7 @@ export function CustomerWallet() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-brand-200 mb-2">CVV</label>
+                <label className="block text-sm font-medium text-brand-200 mb-2">{t('customerWallet.cvv')}</label>
                 <input
                   type="text"
                   placeholder="123"
@@ -244,7 +246,7 @@ export function CustomerWallet() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-brand-200 mb-2">Name on Card</label>
+              <label className="block text-sm font-medium text-brand-200 mb-2">{t('customerWallet.nameOnCard')}</label>
               <input
                 type="text"
                 placeholder="John Smith"
@@ -252,7 +254,7 @@ export function CustomerWallet() {
               />
             </div>
             <button className="w-full px-4 py-3 bg-accent-DEFAULT hover:bg-accent-hover text-white rounded-lg transition-colors font-medium">
-              Add Card
+              {t('customerWallet.addCard')}
             </button>
           </div>
         </div>
@@ -271,19 +273,19 @@ export function CustomerWallet() {
         >
           <ChevronLeft className="h-5 w-5 text-brand-400" />
         </button>
-        <h1 className="text-2xl font-bold text-white">Transaction History</h1>
+        <h1 className="text-2xl font-bold text-white">{t('customerWallet.transactionHistory')}</h1>
       </div>
 
       {/* Filter Options */}
       <div className="flex gap-2">
         <button className="px-4 py-2 bg-accent-DEFAULT text-white rounded-lg text-sm font-medium">
-          All
+          {t('customerWallet.all')}
         </button>
         <button className="px-4 py-2 bg-brand-800 text-brand-300 hover:bg-brand-700 rounded-lg text-sm font-medium transition-colors">
-          Coins Earned
+          {t('customerWallet.coinsEarned')}
         </button>
         <button className="px-4 py-2 bg-brand-800 text-brand-300 hover:bg-brand-700 rounded-lg text-sm font-medium transition-colors">
-          Coins Redeemed
+          {t('customerWallet.coinsRedeemed')}
         </button>
       </div>
 
@@ -350,7 +352,7 @@ export function CustomerWallet() {
       >
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-yellow-100 text-xs">Total Reward Coins</p>
+            <p className="text-yellow-100 text-xs">{t('customerWallet.totalRewardCoins')}</p>
             <p className="text-2xl font-bold">${totalCoinValue}</p>
           </div>
           <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center">
@@ -361,7 +363,7 @@ export function CustomerWallet() {
 
       {/* Quick Actions - Now at top */}
       <div className="space-y-3">
-        <h2 className="text-lg font-semibold text-white">Quick Actions</h2>
+        <h2 className="text-lg font-semibold text-white">{t('customerWallet.quickActions')}</h2>
         <div className="grid grid-cols-2 gap-3">
           {quickActions.map((action, index) => (
             <motion.button
@@ -385,7 +387,7 @@ export function CustomerWallet() {
 
       {/* Promotional Coins - Stacked vertically */}
       <div className="space-y-3">
-        <h2 className="text-lg font-semibold text-white">Promotional Coins</h2>
+        <h2 className="text-lg font-semibold text-white">{t('customerWallet.promotionalCoins')}</h2>
 
         {isLoading ? (
           <div className="space-y-3">
@@ -434,13 +436,13 @@ export function CustomerWallet() {
                   {/* Coin Amount */}
                   <div className="text-center px-3">
                     <p className="font-semibold text-white text-sm">{coinBalance.balance}</p>
-                    <p className="text-xs text-brand-500">coins</p>
+                    <p className="text-xs text-brand-500">{t('customerWallet.coins')}</p>
                   </div>
 
                   {/* Dollar Value */}
                   <div className="text-center px-3">
                     <p className="font-semibold text-accent-DEFAULT text-sm">${coinBalance.dollarValue}</p>
-                    <p className="text-xs text-brand-500">value</p>
+                    <p className="text-xs text-brand-500">{t('customerWallet.value')}</p>
                   </div>
 
                   {/* Redeem Button */}
@@ -448,7 +450,7 @@ export function CustomerWallet() {
                     onClick={() => handleRedeemClick(coinBalance)}
                     className="px-3 py-1.5 bg-accent-DEFAULT hover:bg-accent-hover text-white text-xs font-medium rounded-lg transition-colors flex-shrink-0"
                   >
-                    Redeem
+                    {t('customerWallet.redeem')}
                   </button>
                 </div>
               </motion.div>
@@ -459,8 +461,8 @@ export function CustomerWallet() {
             <div className="h-12 w-12 rounded-full bg-brand-800 flex items-center justify-center mx-auto">
               <Coins className="h-6 w-6 text-brand-600" />
             </div>
-            <p className="text-brand-400 text-sm">No promotional coins yet</p>
-            <p className="text-xs text-brand-500">Complete your first booking to start earning!</p>
+            <p className="text-brand-400 text-sm">{t('customerWallet.noPromotionalCoins')}</p>
+            <p className="text-xs text-brand-500">{t('customerWallet.completeFirstBooking')}</p>
           </div>
         )}
       </div>

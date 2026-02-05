@@ -4,8 +4,10 @@ import Link from "next/link";
 import { ChevronRight, MapPin, Calendar, Star, Zap, Clock, Home, Briefcase, Plus, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
+import { useTranslation } from "@/lib/i18n";
 
 export function CustomerHome() {
+  const { t } = useTranslation();
   const [showAddressInput, setShowAddressInput] = useState(false);
   const [addressType, setAddressType] = useState<'home' | 'work' | 'favorite'>('home');
   const [addressValue, setAddressValue] = useState('');
@@ -30,22 +32,22 @@ export function CustomerHome() {
 
   const quickActions = [
     {
-      title: "Add Home",
-      description: "Set your home address for quick access",
+      title: t('customerHome.addHome'),
+      description: t('customerHome.addHomeDesc'),
       icon: Home,
       action: () => openAddressInput('home'),
       color: "bg-brand-700",
     },
     {
-      title: "Add Work",
-      description: "Set your work address for convenience",
+      title: t('customerHome.addWork'),
+      description: t('customerHome.addWorkDesc'),
       icon: Briefcase,
       action: () => openAddressInput('work'),
       color: "bg-brand-600",
     },
     {
-      title: "+ Add Favorite",
-      description: "Add a frequently visited location",
+      title: t('customerHome.addFavorite'),
+      description: t('customerHome.addFavoriteDesc'),
       icon: Plus,
       action: () => openAddressInput('favorite'),
       color: "bg-brand-800",
@@ -106,13 +108,13 @@ export function CustomerHome() {
     <div className="p-6 space-y-8 pb-24 lg:pb-6">
       {/* Welcome Section */}
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold text-white">Welcome back!</h1>
-        <p className="text-brand-400">Ready to give your car some love?</p>
+        <h1 className="text-3xl font-bold text-white">{t('customerHome.welcomeBack')}</h1>
+        <p className="text-brand-400">{t('customerHome.readyToGive')}</p>
       </div>
 
       {/* Quick Actions */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-white">Quick Actions</h2>
+        <h2 className="text-xl font-semibold text-white">{t('customerHome.quickActions')}</h2>
         <div className="grid grid-cols-1 gap-4">
           {quickActions.map((action, index) => (
             <motion.div
@@ -146,12 +148,12 @@ export function CustomerHome() {
       {/* Recent Bookings */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-white">Recent Services</h2>
+          <h2 className="text-xl font-semibold text-white">{t('customerHome.recentServices')}</h2>
           <Link
             href="/customer/bookings"
             className="text-accent-DEFAULT text-sm font-medium hover:text-accent-hover transition-colors"
           >
-            View All
+            {t('customerHome.viewAll')}
           </Link>
         </div>
 
@@ -190,12 +192,12 @@ export function CustomerHome() {
             <div className="h-16 w-16 rounded-full bg-brand-800 flex items-center justify-center mx-auto">
               <Clock className="h-8 w-8 text-brand-600" />
             </div>
-            <p className="text-brand-400">No recent bookings</p>
+            <p className="text-brand-400">{t('customerHome.noRecentBookings')}</p>
             <Link
               href="/customer/map"
               className="inline-flex items-center gap-2 text-accent-DEFAULT font-medium hover:text-accent-hover transition-colors"
             >
-              Book your first service
+              {t('customerHome.bookFirstService')}
               <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
@@ -209,8 +211,8 @@ export function CustomerHome() {
             <Star className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h3 className="font-semibold text-white">Premium Member</h3>
-            <p className="text-sm text-accent-100">Enjoy exclusive benefits and priority booking</p>
+            <h3 className="font-semibold text-white">{t('customerHome.premiumMember')}</h3>
+            <p className="text-sm text-accent-100">{t('customerHome.premiumBenefits')}</p>
           </div>
         </div>
       </div>
@@ -237,9 +239,9 @@ export function CustomerHome() {
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-white">
-                  {addressType === 'home' ? 'Add Home Address' : 
-                   addressType === 'work' ? 'Add Work Address' : 
-                   'Add Favorite Location'}
+                  {addressType === 'home' ? t('customerHome.addHomeAddress') :
+                   addressType === 'work' ? t('customerHome.addWorkAddress') :
+                   t('customerHome.addFavoriteLocation')}
                 </h2>
                 <button
                   onClick={() => setShowAddressInput(false)}
@@ -253,13 +255,13 @@ export function CustomerHome() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-brand-200 mb-2">
-                    Address
+                    {t('customerHome.address')}
                   </label>
                   <input
                     type="text"
                     value={addressValue}
                     onChange={(e) => setAddressValue(e.target.value)}
-                    placeholder="Enter full address..."
+                    placeholder={t('customerHome.enterFullAddress')}
                     className="w-full px-4 py-3 bg-brand-900 border border-brand-700 rounded-lg text-white placeholder-brand-500 focus:outline-none focus:ring-2 focus:ring-accent-DEFAULT focus:border-transparent"
                     autoFocus
                     onKeyDown={(e) => {
@@ -279,14 +281,14 @@ export function CustomerHome() {
                     onClick={() => setShowAddressInput(false)}
                     className="flex-1 px-4 py-3 bg-brand-800 hover:bg-brand-700 text-white rounded-lg transition-colors"
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                   <button
                     onClick={saveAddress}
                     disabled={!addressValue.trim()}
                     className="flex-1 px-4 py-3 bg-accent-DEFAULT hover:bg-accent-hover text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Save
+                    {t('common.save')}
                   </button>
                 </div>
               </div>
