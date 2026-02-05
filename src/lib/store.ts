@@ -654,9 +654,7 @@ export const useAppStore = create<AppState>()(
             const isToday = apt.scheduledDate === today;
             const isForDetailer = apt.detailerId === detailerId;
             const isActive = apt.status !== 'completed' && apt.status !== 'cancelled';
-            const appointmentTime = new Date(`${apt.scheduledDate} ${apt.scheduledTime}`);
-            const isUpcoming = appointmentTime > now;
-            return isToday && isForDetailer && isActive && isUpcoming;
+            return isToday && isForDetailer && isActive;
           })
           .sort((a, b) => {
             const timeA = new Date(`${a.scheduledDate} ${a.scheduledTime}`).getTime();
