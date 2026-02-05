@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { ChevronUp, ChevronDown, Star, Heart, MessageCircle, Phone, MapPin, Filter, SlidersHorizontal, ArrowLeft, Send } from 'lucide-react';
-import { useAppStore } from '@/lib/store';
+import { useAppStore, type ChatMessage } from '@/lib/store';
 import { StarRating } from '@/components/shared/StarRating';
 import { BookingWizard } from '@/components/booking/BookingWizard';
 import { mockDetailers as mockDetailersData } from '@/lib/mockData';
@@ -65,10 +65,10 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
   const [sortBy, setSortBy] = useState<SortOption>('distance');
   const [selectedDetailer, setSelectedDetailer] = useState<Detailer | null>(null);
   const [viewState, setViewState] = useState<ViewState>('list');
-  const { favoriteDetailers, toggleFavoriteDetailer, isFavoriteDetailer, getActiveServicesByDetailer } = useAppStore();
+  const { favoriteDetailers, toggleFavoriteDetailer, isFavoriteDetailer, getActiveServicesByDetailer, addChatMessage, getChatMessages, activeCustomerId } = useAppStore();
   const [sheetHeights, setSheetHeights] = useState(getSheetHeights());
   const [chatMessage, setChatMessage] = useState('');
-  const [chatMessages, setChatMessages] = useState<Array<{id: string; text: string; sender: 'user' | 'detailer'; timestamp: Date}>>([]);
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
 
   const y = useMotionValue(0);
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -217,18 +217,21 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
   };
 
   const handleChat = (detailer: Detailer) => {
+    setSlideDirection('left');
     setSelectedDetailer(detailer);
     setViewState('chat');
     if (sheetState !== 'expanded') setSheetState('expanded');
   };
 
   const handleProfileClick = (detailer: Detailer) => {
+    setSlideDirection('left');
     setSelectedDetailer(detailer);
     setViewState('profile');
     if (sheetState === 'collapsed') setSheetState('expanded');
   };
-  
+
   const handleBackToList = () => {
+    setSlideDirection('right');
     setViewState('list');
     setSelectedDetailer(null);
     // Clear map selection if we're coming back from a map-selected detailer
@@ -236,18 +239,30 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
       onClearMapSelection();
     }
   };
-  
+
   const handleShowReviews = (detailer: Detailer) => {
+    setSlideDirection('left');
     setSelectedDetailer(detailer);
     setViewState('reviews');
   };
-  
+
   const handleBookService = () => {
     if (!selectedDetailer) return;
+    setSlideDirection('left');
     setViewState('booking');
   };
 
   const handleBackFromBooking = () => {
+    setSlideDirection('right');
+    if (selectedDetailerFromMap) {
+      setViewState('single');
+    } else {
+      setViewState('profile');
+    }
+  };
+
+  const handleBackFromChat = () => {
+    setSlideDirection('right');
     if (selectedDetailerFromMap) {
       setViewState('single');
     } else {
@@ -265,17 +280,16 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
 
   const handleSendMessage = () => {
     if (!chatMessage.trim() || !selectedDetailer) return;
-    
-    const newMessage = {
-      id: Date.now().toString(),
-      text: chatMessage,
-      sender: 'user' as const,
-      timestamp: new Date()
-    };
-    
-    setChatMessages(prev => [...prev, newMessage]);
+
+    // Add message to global store
+    addChatMessage(selectedDetailer.id, activeCustomerId, {
+      text: chatMessage.trim(),
+      fromMe: true,
+      timestamp: new Date().toISOString()
+    });
+
     setChatMessage('');
-    
+
     // Simulate detailer response after 1-2 seconds
     setTimeout(() => {
       const responses = [
@@ -284,15 +298,18 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
         "Hello! I'd be happy to detail your vehicle. When would work best?",
         "Great to hear from you! Let me know what services you're interested in."
       ];
-      const response = {
-        id: (Date.now() + 1).toString(),
+      addChatMessage(selectedDetailer.id, activeCustomerId, {
         text: responses[Math.floor(Math.random() * responses.length)],
-        sender: 'detailer' as const,
-        timestamp: new Date()
-      };
-      setChatMessages(prev => [...prev, response]);
+        fromMe: false,
+        timestamp: new Date().toISOString()
+      });
     }, 1000 + Math.random() * 1000);
   };
+
+  // Get chat messages from global store
+  const currentChatMessages = selectedDetailer
+    ? getChatMessages(selectedDetailer.id, activeCustomerId)
+    : [];
 
   if (!isVisible) return null;
 
@@ -371,7 +388,22 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
             ) : (
               <div className="flex items-center gap-3">
                 <button
-                  onClick={viewState === 'booking' ? handleBackFromBooking : handleBackToList}
+                  onClick={() => {
+                    if (viewState === 'booking') {
+                      handleBackFromBooking();
+                    } else if (viewState === 'chat') {
+                      handleBackFromChat();
+                    } else if (viewState === 'reviews') {
+                      setSlideDirection('right');
+                      if (selectedDetailerFromMap) {
+                        setViewState('single');
+                      } else {
+                        setViewState('profile');
+                      }
+                    } else {
+                      handleBackToList();
+                    }
+                  }}
                   className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
                 >
                   <ArrowLeft className="h-5 w-5 text-gray-600" />
@@ -449,10 +481,18 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
         </motion.div>
 
         {/* Content Area - Added pb-20 for mobile to account for bottom nav */}
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-6 pb-6 md:pb-6 flex flex-col">
+        <div className="flex-1 min-h-0 overflow-hidden px-6 pb-6 md:pb-6 flex flex-col">
+          <AnimatePresence mode="wait" initial={false}>
           {viewState === 'list' && sheetState === 'collapsed' && (
             // Collapsed view - horizontal scroll
-            <div className="flex gap-4 overflow-x-auto pb-2">
+            <motion.div
+              key="collapsed-list"
+              initial={{ opacity: 0, x: slideDirection === 'left' ? 100 : -100 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: slideDirection === 'left' ? -100 : 100 }}
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
+              className="flex gap-4 overflow-x-auto pb-2"
+            >
               {filteredDetailers.slice(0, 3).map((detailer) => (
                 <motion.div
                   key={detailer.id}
@@ -488,14 +528,19 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                   </div>
                 </motion.div>
               ))}
-            </div>
+            </motion.div>
           )}
 
           {viewState === 'list' && sheetState === 'expanded' && (
             // Expanded view - vertical list with scroll
-            <div 
-              className="space-y-4 flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y pb-20" 
-              onMouseDown={(e) => e.stopPropagation()} 
+            <motion.div
+              key="expanded-list"
+              initial={{ opacity: 0, x: slideDirection === 'left' ? 100 : -100 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: slideDirection === 'left' ? -100 : 100 }}
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
+              className="space-y-4 flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y pb-20"
+              onMouseDown={(e) => e.stopPropagation()}
               onTouchStart={(e) => e.stopPropagation()}
               onTouchMove={(e) => e.stopPropagation()}
             >
@@ -591,12 +636,17 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                   </div>
                 </motion.div>
               ))}
-            </div>
+            </motion.div>
           )}
 
           {viewState === 'profile' && selectedDetailer && (
             // Profile View - Same as Single View with booking
-            <div
+            <motion.div
+              key="profile-view"
+              initial={{ opacity: 0, x: slideDirection === 'left' ? 100 : -100 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: slideDirection === 'left' ? -100 : 100 }}
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
               className="space-y-6 flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y pb-20"
               onMouseDown={(e) => e.stopPropagation()}
               onTouchStart={(e) => e.stopPropagation()}
@@ -722,29 +772,36 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                   </button>
                 )}
               </div>
-            </div>
+            </motion.div>
           )}
 
           {viewState === 'chat' && selectedDetailer && (
             // Chat View
-            <div className="flex flex-col flex-1 h-full relative">
+            <motion.div
+              key="chat-view"
+              initial={{ opacity: 0, x: slideDirection === 'left' ? 100 : -100 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: slideDirection === 'left' ? -100 : 100 }}
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
+              className="flex flex-col flex-1 h-full relative"
+            >
               {/* Chat Messages */}
               <div className="flex-1 overflow-y-auto pb-20">
-                {chatMessages.length === 0 ? (
+                {currentChatMessages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full">
                     <MessageCircle className="h-12 w-12 text-gray-300 mb-4" />
                     <p className="text-gray-500">Start a conversation with {selectedDetailer.name}</p>
                   </div>
                 ) : (
                   <div className="space-y-4 p-2">
-                    {chatMessages.map((message) => (
+                    {currentChatMessages.map((message: ChatMessage, idx: number) => (
                       <div
-                        key={message.id}
-                        className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                        key={idx}
+                        className={`flex ${message.fromMe ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
                           className={`max-w-[80%] px-4 py-2 rounded-2xl ${
-                            message.sender === 'user'
+                            message.fromMe
                               ? 'bg-blue-500 text-white'
                               : 'bg-gray-100 text-gray-900'
                           }`}
@@ -777,14 +834,19 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                   <Send className="h-5 w-5" />
                 </button>
               </div>
-            </div>
+            </motion.div>
           )}
 
           {viewState === 'reviews' && selectedDetailer && (
             // Reviews View
-            <div 
-              className="space-y-4 flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y pb-20" 
-              onMouseDown={(e) => e.stopPropagation()} 
+            <motion.div
+              key="reviews-view"
+              initial={{ opacity: 0, x: slideDirection === 'left' ? 100 : -100 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: slideDirection === 'left' ? -100 : 100 }}
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
+              className="space-y-4 flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y pb-20"
+              onMouseDown={(e) => e.stopPropagation()}
               onTouchStart={(e) => e.stopPropagation()}
               onTouchMove={(e) => e.stopPropagation()}
             >
@@ -831,12 +893,17 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                   <p className="text-gray-700 text-sm">{review.text}</p>
                 </div>
               ))}
-            </div>
+            </motion.div>
           )}
 
           {viewState === 'booking' && selectedDetailer && (
             // Inline Booking Wizard
-            <div
+            <motion.div
+              key="booking-view"
+              initial={{ opacity: 0, x: slideDirection === 'left' ? 100 : -100 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: slideDirection === 'left' ? -100 : 100 }}
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
               className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain touch-pan-y pb-20"
               onMouseDown={(e) => e.stopPropagation()}
               onTouchStart={(e) => e.stopPropagation()}
@@ -848,12 +915,17 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                 onComplete={handleBookingDone}
                 compact
               />
-            </div>
+            </motion.div>
           )}
 
           {viewState === 'single' && selectedDetailer && (
             // Single Detailer View (from map marker click)
-            <div
+            <motion.div
+              key="single-view"
+              initial={{ opacity: 0, x: slideDirection === 'left' ? 100 : -100 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: slideDirection === 'left' ? -100 : 100 }}
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
               className="space-y-6 flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y pb-20"
               onMouseDown={(e) => e.stopPropagation()}
               onTouchStart={(e) => e.stopPropagation()}
@@ -979,8 +1051,9 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                   </button>
                 )}
               </div>
-            </div>
+            </motion.div>
           )}
+          </AnimatePresence>
         </div>
       </motion.div>
 

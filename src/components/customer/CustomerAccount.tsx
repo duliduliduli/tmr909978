@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, Edit3, Trash2, Plus, Home, Briefcase, Star, Car, X, HelpCircle, MessageCircle, FileText, Mail, Check } from "lucide-react";
+import { MapPin, Edit3, Trash2, Plus, Home, Briefcase, Star, Car, X, HelpCircle, MessageCircle, FileText, Mail, Check, User, Camera } from "lucide-react";
 import { mockCustomers, type Vehicle } from "@/lib/mockData";
 import { useAppStore } from "@/lib/store";
 
@@ -99,6 +99,7 @@ export function CustomerAccount() {
   const [customerName, setCustomerName] = useState('John Smith');
   const [customerEmail, setCustomerEmail] = useState('customer@test.com');
   const [customerPhone, setCustomerPhone] = useState('(555) 123-4567');
+  const [profileImage, setProfileImage] = useState<string | null>(null);
 
   // Editing states
   const [editingField, setEditingField] = useState<EditingField>(null);
@@ -246,6 +247,54 @@ export function CustomerAccount() {
       <div className="bg-brand-900/50 border border-brand-800 rounded-xl p-6">
         <h2 className="text-xl font-bold text-white mb-4">Profile</h2>
         <div className="space-y-4">
+          {/* Profile Picture */}
+          <div className="flex items-center gap-4 pb-4 border-b border-brand-700">
+            <div className="relative">
+              {profileImage ? (
+                <img
+                  src={profileImage}
+                  alt="Profile"
+                  className="w-20 h-20 rounded-xl object-cover border-2 border-brand-700"
+                />
+              ) : (
+                <div className="w-20 h-20 rounded-xl bg-brand-800 border-2 border-brand-700 flex items-center justify-center">
+                  <User className="h-10 w-10 text-brand-500" />
+                </div>
+              )}
+              <label className="absolute -bottom-2 -right-2 p-2 bg-accent-DEFAULT hover:bg-accent-hover rounded-full cursor-pointer transition-colors">
+                <Camera className="h-4 w-4 text-white" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setProfileImage(reader.result as string);
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+              </label>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm text-brand-400">
+                {profileImage ? 'Click the camera to change your photo' : 'Add a profile picture'}
+              </p>
+              {profileImage && (
+                <button
+                  onClick={() => setProfileImage(null)}
+                  className="text-sm text-red-400 hover:text-red-300 mt-1 transition-colors"
+                >
+                  Remove photo
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Name */}
           <div className="border border-brand-700 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
