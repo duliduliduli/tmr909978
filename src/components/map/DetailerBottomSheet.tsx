@@ -639,9 +639,9 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                   <p className="text-sm">Sat 8AM-6PM • Sun 9AM-5PM</p>
                 </div>
 
-                {/* Premium Coins */}
+                {/* Promotional Coins */}
                 <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-4 mb-4">
-                  <h4 className="font-semibold text-yellow-800 mb-1">Premium Coins</h4>
+                  <h4 className="font-semibold text-yellow-800 mb-1">Promotional Coins</h4>
                   <p className="text-sm text-yellow-700">Earn 1.5x coins • $0.12 per coin</p>
                 </div>
               </div>
@@ -879,9 +879,9 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                   <p className="text-sm">Sat 8AM-6PM • Sun 9AM-5PM</p>
                 </div>
 
-                {/* Premium Coins */}
+                {/* Promotional Coins */}
                 <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-4 mb-4">
-                  <h4 className="font-semibold text-yellow-800 mb-1">Premium Coins</h4>
+                  <h4 className="font-semibold text-yellow-800 mb-1">Promotional Coins</h4>
                   <p className="text-sm text-yellow-700">Earn 1.5x coins • $0.12 per coin</p>
                 </div>
               </div>

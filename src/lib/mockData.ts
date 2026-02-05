@@ -91,6 +91,7 @@ export const mockDetailers: Detailer[] = [
     rating: 4.9,
     reviewCount: 142,
     services: [
+      { id: "s0_1", name: "Test Service", description: "Free test service for payment testing", price: 0, duration: 15, category: "Test" },
       { id: "s1", name: "Basic Wash", description: "Exterior wash & dry", price: 25, duration: 30, category: "Basic" },
       { id: "s2", name: "Full Detail", description: "Interior & exterior detail", price: 120, duration: 180, category: "Premium" },
       { id: "s3", name: "Paint Correction", description: "Paint correction & ceramic coating", price: 300, duration: 240, category: "Premium" }
@@ -117,6 +118,7 @@ export const mockDetailers: Detailer[] = [
     rating: 4.8,
     reviewCount: 89,
     services: [
+      { id: "s0_2", name: "Test Service", description: "Free test service for payment testing", price: 0, duration: 15, category: "Test" },
       { id: "s4", name: "Express Wash", description: "Quick exterior wash", price: 20, duration: 20, category: "Basic" },
       { id: "s5", name: "Interior Deep Clean", description: "Deep vacuum & sanitize", price: 80, duration: 120, category: "Interior" }
     ],
@@ -140,6 +142,7 @@ export const mockDetailers: Detailer[] = [
     rating: 4.7,
     reviewCount: 203,
     services: [
+      { id: "s0_3", name: "Test Service", description: "Free test service for payment testing", price: 0, duration: 15, category: "Test" },
       { id: "s6", name: "Luxury Detail", description: "Premium service for luxury cars", price: 200, duration: 240, category: "Luxury" },
       { id: "s7", name: "Ceramic Coating", description: "9H ceramic coating protection", price: 500, duration: 360, category: "Protection" }
     ],
@@ -165,6 +168,7 @@ export const mockDetailers: Detailer[] = [
     rating: 4.9,
     reviewCount: 156,
     services: [
+      { id: "s0_4", name: "Test Service", description: "Free test service for payment testing", price: 0, duration: 15, category: "Test" },
       { id: "s8", name: "Quick Wash", description: "Fast and efficient wash service", price: 35, duration: 45, category: "Quick" },
       { id: "s9", name: "Express Detail", description: "Quick interior and exterior touch-up", price: 90, duration: 90, category: "Quick" }
     ],
@@ -188,6 +192,7 @@ export const mockDetailers: Detailer[] = [
     rating: 4.6,
     reviewCount: 78,
     services: [
+      { id: "s0_5", name: "Test Service", description: "Free test service for payment testing", price: 0, duration: 15, category: "Test" },
       { id: "s10", name: "Professional Detail", description: "Complete professional service", price: 60, duration: 75, category: "Professional" },
       { id: "s11", name: "Luxury Vehicle Care", description: "Specialized care for luxury vehicles", price: 150, duration: 210, category: "Luxury" }
     ],

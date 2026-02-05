@@ -61,10 +61,10 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
       rating: mapDetailer.rating || 4.8,
       reviewCount: mapDetailer.reviewCount || 89,
       distance: mapDetailer.distance || 2.1,
-      profileImage: mapDetailer.image || '/api/placeholder/60/60',
-      specialties: mapDetailer.services || ['Premium Wash', 'Ceramic Coating'],
+      profileImage: mapDetailer.profileImage || '/images/detailers/detailer-1.webp',
+      specialties: mapDetailer.services?.map((s: any) => s.name) || ['Premium Wash', 'Ceramic Coating'],
       price: mapDetailer.priceRange || '$$$',
-      availability: mapDetailer.status === 'available' ? 'available' as const : 
+      availability: mapDetailer.status === 'available' ? 'available' as const :
                    mapDetailer.status === 'busy' ? 'busy' as const : 'offline' as const,
       phone: mapDetailer.phone || '+1234567890',
       isFavorite: false,

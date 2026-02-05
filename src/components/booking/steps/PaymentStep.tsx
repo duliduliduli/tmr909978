@@ -50,8 +50,8 @@ export function PaymentStep({
   const vehicleSubtotalCents = Math.round(
     (bookingData.totalPrice || bookingData.vehicles.reduce((sum, v) => sum + v.adjustedPrice, 0)) * 100
   );
-  const taxCents = Math.round(vehicleSubtotalCents * 0.0875); // 8.75% tax
-  const totalBeforeTip = vehicleSubtotalCents + taxCents;
+  const transactionFeeCents = Math.round(vehicleSubtotalCents * 0.04); // 4% transaction fee
+  const totalBeforeTip = vehicleSubtotalCents + transactionFeeCents;
   const tipCents = Math.round(tipAmount * 100);
   const finalTotal = totalBeforeTip + tipCents;
 
@@ -143,8 +143,8 @@ export function PaymentStep({
             </div>
           )}
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Tax (8.75%)</span>
-            <span className="text-gray-900">{formatPrice(taxCents)}</span>
+            <span className="text-gray-600">Transaction Fee (4%)</span>
+            <span className="text-gray-900">{formatPrice(transactionFeeCents)}</span>
           </div>
           {tipCents > 0 && (
             <div className="flex justify-between text-sm">
