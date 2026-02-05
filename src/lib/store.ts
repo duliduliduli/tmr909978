@@ -1116,6 +1116,26 @@ export const useAppStore = create<AppState>()(
         return state.detailerQRCodes.find(qr => qr.detailerId === detailerId);
       },
     }),
-    { name: "app_state_v11" }
+    {
+      name: "app_state_v11",
+      merge: (persistedState: any, currentState: AppState) => {
+        const merged = { ...currentState, ...persistedState };
+        // Refresh "today" appointment dates so they always match the current day
+        // This prevents stale persisted dates from hiding mock appointments
+        const now = new Date();
+        const freshToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const todayIds = [
+          'apt_today_1', 'apt_today_2', 'apt_today_3', 'apt_today_4',
+          'apt_today_5', 'apt_today_6', 'apt_today_7', 'apt_today_8'
+        ];
+        merged.appointments = merged.appointments.map((apt: Appointment) => {
+          if (todayIds.includes(apt.id)) {
+            return { ...apt, scheduledDate: freshToday };
+          }
+          return apt;
+        });
+        return merged;
+      },
+    }
   )
 );

@@ -27,24 +27,31 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
   const etaMarkersRef = useRef<mapboxgl.Marker[]>([]);
 
   const { userLocation, setUserLocation, mapViewState, setMapViewState, activeDetailerId } = useAppStore();
+  const todaysAppointments = useAppStore((state) => {
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    return state.appointments
+      .filter(apt => {
+        const isToday = apt.scheduledDate === today;
+        const isForDetailer = apt.detailerId === activeDetailerId;
+        const isActive = apt.status !== 'completed' && apt.status !== 'cancelled';
+        return isToday && isForDetailer && isActive;
+      })
+      .sort((a, b) => {
+        const timeA = new Date(`${a.scheduledDate} ${a.scheduledTime}`).getTime();
+        const timeB = new Date(`${b.scheduledDate} ${b.scheduledTime}`).getTime();
+        return timeA - timeB;
+      });
+  });
 
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
   const mapboxStyle = process.env.NEXT_PUBLIC_MAPBOX_STYLE;
 
   const [isLoaded, setIsLoaded] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
   const [isLocationPermissionDenied, setIsLocationPermissionDenied] = useState(false);
   const [isLocationShuffled, setIsLocationShuffled] = useState(false);
   const [showRoute, setShowRoute] = useState(false);
   const [etaMinutes, setEtaMinutes] = useState<number[]>([]);
-
-  // Track client mount to avoid hydration mismatch
-  useEffect(() => { setIsMounted(true); }, []);
-
-  // Get today's appointments for the active detailer (only on client)
-  const todaysAppointments = isMounted
-    ? useAppStore.getState().getTodaysAppointments(activeDetailerId)
-    : [];
 
   // Initialize map
   useEffect(() => {
