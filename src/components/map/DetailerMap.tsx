@@ -50,6 +50,7 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isLocationPermissionDenied, setIsLocationPermissionDenied] = useState(false);
   const [isLocationShuffled, setIsLocationShuffled] = useState(false);
+  const [originalLocation, setOriginalLocation] = useState<[number, number] | null>(null);
   const [showRoute, setShowRoute] = useState(false);
   const [etaMinutes, setEtaMinutes] = useState<number[]>([]);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
@@ -169,16 +170,30 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
 
   const scrambleLocation = useCallback(() => {
     if (!userLocation) return;
-    const scrambled: [number, number] = [
-      userLocation[0] + (Math.random() - 0.5) * 0.007,
-      userLocation[1] + (Math.random() - 0.5) * 0.007
-    ];
-    setUserLocation(scrambled);
-    setIsLocationShuffled(!isLocationShuffled);
-    if (map.current) {
-      map.current.flyTo({ center: scrambled, zoom: 16, duration: 1500 });
+
+    if (isLocationShuffled) {
+      // Turn OFF shuffle - restore original location
+      if (originalLocation) {
+        setUserLocation(originalLocation);
+        if (map.current) {
+          map.current.flyTo({ center: originalLocation, zoom: 16, duration: 1500 });
+        }
+      }
+      setIsLocationShuffled(false);
+    } else {
+      // Turn ON shuffle - store original and scramble
+      setOriginalLocation(userLocation);
+      const scrambled: [number, number] = [
+        userLocation[0] + (Math.random() - 0.5) * 0.002, // ~200m radius
+        userLocation[1] + (Math.random() - 0.5) * 0.002
+      ];
+      setUserLocation(scrambled);
+      setIsLocationShuffled(true);
+      if (map.current) {
+        map.current.flyTo({ center: scrambled, zoom: 16, duration: 1500 });
+      }
     }
-  }, [userLocation, setUserLocation, isLocationShuffled]);
+  }, [userLocation, setUserLocation, isLocationShuffled, originalLocation]);
 
   const centerOnUser = useCallback(() => {
     if (!userLocation) { requestLocation(true); return; }
