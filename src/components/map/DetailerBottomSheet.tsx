@@ -638,17 +638,17 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                   <p className="font-medium">Mon-Fri 7AM-7PM</p>
                   <p className="text-sm">Sat 8AM-6PM • Sun 9AM-5PM</p>
                 </div>
-
-                {/* Promotional Coins */}
-                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-4 mb-4">
-                  <h4 className="font-semibold text-yellow-800 mb-1">Promotional Coins</h4>
-                  <p className="text-sm text-yellow-700">Earn 1.5x coins • $0.12 per coin</p>
-                </div>
               </div>
 
               {/* Services Section */}
               <div>
-                <h4 className="text-xl font-bold text-gray-900 mb-3">Services</h4>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-xl font-bold text-gray-900">Services</h4>
+                  {/* Promotional Coins - small badge */}
+                  <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg px-2 py-1">
+                    <span className="text-xs font-medium text-yellow-800">🪙 1.5x Coins</span>
+                  </div>
+                </div>
                 <div className="divide-y divide-gray-100">
                   {(() => {
                     const services = getActiveServicesByDetailer(selectedDetailer.id);
@@ -882,17 +882,17 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                   <p className="font-medium">Mon-Fri 7AM-7PM</p>
                   <p className="text-sm">Sat 8AM-6PM • Sun 9AM-5PM</p>
                 </div>
-
-                {/* Promotional Coins */}
-                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-4 mb-4">
-                  <h4 className="font-semibold text-yellow-800 mb-1">Promotional Coins</h4>
-                  <p className="text-sm text-yellow-700">Earn 1.5x coins • $0.12 per coin</p>
-                </div>
               </div>
 
               {/* Services Section */}
               <div>
-                <h4 className="text-xl font-bold text-gray-900 mb-3">Services</h4>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-xl font-bold text-gray-900">Services</h4>
+                  {/* Promotional Coins - small badge */}
+                  <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg px-2 py-1">
+                    <span className="text-xs font-medium text-yellow-800">🪙 1.5x Coins</span>
+                  </div>
+                </div>
                 <div className="divide-y divide-gray-100">
                   {(() => {
                     const services = getActiveServicesByDetailer(selectedDetailer.id);

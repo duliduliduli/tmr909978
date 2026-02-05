@@ -1245,7 +1245,7 @@ export const useAppStore = create<AppState>()(
       },
     }),
     {
-      name: "app_state_v12",
+      name: "app_state_v13",
       merge: (persistedState: any, currentState: AppState) => {
         const merged = { ...currentState, ...persistedState };
         // Refresh "today" appointment dates so they always match the current day
