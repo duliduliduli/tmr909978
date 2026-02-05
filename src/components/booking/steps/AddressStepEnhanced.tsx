@@ -371,7 +371,7 @@ export function AddressStepEnhanced({
               : 'bg-teal-600 text-white hover:bg-teal-700'
           }`}
         >
-          Continue to Vehicle Info
+          Continue to Payment
         </button>
       </div>
     </div>

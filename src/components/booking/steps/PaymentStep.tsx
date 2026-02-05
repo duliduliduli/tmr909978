@@ -14,6 +14,13 @@ interface PaymentStepProps {
   setError: (error: string | null) => void;
 }
 
+const BODY_TYPE_LABELS: Record<string, string> = {
+  car: 'Car',
+  van: 'Van',
+  truck: 'Truck',
+  suv: 'SUV',
+};
+
 export function PaymentStep({
   bookingData,
   updateBookingData,
@@ -23,7 +30,7 @@ export function PaymentStep({
   setIsLoading,
   setError
 }: PaymentStepProps) {
-  const [paymentMethod, setPaymentMethod] = useState('new');
+  const [paymentMethod, setPaymentMethod] = useState('apple_pay');
   const [cardDetails, setCardDetails] = useState({
     number: '',
     expiry: '',
@@ -39,13 +46,14 @@ export function PaymentStep({
     { id: 'card_2', last4: '5555', brand: 'mastercard', expiry: '08/26' }
   ];
 
-  // Calculate pricing
-  const baseAmount = 7500; // $75.00 - mock service price
-  const addOnAmount = 0;
-  const subtotal = baseAmount + addOnAmount;
-  const taxAmount = Math.round(subtotal * 0.0875); // 8.75% tax
-  const totalBeforeTip = subtotal + taxAmount;
-  const finalTotal = totalBeforeTip + (tipAmount * 100);
+  // Calculate pricing from actual booking data
+  const vehicleSubtotalCents = Math.round(
+    (bookingData.totalPrice || bookingData.vehicles.reduce((sum, v) => sum + v.adjustedPrice, 0)) * 100
+  );
+  const taxCents = Math.round(vehicleSubtotalCents * 0.0875); // 8.75% tax
+  const totalBeforeTip = vehicleSubtotalCents + taxCents;
+  const tipCents = Math.round(tipAmount * 100);
+  const finalTotal = totalBeforeTip + tipCents;
 
   const formatPrice = (cents: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -58,13 +66,10 @@ export function PaymentStep({
     let formattedValue = value;
 
     if (field === 'number') {
-      // Format card number with spaces
       formattedValue = value.replace(/\s/g, '').replace(/(\d{4})/g, '$1 ').trim();
     } else if (field === 'expiry') {
-      // Format expiry as MM/YY
       formattedValue = value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '$1/$2');
     } else if (field === 'cvc') {
-      // Limit CVC to 3-4 digits
       formattedValue = value.replace(/\D/g, '').slice(0, 4);
     }
 
@@ -86,13 +91,11 @@ export function PaymentStep({
     setError(null);
 
     try {
-      // Simulate payment processing
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Mock successful payment
       updateBookingData({
-        paymentMethodId: paymentMethod === 'new' ? 'pm_new_card' : paymentMethod,
-        tipAmount: tipAmount * 100 // Convert to cents
+        paymentMethodId: paymentMethod === 'new' ? 'pm_new_card' : paymentMethod === 'apple_pay' ? 'pm_apple_pay' : paymentMethod,
+        tipAmount: tipCents
       });
 
       onNext();
@@ -103,7 +106,8 @@ export function PaymentStep({
     }
   };
 
-  const isFormValid = paymentMethod !== 'new' || (
+  const isFormValid = paymentMethod === 'apple_pay' ||
+    paymentMethod !== 'new' || (
     cardDetails.number.length >= 19 &&
     cardDetails.expiry.length === 5 &&
     cardDetails.cvc.length >= 3 &&
@@ -115,32 +119,37 @@ export function PaymentStep({
       <div>
         <h3 className="text-lg font-medium text-gray-900 mb-2">Payment Information</h3>
         <p className="text-sm text-gray-600">
-          Secure payment processing with Stripe. Your card information is encrypted and secure.
+          Secure payment processing. Your information is encrypted and secure.
         </p>
       </div>
 
       {/* Order Summary */}
-      <div className="bg-gray-50 rounded-lg p-6">
-        <h4 className="font-medium text-gray-900 mb-4">Order Summary</h4>
+      <div className="bg-gray-50 rounded-lg p-4">
+        <h4 className="font-medium text-gray-900 mb-3">Order Summary</h4>
         <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Service (Premium Exterior Detail)</span>
-            <span className="text-gray-900">{formatPrice(baseAmount)}</span>
-          </div>
-          {addOnAmount > 0 && (
+          {bookingData.vehicles.map((vehicle, index) => (
+            <div key={vehicle.id} className="flex justify-between text-sm">
+              <span className="text-gray-600">
+                {vehicle.serviceName} ({BODY_TYPE_LABELS[vehicle.bodyType] || vehicle.bodyType})
+                {vehicle.luxuryCare ? ' + Luxury' : ''}
+              </span>
+              <span className="text-gray-900">{formatPrice(Math.round(vehicle.adjustedPrice * 100))}</span>
+            </div>
+          ))}
+          {bookingData.vehicles.length === 0 && (
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Add-ons</span>
-              <span className="text-gray-900">{formatPrice(addOnAmount)}</span>
+              <span className="text-gray-600">Services</span>
+              <span className="text-gray-900">{formatPrice(vehicleSubtotalCents)}</span>
             </div>
           )}
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Tax</span>
-            <span className="text-gray-900">{formatPrice(taxAmount)}</span>
+            <span className="text-gray-600">Tax (8.75%)</span>
+            <span className="text-gray-900">{formatPrice(taxCents)}</span>
           </div>
-          {tipAmount > 0 && (
+          {tipCents > 0 && (
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Tip</span>
-              <span className="text-gray-900">{formatPrice(tipAmount * 100)}</span>
+              <span className="text-gray-900">{formatPrice(tipCents)}</span>
             </div>
           )}
           <div className="border-t pt-2 mt-2">
@@ -187,7 +196,32 @@ export function PaymentStep({
       {/* Payment Method */}
       <div>
         <h4 className="font-medium text-gray-900 mb-4">Payment Method</h4>
-        
+
+        {/* Apple Pay */}
+        <button
+          onClick={() => setPaymentMethod('apple_pay')}
+          className={`w-full mb-3 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-colors ${
+            paymentMethod === 'apple_pay'
+              ? 'border-teal-500 bg-black text-white'
+              : 'border-gray-300 bg-black text-white hover:border-gray-400'
+          }`}
+        >
+          <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" xmlns="http://www.w3.org/2000/svg">
+            <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+          </svg>
+          <span className="font-semibold text-base">Pay</span>
+          {paymentMethod === 'apple_pay' && (
+            <span className="ml-1 text-xs bg-teal-500 text-white px-2 py-0.5 rounded-full">Selected</span>
+          )}
+        </button>
+
+        {/* Divider */}
+        <div className="flex items-center gap-3 my-4">
+          <div className="flex-1 border-t border-gray-200" />
+          <span className="text-xs text-gray-400 font-medium">or pay with card</span>
+          <div className="flex-1 border-t border-gray-200" />
+        </div>
+
         {/* Saved Cards */}
         {savedCards.length > 0 && (
           <div className="space-y-2 mb-4">
@@ -346,13 +380,22 @@ export function PaymentStep({
           className={`w-full px-6 py-3 rounded-lg font-medium transition-colors ${
             !isFormValid || isLoading
               ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              : 'bg-teal-600 text-white hover:bg-teal-700'
+              : paymentMethod === 'apple_pay'
+                ? 'bg-black text-white hover:bg-gray-900'
+                : 'bg-teal-600 text-white hover:bg-teal-700'
           }`}
         >
           {isLoading ? (
             <div className="flex items-center justify-center">
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
               Processing Payment...
+            </div>
+          ) : paymentMethod === 'apple_pay' ? (
+            <div className="flex items-center justify-center gap-2">
+              <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+              </svg>
+              Pay {formatPrice(finalTotal)}
             </div>
           ) : (
             `Complete Payment ${formatPrice(finalTotal)}`

@@ -13,6 +13,7 @@ import type { BodyType } from '@/lib/store';
 interface BookingWizardProps {
   providerId?: string;
   onComplete?: (bookingId: string) => void;
+  compact?: boolean;
 }
 
 export interface BookingVehicle {
@@ -72,7 +73,8 @@ const STEPS = [
 
 export function BookingWizard({
   providerId,
-  onComplete
+  onComplete,
+  compact = false
 }: BookingWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [bookingData, setBookingData] = useState<BookingData>({
@@ -143,14 +145,16 @@ export function BookingWizard({
   };
 
   return (
-    <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
+    <div className={compact ? '' : 'max-w-2xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden'}>
       {/* Header */}
-      <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
-        <h2 className="text-xl font-semibold text-white">Book a Service</h2>
-        <p className="text-teal-100 text-sm mt-1">
-          Complete your booking in {STEPS.length} easy steps
-        </p>
-      </div>
+      {!compact && (
+        <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
+          <h2 className="text-xl font-semibold text-white">Book a Service</h2>
+          <p className="text-teal-100 text-sm mt-1">
+            Complete your booking in {STEPS.length} easy steps
+          </p>
+        </div>
+      )}
 
       {/* Progress Bar */}
       <BookingProgress
@@ -167,46 +171,48 @@ export function BookingWizard({
       )}
 
       {/* Step Content */}
-      <div className="p-6">
+      <div className={compact ? '' : 'p-6'}>
         {renderCurrentStep()}
       </div>
 
       {/* Navigation Footer */}
-      <div className="border-t bg-gray-50 px-6 py-4 flex justify-between items-center">
-        <button
-          onClick={prevStep}
-          disabled={currentStep === 0 || isLoading}
-          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-            currentStep === 0 || isLoading
-              ? 'text-gray-400 cursor-not-allowed'
-              : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-          }`}
-        >
-          Previous
-        </button>
-
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-500">
-            Step {currentStep + 1} of {STEPS.length}
-          </span>
-        </div>
-
-        {currentStep < STEPS.length - 1 ? (
+      {!compact && (
+        <div className="border-t bg-gray-50 px-6 py-4 flex justify-between items-center">
           <button
-            onClick={nextStep}
-            disabled={!canProceedToNext() || isLoading}
-            className={`px-6 py-2 text-sm font-medium rounded-lg transition-colors ${
-              !canProceedToNext() || isLoading
-                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                : 'bg-teal-600 text-white hover:bg-teal-700'
+            onClick={prevStep}
+            disabled={currentStep === 0 || isLoading}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+              currentStep === 0 || isLoading
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
             }`}
           >
-            {isLoading ? 'Processing...' : 'Continue'}
+            Previous
           </button>
-        ) : (
-          <div className="w-20" />
-        )}
-      </div>
+
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-500">
+              Step {currentStep + 1} of {STEPS.length}
+            </span>
+          </div>
+
+          {currentStep < STEPS.length - 1 ? (
+            <button
+              onClick={nextStep}
+              disabled={!canProceedToNext() || isLoading}
+              className={`px-6 py-2 text-sm font-medium rounded-lg transition-colors ${
+                !canProceedToNext() || isLoading
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-teal-600 text-white hover:bg-teal-700'
+              }`}
+            >
+              {isLoading ? 'Processing...' : 'Continue'}
+            </button>
+          ) : (
+            <div className="w-20" />
+          )}
+        </div>
+      )}
     </div>
   );
 }
