@@ -54,10 +54,10 @@ export function TumaroMap({ className = '' }: TumaroMapProps) {
   // Convert map detailer data to bottom sheet format
   const convertToBottomSheetDetailer = (mapDetailer: any) => {
     if (!mapDetailer) return null;
-    
+
     return {
       id: mapDetailer.id,
-      name: mapDetailer.name,
+      name: mapDetailer.businessName || mapDetailer.name,
       rating: mapDetailer.rating || 4.8,
       reviewCount: mapDetailer.reviewCount || 89,
       distance: mapDetailer.distance || 2.1,

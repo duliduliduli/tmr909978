@@ -648,63 +648,35 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
 
               {/* Services Section */}
               <div>
-                <h4 className="text-xl font-bold text-gray-900 mb-4">Services</h4>
-                <div className="space-y-3">
+                <h4 className="text-xl font-bold text-gray-900 mb-3">Services</h4>
+                <div className="divide-y divide-gray-100">
                   {(() => {
                     const services = getActiveServicesByDetailer(selectedDetailer.id);
                     if (services.length === 0) {
                       return (
-                        <div className="text-center py-6 text-gray-500">
+                        <div className="text-center py-4 text-gray-500">
                           <p>No services listed yet.</p>
                         </div>
                       );
                     }
-                    return services.map((service, index) => {
-                      const isPremium = service.category === 'Premium' || service.price > 50;
-                      return (
-                        <div
-                          key={service.id}
-                          className={`border rounded-xl p-4 ${
-                            isPremium ? 'border-blue-200 bg-blue-50' : 'border-gray-200'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <h5 className={`font-semibold ${
-                              isPremium ? 'text-blue-900' : 'text-gray-900'
-                            }`}>
-                              {service.name}
-                            </h5>
-                            <span className={`text-lg font-bold ${
-                              isPremium ? 'text-blue-900' : 'text-gray-900'
-                            }`}>
-                              ${service.price}
-                            </span>
-                          </div>
-                          <div className={`flex items-center text-sm mb-2 gap-3 ${
-                            isPremium ? 'text-blue-700' : 'text-gray-600'
-                          }`}>
-                            <span>⏱️ {service.duration} min</span>
-                            {service.category && (
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                isPremium ? 'bg-blue-200 text-blue-800' : 'bg-gray-200 text-gray-700'
-                              }`}>
-                                {service.category}
-                              </span>
-                            )}
-                            {index === 0 && (
-                              <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
-                                Most Popular
-                              </span>
-                            )}
-                          </div>
-                          <p className={`text-sm ${
-                            isPremium ? 'text-blue-700' : 'text-gray-600'
-                          }`}>
-                            {service.description}
-                          </p>
+                    return services.map((service, index) => (
+                      <div key={service.id} className="py-2.5">
+                        <div className="flex items-center justify-between">
+                          <h5 className="font-semibold text-gray-900">{service.name}</h5>
+                          <span className="text-base font-bold text-gray-900">${service.price}</span>
                         </div>
-                      );
-                    });
+                        <div className="flex items-center text-xs text-gray-500 gap-2 mt-0.5">
+                          <span>⏱️ {service.duration} min</span>
+                          {service.category && (
+                            <span className="text-gray-400">• {service.category}</span>
+                          )}
+                          {index === 0 && (
+                            <span className="text-green-600 font-medium">• Most Popular</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{service.description}</p>
+                      </div>
+                    ));
                   })()}
                 </div>
 
@@ -916,63 +888,35 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
 
               {/* Services Section */}
               <div>
-                <h4 className="text-xl font-bold text-gray-900 mb-4">Services</h4>
-                <div className="space-y-3">
+                <h4 className="text-xl font-bold text-gray-900 mb-3">Services</h4>
+                <div className="divide-y divide-gray-100">
                   {(() => {
                     const services = getActiveServicesByDetailer(selectedDetailer.id);
                     if (services.length === 0) {
                       return (
-                        <div className="text-center py-6 text-gray-500">
+                        <div className="text-center py-4 text-gray-500">
                           <p>No services listed yet.</p>
                         </div>
                       );
                     }
-                    return services.map((service, index) => {
-                      const isPremium = service.category === 'Premium' || service.price > 50;
-                      return (
-                        <div
-                          key={service.id}
-                          className={`border rounded-xl p-4 ${
-                            isPremium ? 'border-blue-200 bg-blue-50' : 'border-gray-200'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <h5 className={`font-semibold ${
-                              isPremium ? 'text-blue-900' : 'text-gray-900'
-                            }`}>
-                              {service.name}
-                            </h5>
-                            <span className={`text-lg font-bold ${
-                              isPremium ? 'text-blue-900' : 'text-gray-900'
-                            }`}>
-                              ${service.price}
-                            </span>
-                          </div>
-                          <div className={`flex items-center text-sm mb-2 gap-3 ${
-                            isPremium ? 'text-blue-700' : 'text-gray-600'
-                          }`}>
-                            <span>⏱️ {service.duration} min</span>
-                            {service.category && (
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                isPremium ? 'bg-blue-200 text-blue-800' : 'bg-gray-200 text-gray-700'
-                              }`}>
-                                {service.category}
-                              </span>
-                            )}
-                            {index === 0 && (
-                              <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
-                                Most Popular
-                              </span>
-                            )}
-                          </div>
-                          <p className={`text-sm ${
-                            isPremium ? 'text-blue-700' : 'text-gray-600'
-                          }`}>
-                            {service.description}
-                          </p>
+                    return services.map((service, index) => (
+                      <div key={service.id} className="py-2.5">
+                        <div className="flex items-center justify-between">
+                          <h5 className="font-semibold text-gray-900">{service.name}</h5>
+                          <span className="text-base font-bold text-gray-900">${service.price}</span>
                         </div>
-                      );
-                    });
+                        <div className="flex items-center text-xs text-gray-500 gap-2 mt-0.5">
+                          <span>⏱️ {service.duration} min</span>
+                          {service.category && (
+                            <span className="text-gray-400">• {service.category}</span>
+                          )}
+                          {index === 0 && (
+                            <span className="text-green-600 font-medium">• Most Popular</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{service.description}</p>
+                      </div>
+                    ));
                   })()}
                 </div>
 
