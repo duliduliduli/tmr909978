@@ -1,7 +1,7 @@
 "use client";
 
 import { AppShell } from "@/components/AppShell";
-import { Settings, Clock, MapPin, Package, QrCode, X, Camera } from "lucide-react";
+import { Settings, Clock, MapPin, Package, QrCode, X, Camera, Edit3, Check } from "lucide-react";
 import { ServiceManager } from "@/components/detailer/ServiceManager";
 import { QRCodeManager } from "@/components/detailer/QRCodeManager";
 import { useState } from "react";
@@ -18,6 +18,7 @@ const defaultHours = {
 };
 
 type DayKey = keyof typeof defaultHours;
+type EditingField = 'name' | 'phone' | 'description' | null;
 
 export default function DetailerAccountPage() {
   const [activeTab, setActiveTab] = useState<'profile' | 'services' | 'qrcode'>('profile');
@@ -29,20 +30,26 @@ export default function DetailerAccountPage() {
   const [description, setDescription] = useState('Professional mobile auto detailing service. We come to you!');
   const [profileImage, setProfileImage] = useState('/images/detailers/detailer-1.webp');
 
-  const formatHoursDisplay = () => {
-    const days = Object.entries(workingHours);
-    const openDays = days.filter(([_, h]) => !h.closed);
-    if (openDays.length === 0) return 'Closed';
+  // Editing states
+  const [editingField, setEditingField] = useState<EditingField>(null);
+  const [tempValue, setTempValue] = useState('');
 
-    // Check if all open days have same hours
-    const firstOpen = openDays[0][1];
-    const allSame = openDays.every(([_, h]) => h.open === firstOpen.open && h.close === firstOpen.close);
+  const startEditing = (field: EditingField, currentValue: string) => {
+    setEditingField(field);
+    setTempValue(currentValue);
+  };
 
-    if (allSame) {
-      const dayNames = openDays.map(([d]) => d.charAt(0).toUpperCase() + d.slice(1, 3));
-      return `${dayNames[0]}-${dayNames[dayNames.length - 1]} ${firstOpen.open.replace(':00', 'AM').replace(':', ':')}-${firstOpen.close.replace(':00', 'PM').replace(':', ':')}`;
-    }
-    return 'Custom hours set';
+  const saveField = () => {
+    if (editingField === 'name') setBusinessName(tempValue);
+    if (editingField === 'phone') setPhone(tempValue);
+    if (editingField === 'description') setDescription(tempValue);
+    setEditingField(null);
+    setTempValue('');
+  };
+
+  const cancelEditing = () => {
+    setEditingField(null);
+    setTempValue('');
   };
 
   const handleSaveHours = () => {
@@ -129,34 +136,138 @@ export default function DetailerAccountPage() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Business Name</label>
-              <input
-                type="text"
-                value={businessName}
-                onChange={(e) => setBusinessName(e.target.value)}
-                className="w-full px-3 py-2 border border-brand-700 rounded-lg bg-brand-800 text-gray-100 focus:outline-none focus:ring-2 focus:ring-accent-DEFAULT"
-              />
+            {/* Business Name */}
+            <div className="border border-brand-700 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-gray-300">Business Name</label>
+                {editingField !== 'name' && (
+                  <button
+                    onClick={() => startEditing('name', businessName)}
+                    className="flex items-center gap-1 text-sm text-accent-DEFAULT hover:text-accent-hover transition-colors"
+                  >
+                    <Edit3 className="h-3.5 w-3.5" />
+                    Change
+                  </button>
+                )}
+              </div>
+              {editingField === 'name' ? (
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={tempValue}
+                    onChange={(e) => setTempValue(e.target.value)}
+                    autoFocus
+                    className="w-full px-3 py-2 border border-accent-DEFAULT rounded-lg bg-brand-800 text-gray-100 focus:outline-none focus:ring-2 focus:ring-accent-DEFAULT"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={cancelEditing}
+                      className="flex-1 px-3 py-1.5 bg-brand-800 hover:bg-brand-700 text-white text-sm rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={saveField}
+                      className="flex-1 px-3 py-1.5 bg-accent-DEFAULT hover:bg-accent-hover text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-1"
+                    >
+                      <Check className="h-4 w-4" />
+                      Save
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-100 text-lg">{businessName}</p>
+              )}
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Phone</label>
-              <input
-                type="text"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full px-3 py-2 border border-brand-700 rounded-lg bg-brand-800 text-gray-100 focus:outline-none focus:ring-2 focus:ring-accent-DEFAULT"
-              />
+
+            {/* Phone */}
+            <div className="border border-brand-700 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-gray-300">Phone Number</label>
+                {editingField !== 'phone' && (
+                  <button
+                    onClick={() => startEditing('phone', phone)}
+                    className="flex items-center gap-1 text-sm text-accent-DEFAULT hover:text-accent-hover transition-colors"
+                  >
+                    <Edit3 className="h-3.5 w-3.5" />
+                    Change
+                  </button>
+                )}
+              </div>
+              {editingField === 'phone' ? (
+                <div className="space-y-2">
+                  <input
+                    type="tel"
+                    value={tempValue}
+                    onChange={(e) => setTempValue(e.target.value)}
+                    autoFocus
+                    className="w-full px-3 py-2 border border-accent-DEFAULT rounded-lg bg-brand-800 text-gray-100 focus:outline-none focus:ring-2 focus:ring-accent-DEFAULT"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={cancelEditing}
+                      className="flex-1 px-3 py-1.5 bg-brand-800 hover:bg-brand-700 text-white text-sm rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={saveField}
+                      className="flex-1 px-3 py-1.5 bg-accent-DEFAULT hover:bg-accent-hover text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-1"
+                    >
+                      <Check className="h-4 w-4" />
+                      Save
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-100 text-lg">{phone}</p>
+              )}
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Business Description</label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                placeholder="Describe your business and services..."
-                className="w-full px-3 py-2 border border-brand-700 rounded-lg bg-brand-800 text-gray-100 focus:outline-none focus:ring-2 focus:ring-accent-DEFAULT resize-none"
-              />
-              <p className="text-xs text-gray-500 mt-1">{description.length}/300 characters</p>
+
+            {/* Description */}
+            <div className="border border-brand-700 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-gray-300">Business Description</label>
+                {editingField !== 'description' && (
+                  <button
+                    onClick={() => startEditing('description', description)}
+                    className="flex items-center gap-1 text-sm text-accent-DEFAULT hover:text-accent-hover transition-colors"
+                  >
+                    <Edit3 className="h-3.5 w-3.5" />
+                    Change
+                  </button>
+                )}
+              </div>
+              {editingField === 'description' ? (
+                <div className="space-y-2">
+                  <textarea
+                    value={tempValue}
+                    onChange={(e) => setTempValue(e.target.value)}
+                    rows={3}
+                    autoFocus
+                    maxLength={300}
+                    className="w-full px-3 py-2 border border-accent-DEFAULT rounded-lg bg-brand-800 text-gray-100 focus:outline-none focus:ring-2 focus:ring-accent-DEFAULT resize-none"
+                  />
+                  <p className="text-xs text-gray-500">{tempValue.length}/300 characters</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={cancelEditing}
+                      className="flex-1 px-3 py-1.5 bg-brand-800 hover:bg-brand-700 text-white text-sm rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={saveField}
+                      className="flex-1 px-3 py-1.5 bg-accent-DEFAULT hover:bg-accent-hover text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-1"
+                    >
+                      <Check className="h-4 w-4" />
+                      Save
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-100">{description || <span className="text-gray-500 italic">No description set</span>}</p>
+              )}
             </div>
           </div>
         </div>

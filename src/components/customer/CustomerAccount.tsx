@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, Edit3, Trash2, Plus, Home, Briefcase, Star, Car, X, HelpCircle, MessageCircle, FileText, Mail } from "lucide-react";
+import { MapPin, Edit3, Trash2, Plus, Home, Briefcase, Star, Car, X, HelpCircle, MessageCircle, FileText, Mail, Check } from "lucide-react";
 import { mockCustomers, type Vehicle } from "@/lib/mockData";
 import { useAppStore } from "@/lib/store";
 
@@ -76,6 +76,8 @@ const mockDetailers = [
   },
 ];
 
+type EditingField = 'name' | 'email' | 'phone' | null;
+
 export function CustomerAccount() {
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,6 +94,33 @@ export function CustomerAccount() {
     bodyType: 'car' as 'car' | 'suv' | 'truck' | 'van',
     isLuxury: false
   });
+
+  // Profile fields
+  const [customerName, setCustomerName] = useState('John Smith');
+  const [customerEmail, setCustomerEmail] = useState('customer@test.com');
+  const [customerPhone, setCustomerPhone] = useState('(555) 123-4567');
+
+  // Editing states
+  const [editingField, setEditingField] = useState<EditingField>(null);
+  const [tempValue, setTempValue] = useState('');
+
+  const startEditing = (field: EditingField, currentValue: string) => {
+    setEditingField(field);
+    setTempValue(currentValue);
+  };
+
+  const saveField = () => {
+    if (editingField === 'name') setCustomerName(tempValue);
+    if (editingField === 'email') setCustomerEmail(tempValue);
+    if (editingField === 'phone') setCustomerPhone(tempValue);
+    setEditingField(null);
+    setTempValue('');
+  };
+
+  const cancelEditing = () => {
+    setEditingField(null);
+    setTempValue('');
+  };
 
   useEffect(() => {
     fetchAddresses();
@@ -217,32 +246,136 @@ export function CustomerAccount() {
       <div className="bg-brand-900/50 border border-brand-800 rounded-xl p-6">
         <h2 className="text-xl font-bold text-white mb-4">Profile</h2>
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-brand-200 mb-1">Name</label>
-            <input 
-              type="text" 
-              value="John Smith" 
-              className="w-full px-3 py-2 bg-brand-800 border border-brand-700 rounded-lg text-white"
-              readOnly
-            />
+          {/* Name */}
+          <div className="border border-brand-700 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium text-brand-200">Name</label>
+              {editingField !== 'name' && (
+                <button
+                  onClick={() => startEditing('name', customerName)}
+                  className="flex items-center gap-1 text-sm text-accent-DEFAULT hover:text-accent-hover transition-colors"
+                >
+                  <Edit3 className="h-3.5 w-3.5" />
+                  Change
+                </button>
+              )}
+            </div>
+            {editingField === 'name' ? (
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={tempValue}
+                  onChange={(e) => setTempValue(e.target.value)}
+                  autoFocus
+                  className="w-full px-3 py-2 border border-accent-DEFAULT rounded-lg bg-brand-800 text-white focus:outline-none focus:ring-2 focus:ring-accent-DEFAULT"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={cancelEditing}
+                    className="flex-1 px-3 py-1.5 bg-brand-800 hover:bg-brand-700 text-white text-sm rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={saveField}
+                    className="flex-1 px-3 py-1.5 bg-accent-DEFAULT hover:bg-accent-hover text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-1"
+                  >
+                    <Check className="h-4 w-4" />
+                    Save
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-white text-lg">{customerName}</p>
+            )}
           </div>
-          <div>
-            <label className="block text-sm font-medium text-brand-200 mb-1">Email</label>
-            <input 
-              type="email" 
-              value="customer@test.com" 
-              className="w-full px-3 py-2 bg-brand-800 border border-brand-700 rounded-lg text-white"
-              readOnly
-            />
+
+          {/* Email */}
+          <div className="border border-brand-700 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium text-brand-200">Email</label>
+              {editingField !== 'email' && (
+                <button
+                  onClick={() => startEditing('email', customerEmail)}
+                  className="flex items-center gap-1 text-sm text-accent-DEFAULT hover:text-accent-hover transition-colors"
+                >
+                  <Edit3 className="h-3.5 w-3.5" />
+                  Change
+                </button>
+              )}
+            </div>
+            {editingField === 'email' ? (
+              <div className="space-y-2">
+                <input
+                  type="email"
+                  value={tempValue}
+                  onChange={(e) => setTempValue(e.target.value)}
+                  autoFocus
+                  className="w-full px-3 py-2 border border-accent-DEFAULT rounded-lg bg-brand-800 text-white focus:outline-none focus:ring-2 focus:ring-accent-DEFAULT"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={cancelEditing}
+                    className="flex-1 px-3 py-1.5 bg-brand-800 hover:bg-brand-700 text-white text-sm rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={saveField}
+                    className="flex-1 px-3 py-1.5 bg-accent-DEFAULT hover:bg-accent-hover text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-1"
+                  >
+                    <Check className="h-4 w-4" />
+                    Save
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-white text-lg">{customerEmail}</p>
+            )}
           </div>
-          <div>
-            <label className="block text-sm font-medium text-brand-200 mb-1">Phone</label>
-            <input 
-              type="tel" 
-              value="(555) 123-4567" 
-              className="w-full px-3 py-2 bg-brand-800 border border-brand-700 rounded-lg text-white"
-              readOnly
-            />
+
+          {/* Phone */}
+          <div className="border border-brand-700 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium text-brand-200">Phone</label>
+              {editingField !== 'phone' && (
+                <button
+                  onClick={() => startEditing('phone', customerPhone)}
+                  className="flex items-center gap-1 text-sm text-accent-DEFAULT hover:text-accent-hover transition-colors"
+                >
+                  <Edit3 className="h-3.5 w-3.5" />
+                  Change
+                </button>
+              )}
+            </div>
+            {editingField === 'phone' ? (
+              <div className="space-y-2">
+                <input
+                  type="tel"
+                  value={tempValue}
+                  onChange={(e) => setTempValue(e.target.value)}
+                  autoFocus
+                  className="w-full px-3 py-2 border border-accent-DEFAULT rounded-lg bg-brand-800 text-white focus:outline-none focus:ring-2 focus:ring-accent-DEFAULT"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={cancelEditing}
+                    className="flex-1 px-3 py-1.5 bg-brand-800 hover:bg-brand-700 text-white text-sm rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={saveField}
+                    className="flex-1 px-3 py-1.5 bg-accent-DEFAULT hover:bg-accent-hover text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-1"
+                  >
+                    <Check className="h-4 w-4" />
+                    Save
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-white text-lg">{customerPhone}</p>
+            )}
           </div>
         </div>
       </div>
