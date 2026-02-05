@@ -69,7 +69,7 @@ export default function DetailerAccountPage() {
               : 'text-gray-400 border-transparent hover:text-gray-200'
           }`}
         >
-          Business Profile
+          Profile
         </button>
         <button
           onClick={() => setActiveTab('services')}
@@ -80,7 +80,7 @@ export default function DetailerAccountPage() {
           }`}
         >
           <Package className="h-4 w-4" />
-          Services & Pricing
+          Pricing
         </button>
         <button
           onClick={() => setActiveTab('qrcode')}
@@ -97,9 +97,9 @@ export default function DetailerAccountPage() {
 
       {activeTab === 'profile' ? (
         <div className="space-y-6">
-        {/* Business Profile */}
+        {/* Profile */}
         <div className="bg-brand-900 rounded-xl p-6 border border-brand-700">
-          <h2 className="text-xl font-bold text-gray-100 mb-4">Business Profile</h2>
+          <h2 className="text-xl font-bold text-gray-100 mb-4">Profile</h2>
           <div className="space-y-4">
             {/* Profile Picture */}
             <div>
