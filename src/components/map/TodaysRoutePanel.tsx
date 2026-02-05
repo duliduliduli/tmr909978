@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Phone, MessageCircle, Clock, MapPin, Navigation, Send, ChevronDown, ChevronUp, DollarSign } from 'lucide-react';
+import { X, Phone, MessageCircle, Clock, MapPin, Navigation, Send, ChevronDown, ChevronUp, DollarSign, ChevronRight } from 'lucide-react';
 import type { Appointment } from '@/lib/store';
 import { useAppStore } from '@/lib/store';
 
@@ -13,9 +13,11 @@ interface TodaysRoutePanelProps {
   etaMinutes: number[]; // ETA in minutes between consecutive jobs
   onJobClick: (appointment: Appointment) => void;
   onFitAllMarkers?: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, onJobClick, onFitAllMarkers }: TodaysRoutePanelProps) {
+export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, onJobClick, onFitAllMarkers, isCollapsed = false, onToggleCollapse }: TodaysRoutePanelProps) {
   const [expandedChatId, setExpandedChatId] = useState<string | null>(null);
   const [chatInput, setChatInput] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -66,40 +68,71 @@ export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, on
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
-          initial={{ x: -380, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: -380, opacity: 0 }}
-          transition={{ type: "spring", damping: 28, stiffness: 300 }}
-          className="absolute top-0 left-0 bottom-0 z-40 w-[360px] bg-white shadow-2xl border-r border-gray-200 flex flex-col overflow-hidden"
-          style={{ maxHeight: '100%' }}
-        >
-          {/* Header */}
-          <div className="text-gray-800 px-5 py-4 flex items-center justify-between flex-shrink-0" style={{ background: 'linear-gradient(to right, #B7E892, #a5d880)' }}>
-            <div
-              className="cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={onFitAllMarkers}
+        <>
+          {/* Collapsed state - just show expand arrow */}
+          {isCollapsed ? (
+            <motion.button
+              initial={{ x: -60, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -60, opacity: 0 }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              onClick={onToggleCollapse}
+              className="absolute top-1/2 -translate-y-1/2 left-0 z-40 bg-white shadow-lg border border-gray-200 rounded-r-xl p-3 hover:bg-gray-50 transition-colors lg:hidden"
+              style={{ borderLeft: 'none' }}
             >
-              <h2 className="text-lg font-bold flex items-center gap-2">
-                <Navigation className="h-5 w-5" />
-                Today&apos;s Route
-              </h2>
-              <p className="text-gray-600 text-sm">{appointments.length} job{appointments.length !== 1 ? 's' : ''} remaining</p>
-            </div>
-            <div className="flex items-center gap-3">
-              {/* Total earnings */}
-              <div className="flex items-center gap-1 px-3 py-1.5 bg-white/60 rounded-full">
-                <DollarSign className="h-4 w-4 text-green-700" />
-                <span className="text-sm font-bold text-green-800">{totalEarnings.toFixed(2)}</span>
+              <div className="flex flex-col items-center gap-1">
+                <ChevronRight className="h-5 w-5 text-gray-600" />
+                <div className="w-6 h-6 rounded-full text-gray-800 flex items-center justify-center text-xs font-bold" style={{ backgroundColor: '#B7E892' }}>
+                  {appointments.length}
+                </div>
               </div>
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-black/10 rounded-full transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
+            </motion.button>
+          ) : (
+            <motion.div
+              initial={{ x: -380, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -380, opacity: 0 }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="absolute top-0 left-0 bottom-0 z-40 w-[320px] lg:w-[360px] bg-white shadow-2xl border-r border-gray-200 flex flex-col overflow-hidden"
+              style={{ maxHeight: '100%' }}
+            >
+              {/* Header */}
+              <div className="text-gray-800 px-4 lg:px-5 py-3 lg:py-4 flex items-center justify-between flex-shrink-0" style={{ background: 'linear-gradient(to right, #B7E892, #a5d880)' }}>
+                <div
+                  className="cursor-pointer hover:opacity-80 transition-opacity flex-1 min-w-0"
+                  onClick={onFitAllMarkers}
+                >
+                  <h2 className="text-base lg:text-lg font-bold flex items-center gap-2">
+                    <Navigation className="h-4 w-4 lg:h-5 lg:w-5" />
+                    Today&apos;s Route
+                  </h2>
+                  <p className="text-gray-600 text-xs lg:text-sm">{appointments.length} job{appointments.length !== 1 ? 's' : ''} remaining</p>
+                </div>
+                <div className="flex items-center gap-2 lg:gap-3">
+                  {/* Total earnings */}
+                  <div className="flex items-center gap-1 px-2 lg:px-3 py-1 lg:py-1.5 bg-white/60 rounded-full">
+                    <DollarSign className="h-3.5 w-3.5 lg:h-4 lg:w-4 text-green-700" />
+                    <span className="text-xs lg:text-sm font-bold text-green-800">{totalEarnings.toFixed(2)}</span>
+                  </div>
+                  {/* Collapse button (mobile only) */}
+                  {onToggleCollapse && (
+                    <button
+                      onClick={onToggleCollapse}
+                      className="p-1.5 lg:hidden hover:bg-black/10 rounded-full transition-colors"
+                      title="Collapse panel"
+                    >
+                      <ChevronDown className="h-5 w-5 rotate-90" />
+                    </button>
+                  )}
+                  <button
+                    onClick={onClose}
+                    className="p-1.5 lg:p-2 hover:bg-black/10 rounded-full transition-colors"
+                    title="Close route"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
 
           {/* Job List */}
           <div className="flex-1 overflow-y-auto">
@@ -268,6 +301,8 @@ export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, on
             )}
           </div>
         </motion.div>
+          )}
+        </>
       )}
     </AnimatePresence>
   );

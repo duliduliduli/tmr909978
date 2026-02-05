@@ -52,6 +52,7 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
   const [isLocationShuffled, setIsLocationShuffled] = useState(false);
   const [showRoute, setShowRoute] = useState(false);
   const [etaMinutes, setEtaMinutes] = useState<number[]>([]);
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
 
   // Initialize map
   useEffect(() => {
@@ -328,11 +329,15 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
     m.on('mouseenter', 'job-markers', () => { m.getCanvas().style.cursor = 'pointer'; });
     m.on('mouseleave', 'job-markers', () => { m.getCanvas().style.cursor = ''; });
 
-    // Fit bounds to all jobs
+    // Fit bounds to all jobs - use mobile-aware padding
     const bounds = new mapboxgl.LngLatBounds();
     todaysAppointments.forEach(apt => bounds.extend([apt.longitude, apt.latitude]));
     if (userLocation) bounds.extend(userLocation);
-    m.fitBounds(bounds, { padding: { top: 80, bottom: 80, left: 400, right: 80 }, maxZoom: 14, duration: 1500 });
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+    const padding = isMobile
+      ? { top: 100, bottom: 120, left: 40, right: 40 }
+      : { top: 80, bottom: 80, left: 400, right: 80 };
+    m.fitBounds(bounds, { padding, maxZoom: 14, duration: 1500 });
 
     // Fetch route from Mapbox Directions API
     // Need at least 2 waypoints: user location + 1 appointment, or 2+ appointments
@@ -469,13 +474,18 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
     const bounds = new mapboxgl.LngLatBounds();
     todaysAppointments.forEach(apt => bounds.extend([apt.longitude, apt.latitude]));
     if (userLocation) bounds.extend(userLocation);
-    map.current.fitBounds(bounds, { padding: { top: 80, bottom: 80, left: 400, right: 80 }, maxZoom: 14, duration: 1500 });
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+    const padding = isMobile
+      ? { top: 100, bottom: 120, left: 40, right: 40 }
+      : { top: 80, bottom: 80, left: 400, right: 80 };
+    map.current.fitBounds(bounds, { padding, maxZoom: 14, duration: 1500 });
   }, [todaysAppointments, userLocation]);
 
   const deactivateRoute = useCallback(() => {
     clearRouteFromMap();
     setShowRoute(false);
     setEtaMinutes([]);
+    setIsPanelCollapsed(false);
 
     // Fly back to user location
     if (map.current && userLocation) {
@@ -591,6 +601,8 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
         etaMinutes={etaMinutes}
         onJobClick={handleJobClick}
         onFitAllMarkers={fitAllMarkers}
+        isCollapsed={isPanelCollapsed}
+        onToggleCollapse={() => setIsPanelCollapsed(!isPanelCollapsed)}
       />
     </div>
   );
