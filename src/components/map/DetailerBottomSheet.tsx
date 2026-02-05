@@ -3,9 +3,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { ChevronUp, ChevronDown, Star, Heart, MessageCircle, Phone, MapPin, Filter, SlidersHorizontal, ArrowLeft, Send } from 'lucide-react';
-import { useAppStore } from '@/lib/store';
+import { useAppStore, calculateAdjustedPrice, type BodyType, type Service } from '@/lib/store';
 import { StarRating } from '@/components/shared/StarRating';
-import { useRouter } from 'next/navigation';
+import { VehicleSelectionStep } from '@/components/booking/steps/VehicleInfoStep';
+import { type BookingData, type BookingVehicle } from '@/components/booking/BookingWizard';
 
 interface Detailer {
   id: string;
@@ -33,7 +34,7 @@ interface DetailerBottomSheetProps {
 }
 
 type SheetState = 'collapsed' | 'expanded';
-type ViewState = 'list' | 'profile' | 'chat' | 'reviews' | 'single';
+type ViewState = 'list' | 'profile' | 'chat' | 'reviews' | 'single' | 'booking' | 'booking-success';
 type SortOption = 'distance' | 'rating' | 'popularity';
 
 const getSheetHeights = () => {
@@ -64,11 +65,15 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
   const [sortBy, setSortBy] = useState<SortOption>('distance');
   const [selectedDetailer, setSelectedDetailer] = useState<Detailer | null>(null);
   const [viewState, setViewState] = useState<ViewState>('list');
-  const { favoriteDetailers, toggleFavoriteDetailer, isFavoriteDetailer, getActiveServicesByDetailer } = useAppStore();
-  const router = useRouter();
+  const { favoriteDetailers, toggleFavoriteDetailer, isFavoriteDetailer, getActiveServicesByDetailer, addAppointment, activeCustomerId } = useAppStore();
   const [sheetHeights, setSheetHeights] = useState(getSheetHeights());
   const [chatMessage, setChatMessage] = useState('');
   const [chatMessages, setChatMessages] = useState<Array<{id: string; text: string; sender: 'user' | 'detailer'; timestamp: Date}>>([]);
+  const [bookingData, setBookingData] = useState<BookingData>({
+    providerId: '',
+    vehicles: [],
+  });
+  const [bookingError, setBookingError] = useState<string | null>(null);
 
   const y = useMotionValue(0);
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -103,7 +108,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
   useEffect(() => {
     const mockDetailers: Detailer[] = [
       {
-        id: '1',
+        id: 'det_1',
         name: 'Alex\'s Premium Detailing',
         rating: 4.9,
         reviewCount: 234,
@@ -119,7 +124,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
         longitude: -118.2437,
       },
       {
-        id: '2',
+        id: 'det_2',
         name: 'Maria\'s Mobile Detail',
         rating: 4.7,
         reviewCount: 189,
@@ -135,7 +140,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
         longitude: -118.2537,
       },
       {
-        id: '3',
+        id: 'det_3',
         name: 'Elite Auto Spa',
         rating: 4.8,
         reviewCount: 156,
@@ -151,7 +156,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
         longitude: -118.2637,
       },
       {
-        id: '4',
+        id: 'det_4',
         name: 'Quick Shine Mobile',
         rating: 4.5,
         reviewCount: 98,
@@ -167,7 +172,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
         longitude: -118.2337,
       },
       {
-        id: '5',
+        id: 'det_5',
         name: 'Luxury Detail Co.',
         rating: 4.9,
         reviewCount: 287,
@@ -291,7 +296,70 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
   };
   
   const handleBookService = () => {
-    router.push(`/customer/booking?detailerId=${selectedDetailer?.id}`);
+    if (!selectedDetailer) return;
+    setBookingData({
+      providerId: selectedDetailer.id,
+      vehicles: [],
+    });
+    setBookingError(null);
+    setViewState('booking');
+  };
+
+  const updateBookingData = (updates: Partial<BookingData>) => {
+    setBookingData(prev => ({ ...prev, ...updates }));
+  };
+
+  const handleBackFromBooking = () => {
+    // Go back to whichever view the user came from (profile or single)
+    if (selectedDetailerFromMap) {
+      setViewState('single');
+    } else {
+      setViewState('profile');
+    }
+  };
+
+  const handleBookingComplete = () => {
+    // Create appointments for each vehicle
+    const mockBookingId = `TUM${Date.now()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
+    bookingData.vehicles.forEach((vehicle, index) => {
+      const vehicleLabel = vehicle.make && vehicle.model
+        ? `${vehicle.make} ${vehicle.model}`
+        : `${vehicle.bodyType.charAt(0).toUpperCase() + vehicle.bodyType.slice(1)} #${index + 1}`;
+
+      const appointment = {
+        id: `${mockBookingId}_v${index}`,
+        customerId: activeCustomerId,
+        customerName: 'Customer',
+        detailerId: bookingData.providerId!,
+        detailerName: selectedDetailer?.name || '',
+        businessName: selectedDetailer?.name || '',
+        serviceId: vehicle.serviceId,
+        serviceName: vehicle.serviceName,
+        serviceDescription: `${vehicle.serviceName} for ${vehicleLabel}${vehicle.luxuryCare ? ' (Luxury Care)' : ''}`,
+        price: vehicle.adjustedPrice,
+        scheduledDate: new Date().toISOString().split('T')[0],
+        scheduledTime: '12:00 PM',
+        duration: 60,
+        address: 'Address not specified',
+        latitude: selectedDetailer?.latitude || 34.0522,
+        longitude: selectedDetailer?.longitude || -118.2437,
+        phone: selectedDetailer?.phone || '',
+        status: 'scheduled' as const,
+        bookedAt: new Date().toISOString(),
+      };
+      addAppointment(appointment);
+    });
+
+    // Show success and go back to profile
+    setViewState('booking-success');
+    setTimeout(() => {
+      if (selectedDetailerFromMap) {
+        setViewState('single');
+      } else {
+        setViewState('profile');
+      }
+    }, 2500);
   };
 
   const handleSendMessage = () => {
@@ -402,16 +470,18 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
             ) : (
               <div className="flex items-center gap-3">
                 <button
-                  onClick={handleBackToList}
+                  onClick={viewState === 'booking' || viewState === 'booking-success' ? handleBackFromBooking : handleBackToList}
                   className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
                 >
                   <ArrowLeft className="h-5 w-5 text-gray-600" />
                 </button>
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">
-                    {viewState === 'profile' ? selectedDetailer?.name : 
+                    {viewState === 'profile' ? selectedDetailer?.name :
                      viewState === 'chat' ? `Chat with ${selectedDetailer?.name}` :
-                     viewState === 'reviews' ? `${selectedDetailer?.name} Reviews` : ''}
+                     viewState === 'reviews' ? `${selectedDetailer?.name} Reviews` :
+                     viewState === 'booking' ? 'Book Service' :
+                     viewState === 'booking-success' ? 'Booking Confirmed' : ''}
                   </h2>
                 </div>
               </div>
@@ -684,28 +754,9 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                     const services = getActiveServicesByDetailer(selectedDetailer.id);
                     if (services.length === 0) {
                       return (
-                        <>
-                          <div className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition-colors">
-                            <div className="flex items-center justify-between mb-2">
-                              <h5 className="font-semibold text-gray-900">Express Wash</h5>
-                              <span className="text-lg font-bold text-gray-900">$20</span>
-                            </div>
-                            <div className="flex items-center text-sm text-gray-600 mb-2">
-                              <span>⏱️ 20 min</span>
-                            </div>
-                            <p className="text-sm text-gray-600">Basic exterior wash and dry</p>
-                          </div>
-                          <div className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition-colors">
-                            <div className="flex items-center justify-between mb-2">
-                              <h5 className="font-semibold text-gray-900">Full Detail</h5>
-                              <span className="text-lg font-bold text-gray-900">$65</span>
-                            </div>
-                            <div className="flex items-center text-sm text-gray-600 mb-2">
-                              <span>⏱️ 90 min</span>
-                            </div>
-                            <p className="text-sm text-gray-600">Complete interior and exterior detailing</p>
-                          </div>
-                        </>
+                        <div className="text-center py-6 text-gray-500">
+                          <p>No services listed yet.</p>
+                        </div>
                       );
                     }
                     return services.map((service, index) => {
@@ -894,6 +945,52 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
             </div>
           )}
 
+          {viewState === 'booking' && selectedDetailer && (
+            // Inline Booking View
+            <div
+              className="space-y-4 flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y pb-20"
+              onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              onTouchMove={(e) => e.stopPropagation()}
+            >
+              <div className="text-sm text-gray-600 mb-2">
+                Booking with <span className="font-semibold text-gray-900">{selectedDetailer.name}</span>
+              </div>
+              {bookingError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">
+                  {bookingError}
+                </div>
+              )}
+              <VehicleSelectionStep
+                bookingData={bookingData}
+                updateBookingData={updateBookingData}
+                onNext={handleBookingComplete}
+                onPrev={handleBackFromBooking}
+                isLoading={false}
+                setIsLoading={() => {}}
+                setError={setBookingError}
+              />
+            </div>
+          )}
+
+          {viewState === 'booking-success' && selectedDetailer && (
+            // Booking Success View
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center py-8">
+                <div className="rounded-full bg-green-100 p-4 inline-block mb-4">
+                  <svg className="h-10 w-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Booking Confirmed!</h3>
+                <p className="text-gray-600 text-sm">
+                  {bookingData.vehicles.length} vehicle{bookingData.vehicles.length !== 1 ? 's' : ''} booked with {selectedDetailer.name}
+                </p>
+                <p className="text-gray-500 text-xs mt-2">Returning to profile...</p>
+              </div>
+            </div>
+          )}
+
           {viewState === 'single' && selectedDetailer && (
             // Single Detailer View (from map marker click)
             <div
@@ -955,28 +1052,9 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                     const services = getActiveServicesByDetailer(selectedDetailer.id);
                     if (services.length === 0) {
                       return (
-                        <>
-                          <div className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition-colors">
-                            <div className="flex items-center justify-between mb-2">
-                              <h5 className="font-semibold text-gray-900">Express Wash</h5>
-                              <span className="text-lg font-bold text-gray-900">$20</span>
-                            </div>
-                            <div className="flex items-center text-sm text-gray-600 mb-2">
-                              <span>⏱️ 20 min</span>
-                            </div>
-                            <p className="text-sm text-gray-600">Basic exterior wash and dry</p>
-                          </div>
-                          <div className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition-colors">
-                            <div className="flex items-center justify-between mb-2">
-                              <h5 className="font-semibold text-gray-900">Full Detail</h5>
-                              <span className="text-lg font-bold text-gray-900">$65</span>
-                            </div>
-                            <div className="flex items-center text-sm text-gray-600 mb-2">
-                              <span>⏱️ 90 min</span>
-                            </div>
-                            <p className="text-sm text-gray-600">Complete interior and exterior detailing</p>
-                          </div>
-                        </>
+                        <div className="text-center py-6 text-gray-500">
+                          <p>No services listed yet.</p>
+                        </div>
                       );
                     }
                     return services.map((service, index) => {
