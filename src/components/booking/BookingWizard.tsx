@@ -9,6 +9,7 @@ import { PaymentStep } from './steps/PaymentStep';
 import { ConfirmationStep } from './steps/ConfirmationStep';
 import { BookingProgress } from './BookingProgress';
 import type { BodyType } from '@/lib/store';
+import { useTranslation } from '@/lib/i18n';
 
 interface BookingWizardProps {
   providerId?: string;
@@ -63,19 +64,21 @@ export interface BookingData {
   };
 }
 
-const STEPS = [
-  { id: 'vehicles', label: 'Cars', icon: Car },
-  { id: 'schedule', label: 'Schedule', icon: Clock },
-  { id: 'address', label: 'Address', icon: MapPin },
-  { id: 'payment', label: 'Payment', icon: CreditCard },
-  { id: 'confirmation', label: 'Confirm', icon: Check }
-];
-
 export function BookingWizard({
   providerId,
   onComplete,
   compact = false
 }: BookingWizardProps) {
+  const { t } = useTranslation();
+
+  const STEPS = [
+    { id: 'vehicles', label: t('bookingWizard.cars'), icon: Car },
+    { id: 'schedule', label: t('bookingWizard.schedule'), icon: Clock },
+    { id: 'address', label: t('bookingWizard.address'), icon: MapPin },
+    { id: 'payment', label: t('bookingWizard.payment'), icon: CreditCard },
+    { id: 'confirmation', label: t('bookingWizard.confirm'), icon: Check }
+  ];
+
   const [currentStep, setCurrentStep] = useState(0);
   const [bookingData, setBookingData] = useState<BookingData>({
     providerId,
@@ -149,9 +152,9 @@ export function BookingWizard({
       {/* Header */}
       {!compact && (
         <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
-          <h2 className="text-xl font-semibold text-white">Book a Service</h2>
+          <h2 className="text-xl font-semibold text-white">{t('bookingWizard.bookService')}</h2>
           <p className="text-teal-100 text-sm mt-1">
-            Complete your booking in {STEPS.length} easy steps
+            {t('bookingWizard.completeBooking')} {STEPS.length} {t('bookingWizard.easySteps')}
           </p>
         </div>
       )}
@@ -187,12 +190,12 @@ export function BookingWizard({
                 : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
             }`}
           >
-            Previous
+            {t('bookingWizard.previous')}
           </button>
 
           <div className="flex items-center space-x-2">
             <span className="text-sm text-gray-500">
-              Step {currentStep + 1} of {STEPS.length}
+              {t('bookingWizard.step')} {currentStep + 1} {t('bookingWizard.of')} {STEPS.length}
             </span>
           </div>
 
@@ -206,7 +209,7 @@ export function BookingWizard({
                   : 'bg-teal-600 text-white hover:bg-teal-700'
               }`}
             >
-              {isLoading ? 'Processing...' : 'Continue'}
+              {isLoading ? t('bookingWizard.processing') : t('bookingWizard.continue')}
             </button>
           ) : (
             <div className="w-20" />

@@ -7,6 +7,7 @@ import { useAppStore, type ChatMessage } from '@/lib/store';
 import { StarRating } from '@/components/shared/StarRating';
 import { BookingWizard } from '@/components/booking/BookingWizard';
 import { mockDetailers as mockDetailersData } from '@/lib/mockData';
+import { useTranslation } from '@/lib/i18n';
 
 interface Detailer {
   id: string;
@@ -58,6 +59,7 @@ const getSheetHeights = () => {
 };
 
 export function DetailerBottomSheet({ isVisible, onClose, userLocation, selectedDetailerFromMap, onClearMapSelection }: DetailerBottomSheetProps) {
+  const { t } = useTranslation();
   const [sheetState, setSheetState] = useState<SheetState>('collapsed');
   const [detailers, setDetailers] = useState<Detailer[]>([]);
   const [filteredDetailers, setFilteredDetailers] = useState<Detailer[]>([]);
@@ -373,10 +375,10 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
             {viewState === 'list' ? (
               <div>
                 <h2 className="text-xl font-bold text-gray-900">
-                  Detailers near you
+                  {t('detailerBottomSheet.detailersNearYou')}
                 </h2>
                 <p className="text-sm text-gray-600">
-                  {filteredDetailers.length} detailers within {radiusMiles} miles
+                  {filteredDetailers.length} {t('detailerBottomSheet.detailersWithin')} {radiusMiles} {t('detailerBottomSheet.miles')}
                 </p>
               </div>
             ) : viewState === 'single' ? (
@@ -411,9 +413,9 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">
                     {viewState === 'profile' ? selectedDetailer?.name :
-                     viewState === 'chat' ? `Chat with ${selectedDetailer?.name}` :
-                     viewState === 'reviews' ? `${selectedDetailer?.name} Reviews` :
-                     viewState === 'booking' ? 'Book Service' : ''}
+                     viewState === 'chat' ? `${t('detailerBottomSheet.chatWith')} ${selectedDetailer?.name}` :
+                     viewState === 'reviews' ? `${selectedDetailer?.name} ${t('detailerBottomSheet.reviews')}` :
+                     viewState === 'booking' ? t('detailerBottomSheet.bookService') : ''}
                   </h2>
                 </div>
               </div>
@@ -441,8 +443,8 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
               {/* Radius Slider */}
               <div className="bg-gray-50 rounded-xl px-3 py-2">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium text-gray-700">Search radius</span>
-                  <span className="text-xs font-bold text-gray-900">{radiusMiles} miles</span>
+                  <span className="text-xs font-medium text-gray-700">{t('detailerBottomSheet.searchRadius')}</span>
+                  <span className="text-xs font-bold text-gray-900">{radiusMiles} {t('detailerBottomSheet.miles')}</span>
                 </div>
                 <input
                   type="range"
@@ -457,9 +459,9 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
               {/* Sort Options */}
               <div className="flex gap-2">
                 {[
-                  { value: 'distance', label: 'Closest', icon: MapPin },
-                  { value: 'rating', label: 'Highest Rated', icon: Star },
-                  { value: 'popularity', label: 'Most Popular', icon: Filter },
+                  { value: 'distance', label: t('detailerBottomSheet.closest'), icon: MapPin },
+                  { value: 'rating', label: t('detailerBottomSheet.highestRated'), icon: Star },
+                  { value: 'popularity', label: t('detailerBottomSheet.mostPopular'), icon: Filter },
                 ].map(({ value, label, icon: Icon }) => (
                   <button
                     key={value}
@@ -568,11 +570,11 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                           </h3>
                           <div className="flex items-center gap-2 mb-1">
                             <StarRating rating={detailer.rating} size="md" showNumber />
-                            <span 
+                            <span
                               className="text-sm text-gray-500 cursor-pointer hover:text-blue-600"
                               onClick={() => handleShowReviews(detailer)}
                             >
-                              ({detailer.reviewCount} reviews)
+                              ({detailer.reviewCount} {t('detailerBottomSheet.reviews')})
                             </span>
                           </div>
                           <p className="text-sm text-gray-600">{detailer.distance} miles • {detailer.price}</p>
@@ -615,7 +617,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                           onClick={() => handleProfileClick(detailer)}
                           className="flex-1 bg-blue-100 text-blue-900 py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors"
                         >
-                          View Profile
+                          {t('detailerBottomSheet.viewProfile')}
                         </button>
                         <button
                           onClick={() => handleChat(detailer)}
@@ -707,10 +709,10 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
               {/* Services Section */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-xl font-bold text-gray-900">Services</h4>
+                  <h4 className="text-xl font-bold text-gray-900">{t('detailerBottomSheet.services')}</h4>
                   {/* Promotional Coins - small badge */}
                   <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg px-2 py-1">
-                    <span className="text-xs font-medium text-yellow-800">🪙 1.5x Coins</span>
+                    <span className="text-xs font-medium text-yellow-800">🪙 {t('detailerBottomSheet.promotionalCoins')}</span>
                   </div>
                 </div>
                 <div className="divide-y divide-gray-100">
@@ -719,7 +721,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                     if (services.length === 0) {
                       return (
                         <div className="text-center py-4 text-gray-500">
-                          <p>No services listed yet.</p>
+                          <p>{t('detailerBottomSheet.noServicesListed')}</p>
                         </div>
                       );
                     }
@@ -730,12 +732,12 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                           <span className="text-base font-bold text-gray-900">${service.price}</span>
                         </div>
                         <div className="flex items-center text-xs text-gray-500 gap-2 mt-0.5">
-                          <span>⏱️ {service.duration} min</span>
+                          <span>⏱️ {service.duration} {t('common.min')}</span>
                           {service.category && (
                             <span className="text-gray-400">• {service.category}</span>
                           )}
                           {index === 0 && (
-                            <span className="text-green-600 font-medium">• Most Popular</span>
+                            <span className="text-green-600 font-medium">• {t('detailerBottomSheet.mostPopularService')}</span>
                           )}
                         </div>
                         <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{service.description}</p>
@@ -749,7 +751,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                   onClick={() => handleBookService()}
                   className="w-full bg-blue-500 text-white py-4 px-6 rounded-xl text-lg font-bold hover:bg-blue-600 transition-colors mt-6 shadow-lg"
                 >
-                  Book Service
+                  {t('detailerBottomSheet.bookService')}
                 </button>
               </div>
 
@@ -760,7 +762,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                   className="flex-1 bg-blue-100 text-blue-900 py-3 px-4 rounded-xl font-medium hover:bg-blue-200 transition-colors flex items-center justify-center gap-2"
                 >
                   <MessageCircle className="h-5 w-5" />
-                  Chat Now
+                  {t('detailerBottomSheet.chatNow')}
                 </button>
                 {selectedDetailer.phone && (
                   <button
@@ -768,7 +770,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                     className="flex-1 bg-gray-100 text-gray-700 py-3 px-4 rounded-xl font-medium hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
                   >
                     <Phone className="h-5 w-5" />
-                    Call
+                    {t('detailerBottomSheet.call')}
                   </button>
                 )}
               </div>
@@ -790,7 +792,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                 {currentChatMessages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full">
                     <MessageCircle className="h-12 w-12 text-gray-300 mb-4" />
-                    <p className="text-gray-500">Start a conversation with {selectedDetailer.name}</p>
+                    <p className="text-gray-500">{t('detailerBottomSheet.startConversation')} {selectedDetailer.name}</p>
                   </div>
                 ) : (
                   <div className="space-y-4 p-2">
@@ -855,7 +857,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <StarRating rating={selectedDetailer.rating} size="lg" showNumber />
                 </div>
-                <p className="text-gray-600">{selectedDetailer.reviewCount} total reviews</p>
+                <p className="text-gray-600">{selectedDetailer.reviewCount} {t('detailerBottomSheet.totalReviews')}</p>
               </div>
 
               {/* Sample Reviews */}
@@ -986,10 +988,10 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
               {/* Services Section */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-xl font-bold text-gray-900">Services</h4>
+                  <h4 className="text-xl font-bold text-gray-900">{t('detailerBottomSheet.services')}</h4>
                   {/* Promotional Coins - small badge */}
                   <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg px-2 py-1">
-                    <span className="text-xs font-medium text-yellow-800">🪙 1.5x Coins</span>
+                    <span className="text-xs font-medium text-yellow-800">🪙 {t('detailerBottomSheet.promotionalCoins')}</span>
                   </div>
                 </div>
                 <div className="divide-y divide-gray-100">
@@ -998,7 +1000,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                     if (services.length === 0) {
                       return (
                         <div className="text-center py-4 text-gray-500">
-                          <p>No services listed yet.</p>
+                          <p>{t('detailerBottomSheet.noServicesListed')}</p>
                         </div>
                       );
                     }
@@ -1009,12 +1011,12 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                           <span className="text-base font-bold text-gray-900">${service.price}</span>
                         </div>
                         <div className="flex items-center text-xs text-gray-500 gap-2 mt-0.5">
-                          <span>⏱️ {service.duration} min</span>
+                          <span>⏱️ {service.duration} {t('common.min')}</span>
                           {service.category && (
                             <span className="text-gray-400">• {service.category}</span>
                           )}
                           {index === 0 && (
-                            <span className="text-green-600 font-medium">• Most Popular</span>
+                            <span className="text-green-600 font-medium">• {t('detailerBottomSheet.mostPopularService')}</span>
                           )}
                         </div>
                         <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{service.description}</p>
@@ -1028,7 +1030,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                   onClick={() => handleBookService()}
                   className="w-full bg-blue-500 text-white py-4 px-6 rounded-xl text-lg font-bold hover:bg-blue-600 transition-colors mt-6 shadow-lg"
                 >
-                  Book Service
+                  {t('detailerBottomSheet.bookService')}
                 </button>
               </div>
 
@@ -1039,7 +1041,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                   className="flex-1 bg-blue-100 text-blue-900 py-3 px-4 rounded-xl font-medium hover:bg-blue-200 transition-colors flex items-center justify-center gap-2"
                 >
                   <MessageCircle className="h-5 w-5" />
-                  Chat Now
+                  {t('detailerBottomSheet.chatNow')}
                 </button>
                 {selectedDetailer.phone && (
                   <button
@@ -1047,7 +1049,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
                     className="flex-1 bg-gray-100 text-gray-700 py-3 px-4 rounded-xl font-medium hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
                   >
                     <Phone className="h-5 w-5" />
-                    Call
+                    {t('detailerBottomSheet.call')}
                   </button>
                 )}
               </div>

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, Edit3, Trash2, Plus, Home, Briefcase, Star, Car, X, HelpCircle, MessageCircle, FileText, Mail, Check, User, Camera } from "lucide-react";
 import { mockCustomers, type Vehicle } from "@/lib/mockData";
 import { useAppStore } from "@/lib/store";
+import { useTranslation } from "@/lib/i18n";
 
 interface SavedAddress {
   id: string;
@@ -79,6 +80,7 @@ const mockDetailers = [
 type EditingField = 'name' | 'email' | 'phone' | null;
 
 export function CustomerAccount() {
+  const { t } = useTranslation();
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [loading, setLoading] = useState(true);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -245,7 +247,7 @@ export function CustomerAccount() {
     <div className="space-y-6 p-6 pb-24 lg:pb-6">
       {/* Profile Section */}
       <div className="bg-brand-900/50 border border-brand-800 rounded-xl p-6">
-        <h2 className="text-xl font-bold text-white mb-4">Profile</h2>
+        <h2 className="text-xl font-bold text-white mb-4">{t('customerAccount.profile')}</h2>
         <div className="space-y-4">
           {/* Profile Picture */}
           <div className="flex items-center gap-4 pb-4 border-b border-brand-700">
@@ -282,14 +284,14 @@ export function CustomerAccount() {
             </div>
             <div className="flex-1">
               <p className="text-sm text-brand-400">
-                {profileImage ? 'Click the camera to change your photo' : 'Add a profile picture'}
+                {profileImage ? t('customerAccount.clickToChange') : t('customerAccount.addProfilePicture')}
               </p>
               {profileImage && (
                 <button
                   onClick={() => setProfileImage(null)}
                   className="text-sm text-red-400 hover:text-red-300 mt-1 transition-colors"
                 >
-                  Remove photo
+                  {t('customerAccount.removePhoto')}
                 </button>
               )}
             </div>
@@ -298,14 +300,14 @@ export function CustomerAccount() {
           {/* Name */}
           <div className="border border-brand-700 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-brand-200">Name</label>
+              <label className="text-sm font-medium text-brand-200">{t('customerAccount.name')}</label>
               {editingField !== 'name' && (
                 <button
                   onClick={() => startEditing('name', customerName)}
                   className="flex items-center gap-1 text-sm text-accent-DEFAULT hover:text-accent-hover transition-colors"
                 >
                   <Edit3 className="h-3.5 w-3.5" />
-                  Change
+                  {t('customerAccount.change')}
                 </button>
               )}
             </div>
@@ -323,14 +325,14 @@ export function CustomerAccount() {
                     onClick={cancelEditing}
                     className="flex-1 px-3 py-1.5 bg-brand-800 hover:bg-brand-700 text-white text-sm rounded-lg transition-colors"
                   >
-                    Cancel
+                    {t('customerAccount.cancel')}
                   </button>
                   <button
                     onClick={saveField}
                     className="flex-1 px-3 py-1.5 bg-accent-DEFAULT hover:bg-accent-hover text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-1"
                   >
                     <Check className="h-4 w-4" />
-                    Save
+                    {t('customerAccount.save')}
                   </button>
                 </div>
               </div>
@@ -342,14 +344,14 @@ export function CustomerAccount() {
           {/* Email */}
           <div className="border border-brand-700 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-brand-200">Email</label>
+              <label className="text-sm font-medium text-brand-200">{t('customerAccount.email')}</label>
               {editingField !== 'email' && (
                 <button
                   onClick={() => startEditing('email', customerEmail)}
                   className="flex items-center gap-1 text-sm text-accent-DEFAULT hover:text-accent-hover transition-colors"
                 >
                   <Edit3 className="h-3.5 w-3.5" />
-                  Change
+                  {t('customerAccount.change')}
                 </button>
               )}
             </div>
@@ -367,14 +369,14 @@ export function CustomerAccount() {
                     onClick={cancelEditing}
                     className="flex-1 px-3 py-1.5 bg-brand-800 hover:bg-brand-700 text-white text-sm rounded-lg transition-colors"
                   >
-                    Cancel
+                    {t('customerAccount.cancel')}
                   </button>
                   <button
                     onClick={saveField}
                     className="flex-1 px-3 py-1.5 bg-accent-DEFAULT hover:bg-accent-hover text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-1"
                   >
                     <Check className="h-4 w-4" />
-                    Save
+                    {t('customerAccount.save')}
                   </button>
                 </div>
               </div>
@@ -386,14 +388,14 @@ export function CustomerAccount() {
           {/* Phone */}
           <div className="border border-brand-700 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-brand-200">Phone</label>
+              <label className="text-sm font-medium text-brand-200">{t('customerAccount.phone')}</label>
               {editingField !== 'phone' && (
                 <button
                   onClick={() => startEditing('phone', customerPhone)}
                   className="flex items-center gap-1 text-sm text-accent-DEFAULT hover:text-accent-hover transition-colors"
                 >
                   <Edit3 className="h-3.5 w-3.5" />
-                  Change
+                  {t('customerAccount.change')}
                 </button>
               )}
             </div>
@@ -411,14 +413,14 @@ export function CustomerAccount() {
                     onClick={cancelEditing}
                     className="flex-1 px-3 py-1.5 bg-brand-800 hover:bg-brand-700 text-white text-sm rounded-lg transition-colors"
                   >
-                    Cancel
+                    {t('customerAccount.cancel')}
                   </button>
                   <button
                     onClick={saveField}
                     className="flex-1 px-3 py-1.5 bg-accent-DEFAULT hover:bg-accent-hover text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-1"
                   >
                     <Check className="h-4 w-4" />
-                    Save
+                    {t('customerAccount.save')}
                   </button>
                 </div>
               </div>
@@ -432,13 +434,13 @@ export function CustomerAccount() {
       {/* Vehicles Section */}
       <div className="bg-brand-900/50 border border-brand-800 rounded-xl p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-white">My Vehicles</h2>
-          <button 
+          <h2 className="text-xl font-bold text-white">{t('customerAccount.myVehicles')}</h2>
+          <button
             onClick={() => openVehicleForm()}
             className="flex items-center gap-2 px-4 py-2 bg-accent-DEFAULT hover:bg-accent-hover text-white rounded-lg transition-colors text-sm font-medium"
           >
             <Plus className="h-4 w-4" />
-            Add Vehicle
+            {t('customerAccount.addVehicle')}
           </button>
         </div>
         
@@ -462,7 +464,7 @@ export function CustomerAccount() {
                     </h3>
                     {vehicle.isLuxury && (
                       <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded-full text-xs font-medium">
-                        Luxury
+                        {t('customerAccount.luxury')}
                       </span>
                     )}
                   </div>
@@ -496,12 +498,12 @@ export function CustomerAccount() {
             <div className="h-16 w-16 rounded-full bg-brand-800 flex items-center justify-center mx-auto">
               <Car className="h-8 w-8 text-brand-600" />
             </div>
-            <p className="text-brand-400">No vehicles added yet</p>
+            <p className="text-brand-400">{t('customerAccount.noVehicles')}</p>
             <button
               onClick={() => openVehicleForm()}
               className="text-sm text-accent-DEFAULT hover:text-accent-hover transition-colors"
             >
-              Add your first vehicle
+              {t('customerAccount.addFirstVehicle')}
             </button>
           </div>
         )}
@@ -510,8 +512,8 @@ export function CustomerAccount() {
       {/* Favorite Detailers Section */}
       <div className="bg-brand-900/50 border border-brand-800 rounded-xl p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-white">Favorite Detailers</h2>
-          <span className="text-sm text-brand-400">{favoriteDetailers.length} saved</span>
+          <h2 className="text-xl font-bold text-white">{t('customerAccount.favoriteDetailers')}</h2>
+          <span className="text-sm text-brand-400">{favoriteDetailers.length} {t('customerAccount.saved')}</span>
         </div>
         
         {favoriteDetailers.length > 0 ? (
@@ -549,8 +551,8 @@ export function CustomerAccount() {
                         detailer.availability === 'available' ? 'text-green-400' :
                         detailer.availability === 'busy' ? 'text-yellow-400' : 'text-red-400'
                       }`}>
-                        {detailer.availability === 'available' ? 'Available' :
-                         detailer.availability === 'busy' ? 'Busy' : 'Offline'}
+                        {detailer.availability === 'available' ? t('customerAccount.available') :
+                         detailer.availability === 'busy' ? t('customerAccount.busy') : t('customerAccount.offline')}
                       </span>
                     </div>
                     <div className="flex gap-2 mt-2">
@@ -580,9 +582,9 @@ export function CustomerAccount() {
             <div className="h-16 w-16 rounded-full bg-brand-800 flex items-center justify-center mx-auto">
               <Star className="h-8 w-8 text-brand-600" />
             </div>
-            <p className="text-brand-400">No favorite detailers yet</p>
+            <p className="text-brand-400">{t('customerAccount.noFavorites')}</p>
             <p className="text-sm text-brand-500">
-              Heart detailers from the Map to add them to your favorites
+              {t('customerAccount.heartDetailers')}
             </p>
           </div>
         )}
@@ -591,15 +593,15 @@ export function CustomerAccount() {
       {/* Saved Addresses Section */}
       <div className="bg-brand-900/50 border border-brand-800 rounded-xl p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-white">Saved Addresses</h2>
+          <h2 className="text-xl font-bold text-white">{t('customerAccount.savedAddresses')}</h2>
           <button className="text-accent-DEFAULT text-sm font-medium hover:text-accent-hover transition-colors">
-            + Add New
+            {t('customerAccount.addNew')}
           </button>
         </div>
-        
+
         {loading ? (
           <div className="text-center py-4">
-            <div className="text-brand-400">Loading addresses...</div>
+            <div className="text-brand-400">{t('customerAccount.loadingAddresses')}</div>
           </div>
         ) : addresses.length > 0 ? (
           <div className="space-y-3">
@@ -642,9 +644,9 @@ export function CustomerAccount() {
             <div className="h-16 w-16 rounded-full bg-brand-800 flex items-center justify-center mx-auto">
               <MapPin className="h-8 w-8 text-brand-600" />
             </div>
-            <p className="text-brand-400">No saved addresses yet</p>
+            <p className="text-brand-400">{t('customerAccount.noAddresses')}</p>
             <p className="text-sm text-brand-500">
-              Add addresses from the Home screen for quick access
+              {t('customerAccount.addFromHome')}
             </p>
           </div>
         )}
@@ -657,8 +659,8 @@ export function CustomerAccount() {
             <HelpCircle className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white">Help & Support</h2>
-            <p className="text-sm text-brand-400">Get assistance when you need it</p>
+            <h2 className="text-xl font-bold text-white">{t('customerAccount.helpSupport')}</h2>
+            <p className="text-sm text-brand-400">{t('customerAccount.getAssistance')}</p>
           </div>
         </div>
 
@@ -668,8 +670,8 @@ export function CustomerAccount() {
               <FileText className="h-5 w-5 text-blue-400" />
             </div>
             <div className="flex-1">
-              <h3 className="font-medium text-white">FAQs</h3>
-              <p className="text-sm text-brand-400">Find answers to common questions</p>
+              <h3 className="font-medium text-white">{t('customerAccount.faqs')}</h3>
+              <p className="text-sm text-brand-400">{t('customerAccount.faqsDesc')}</p>
             </div>
           </button>
 
@@ -678,8 +680,8 @@ export function CustomerAccount() {
               <MessageCircle className="h-5 w-5 text-green-400" />
             </div>
             <div className="flex-1">
-              <h3 className="font-medium text-white">Live Chat Support</h3>
-              <p className="text-sm text-brand-400">Chat with our support team</p>
+              <h3 className="font-medium text-white">{t('customerAccount.liveChat')}</h3>
+              <p className="text-sm text-brand-400">{t('customerAccount.liveChatDesc')}</p>
             </div>
           </button>
 
@@ -688,7 +690,7 @@ export function CustomerAccount() {
               <Mail className="h-5 w-5 text-amber-400" />
             </div>
             <div className="flex-1">
-              <h3 className="font-medium text-white">Email Support</h3>
+              <h3 className="font-medium text-white">{t('customerAccount.emailSupport')}</h3>
               <p className="text-sm text-brand-400">support@tumaro.com</p>
             </div>
           </button>
@@ -696,7 +698,7 @@ export function CustomerAccount() {
 
         <div className="mt-4 pt-4 border-t border-brand-800">
           <p className="text-xs text-brand-500 text-center">
-            Need urgent help? Call us at (555) 123-WASH
+            {t('customerAccount.urgentHelp')}
           </p>
         </div>
       </div>
@@ -723,7 +725,7 @@ export function CustomerAccount() {
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-white">
-                  {editingVehicle ? 'Edit Vehicle' : 'Add Vehicle'}
+                  {editingVehicle ? t('customerAccount.editVehicle') : t('customerAccount.addVehicle')}
                 </h2>
                 <button
                   onClick={closeVehicleForm}
@@ -738,7 +740,7 @@ export function CustomerAccount() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-brand-200 mb-2">
-                      Year
+                      {t('customerAccount.year')}
                     </label>
                     <select
                       value={vehicleFormData.year}
@@ -752,7 +754,7 @@ export function CustomerAccount() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-brand-200 mb-2">
-                      Make
+                      {t('customerAccount.make')}
                     </label>
                     <input
                       type="text"
@@ -766,7 +768,7 @@ export function CustomerAccount() {
 
                 <div>
                   <label className="block text-sm font-medium text-brand-200 mb-2">
-                    Model
+                    {t('customerAccount.model')}
                   </label>
                   <input
                     type="text"
@@ -780,7 +782,7 @@ export function CustomerAccount() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-brand-200 mb-2">
-                      Color
+                      {t('customerAccount.color')}
                     </label>
                     <input
                       type="text"
@@ -792,7 +794,7 @@ export function CustomerAccount() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-brand-200 mb-2">
-                      License Plate
+                      {t('customerAccount.licensePlate')}
                     </label>
                     <input
                       type="text"
@@ -806,7 +808,7 @@ export function CustomerAccount() {
 
                 <div>
                   <label className="block text-sm font-medium text-brand-200 mb-2">
-                    Body Type
+                    {t('customerAccount.bodyType')}
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     {(['car', 'suv', 'truck', 'van'] as const).map((type) => (
@@ -820,9 +822,9 @@ export function CustomerAccount() {
                             : 'border-brand-700 hover:border-brand-600 text-brand-300'
                         }`}
                       >
-                        <div className="font-medium capitalize">{type}</div>
+                        <div className="font-medium capitalize">{t(`customerAccount.${type}`)}</div>
                         <div className="text-xs text-brand-500">
-                          {type === 'car' ? 'Standard' : 
+                          {type === 'car' ? t('customerAccount.standard') :
                            type === 'suv' ? '+25%' :
                            type === 'truck' ? '+40%' : '+50%'}
                         </div>
@@ -841,9 +843,9 @@ export function CustomerAccount() {
                       className="w-4 h-4 text-accent-DEFAULT border-brand-600 rounded focus:ring-accent-DEFAULT bg-brand-900"
                     />
                     <div>
-                      <div className="text-sm font-medium text-white">Luxury Vehicle</div>
+                      <div className="text-sm font-medium text-white">{t('customerAccount.luxuryVehicle')}</div>
                       <div className="text-xs text-brand-500">
-                        High-end, classic, or premium vehicles requiring special care
+                        {t('customerAccount.luxuryVehicleDesc')}
                       </div>
                     </div>
                   </label>
@@ -855,14 +857,14 @@ export function CustomerAccount() {
                     onClick={closeVehicleForm}
                     className="flex-1 px-4 py-3 bg-brand-800 hover:bg-brand-700 text-white rounded-lg transition-colors"
                   >
-                    Cancel
+                    {t('customerAccount.cancel')}
                   </button>
                   <button
                     onClick={saveVehicle}
                     disabled={!vehicleFormData.make || !vehicleFormData.model || !vehicleFormData.plate}
                     className="flex-1 px-4 py-3 bg-accent-DEFAULT hover:bg-accent-hover text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {editingVehicle ? 'Update' : 'Add'} Vehicle
+                    {editingVehicle ? t('customerAccount.updateVehicle') : t('customerAccount.addVehicle')}
                   </button>
                 </div>
               </div>

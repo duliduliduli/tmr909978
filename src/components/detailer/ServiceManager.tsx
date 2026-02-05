@@ -4,15 +4,18 @@ import { useState } from 'react';
 import { Plus, Edit2, Trash2, DollarSign, Clock, ToggleLeft, ToggleRight, Save, X, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore, Service, DEFAULT_BODY_TYPE_MULTIPLIERS } from '@/lib/store';
-
-const BODY_TYPE_LABELS: Record<string, string> = {
-  car: 'Car',
-  van: 'Van',
-  truck: 'Truck',
-  suv: 'SUV',
-};
+import { useTranslation } from '@/lib/i18n';
 
 export function ServiceManager() {
+  const { t } = useTranslation();
+
+  const BODY_TYPE_LABELS: Record<string, string> = {
+    car: t('customerAccount.car'),
+    van: t('customerAccount.van'),
+    truck: t('customerAccount.truck'),
+    suv: t('customerAccount.suv'),
+  };
+
   const {
     activeDetailerId,
     services,
@@ -92,7 +95,7 @@ export function ServiceManager() {
   };
 
   const handleDeleteService = (serviceId: string) => {
-    if (confirm('Are you sure you want to delete this service?')) {
+    if (confirm(t('serviceManager.deleteConfirm'))) {
       deleteService(serviceId);
     }
   };
@@ -119,10 +122,10 @@ export function ServiceManager() {
   }) => (
     <div className="md:col-span-2">
       <label className="block text-sm font-medium text-gray-300 mb-1">
-        Body Type Price Multipliers
+        {t('serviceManager.bodyTypeMultipliers')}
       </label>
       <p className="text-xs text-gray-500 mb-3">
-        Set price multipliers for different vehicle types (1.0 = base price)
+        {t('serviceManager.multiplierDesc')}
       </p>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {(['car', 'van', 'truck', 'suv'] as const).map((type) => (
@@ -162,11 +165,11 @@ export function ServiceManager() {
       <label className="block text-sm font-medium text-gray-300 mb-1">
         <span className="flex items-center gap-1.5">
           <Sparkles className="h-4 w-4 text-amber-400" />
-          Luxury Care Surcharge (%)
+          {t('serviceManager.luxuryCareSurcharge')}
         </span>
       </label>
       <p className="text-xs text-gray-500 mb-2">
-        Extra percentage charged when customer selects Luxury Care
+        {t('serviceManager.luxuryCareDesc')}
       </p>
       <div className="relative w-32">
         <input
@@ -187,15 +190,15 @@ export function ServiceManager() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-100">Service Management</h2>
-          <p className="text-gray-400 mt-1">Add and manage the services you offer</p>
+          <h2 className="text-2xl font-bold text-gray-100">{t('serviceManager.serviceManagement')}</h2>
+          <p className="text-gray-400 mt-1">{t('serviceManager.addManageServices')}</p>
         </div>
         <button
           onClick={() => setIsAddingService(true)}
           className="bg-teal-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-teal-600 transition-colors"
         >
           <Plus className="h-5 w-5" />
-          Add Service
+          {t('serviceManager.addService')}
         </button>
       </div>
 
@@ -208,11 +211,11 @@ export function ServiceManager() {
             exit={{ opacity: 0, height: 0 }}
             className="bg-brand-800 border border-brand-700 rounded-xl p-6"
           >
-            <h3 className="text-lg font-semibold text-gray-100 mb-4">Add New Service</h3>
+            <h3 className="text-lg font-semibold text-gray-100 mb-4">{t('serviceManager.addNewService')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Service Name *
+                  {t('serviceManager.serviceName')} *
                 </label>
                 <input
                   type="text"
@@ -225,7 +228,7 @@ export function ServiceManager() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Category
+                  {t('serviceManager.category')}
                 </label>
                 <select
                   value={newService.category}
@@ -240,7 +243,7 @@ export function ServiceManager() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Price ($) *
+                  {t('serviceManager.price')} *
                 </label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
@@ -258,7 +261,7 @@ export function ServiceManager() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Duration (minutes)
+                  {t('serviceManager.duration')}
                 </label>
                 <div className="relative">
                   <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
@@ -276,7 +279,7 @@ export function ServiceManager() {
 
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Description *
+                  {t('serviceManager.description')} *
                 </label>
                 <textarea
                   value={newService.description}
@@ -305,14 +308,14 @@ export function ServiceManager() {
                 onClick={() => setIsAddingService(false)}
                 className="px-4 py-2 text-gray-300 bg-brand-900 border border-brand-600 rounded-lg hover:bg-brand-800 transition-colors"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleAddService}
                 className="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors flex items-center gap-2"
               >
                 <Save className="h-4 w-4" />
-                Add Service
+                {t('serviceManager.addService')}
               </button>
             </div>
           </motion.div>
@@ -326,8 +329,8 @@ export function ServiceManager() {
             <div className="w-16 h-16 bg-brand-800 rounded-full flex items-center justify-center mx-auto mb-4">
               <Plus className="h-8 w-8 text-gray-500" />
             </div>
-            <h3 className="text-lg font-medium text-gray-200 mb-2">No services yet</h3>
-            <p className="text-gray-400">Add your first service to start accepting bookings</p>
+            <h3 className="text-lg font-medium text-gray-200 mb-2">{t('serviceManager.noServicesYet')}</h3>
+            <p className="text-gray-400">{t('serviceManager.addFirstService')}</p>
           </div>
         ) : (
           detailerServices.map((service) => (
@@ -344,7 +347,7 @@ export function ServiceManager() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-1">
-                        Service Name
+                        {t('serviceManager.serviceName')}
                       </label>
                       <input
                         type="text"
@@ -356,7 +359,7 @@ export function ServiceManager() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-1">
-                        Category
+                        {t('serviceManager.category')}
                       </label>
                       <select
                         value={editForm.category}
@@ -371,7 +374,7 @@ export function ServiceManager() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-1">
-                        Price ($)
+                        {t('serviceManager.price')}
                       </label>
                       <input
                         type="number"
@@ -385,7 +388,7 @@ export function ServiceManager() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-1">
-                        Duration (minutes)
+                        {t('serviceManager.duration')}
                       </label>
                       <input
                         type="number"
@@ -399,7 +402,7 @@ export function ServiceManager() {
 
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-300 mb-1">
-                        Description
+                        {t('serviceManager.description')}
                       </label>
                       <textarea
                         value={editForm.description}
@@ -430,14 +433,14 @@ export function ServiceManager() {
                       }}
                       className="px-4 py-2 text-gray-300 bg-brand-900 border border-brand-600 rounded-lg hover:bg-brand-800"
                     >
-                      Cancel
+                      {t('common.cancel')}
                     </button>
                     <button
                       onClick={() => handleUpdateService(service.id)}
                       className="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 flex items-center gap-2"
                     >
                       <Save className="h-4 w-4" />
-                      Save Changes
+                      {t('serviceManager.saveChanges')}
                     </button>
                   </div>
                 </div>
@@ -479,12 +482,12 @@ export function ServiceManager() {
                         {service.isActive ? (
                           <>
                             <ToggleRight className="h-4 w-4" />
-                            Active
+                            {t('serviceManager.active')}
                           </>
                         ) : (
                           <>
                             <ToggleLeft className="h-4 w-4" />
-                            Inactive
+                            {t('serviceManager.inactive')}
                           </>
                         )}
                       </button>
@@ -533,17 +536,17 @@ export function ServiceManager() {
       {detailerServices.length > 0 && (
         <div className="bg-brand-900 border border-brand-700 rounded-xl p-6 grid grid-cols-3 gap-4">
           <div>
-            <p className="text-sm text-gray-400">Total Services</p>
+            <p className="text-sm text-gray-400">{t('serviceManager.totalServices')}</p>
             <p className="text-2xl font-bold text-gray-100">{detailerServices.length}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-400">Active Services</p>
+            <p className="text-sm text-gray-400">{t('serviceManager.activeServices')}</p>
             <p className="text-2xl font-bold text-green-400">
               {detailerServices.filter(s => s.isActive).length}
             </p>
           </div>
           <div>
-            <p className="text-sm text-gray-400">Average Price</p>
+            <p className="text-sm text-gray-400">{t('serviceManager.averagePrice')}</p>
             <p className="text-2xl font-bold text-gray-100">
               ${(detailerServices.reduce((sum, s) => sum + s.price, 0) / detailerServices.length).toFixed(2)}
             </p>

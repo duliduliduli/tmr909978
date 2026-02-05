@@ -6,6 +6,7 @@ import { Calendar, Clock, MapPin, Phone, Star, AlertCircle, X } from "lucide-rea
 import { motion, AnimatePresence } from "framer-motion";
 import { format, parseISO, isToday, isTomorrow } from "date-fns";
 import { BookingWizard } from "@/components/booking/BookingWizard";
+import { useTranslation } from "@/lib/i18n";
 
 // Map detailer IDs to their profile images
 const detailerImages: Record<string, string> = {
@@ -18,6 +19,7 @@ const detailerImages: Record<string, string> = {
 };
 
 export function CustomerAppointments() {
+  const { t } = useTranslation();
   const { appointments, updateAppointmentStatus, role, activeDetailerId, activeCustomerId } = useAppStore();
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
   const [selectedDetailer, setSelectedDetailer] = useState<{ id: string; name: string } | null>(null);
@@ -60,8 +62,8 @@ export function CustomerAppointments() {
 
   const getDateLabel = (date: string) => {
     const appointmentDate = parseISO(date);
-    if (isToday(appointmentDate)) return 'Today';
-    if (isTomorrow(appointmentDate)) return 'Tomorrow';
+    if (isToday(appointmentDate)) return t('customerAppointments.today');
+    if (isTomorrow(appointmentDate)) return t('customerAppointments.tomorrow');
     return format(appointmentDate, 'MMM dd, yyyy');
   };
 
@@ -121,7 +123,7 @@ export function CustomerAppointments() {
           <Calendar className="h-3 w-3 text-brand-500" />
           <span className="text-white">{getDateLabel(appointment.scheduledDate)}</span>
           {!isPastAppointment && isToday(parseISO(appointment.scheduledDate)) && (
-            <span className="px-1.5 py-0.5 bg-accent-DEFAULT/20 text-accent-DEFAULT text-xs rounded">Today</span>
+            <span className="px-1.5 py-0.5 bg-accent-DEFAULT/20 text-accent-DEFAULT text-xs rounded">{t('customerAppointments.today')}</span>
           )}
         </div>
         <div className="flex items-center gap-1">
@@ -142,7 +144,7 @@ export function CustomerAppointments() {
             onClick={() => updateAppointmentStatus(appointment.id, 'cancelled')}
             className="px-3 py-1.5 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg text-xs font-medium hover:bg-red-500/30 transition-colors"
           >
-            Cancel Appointment
+            {t('customerAppointments.cancelAppointment')}
           </button>
         </div>
       )}
@@ -150,7 +152,7 @@ export function CustomerAppointments() {
       {appointment.notes && (
         <div className="mt-2 pt-2 border-t border-brand-800">
           <p className="text-xs text-brand-400">
-            <span className="text-brand-500">Notes:</span> {appointment.notes}
+            <span className="text-brand-500">{t('customerAppointments.notes')}:</span> {appointment.notes}
           </p>
         </div>
       )}
@@ -161,12 +163,12 @@ export function CustomerAppointments() {
     <div className="text-center py-12">
       <AlertCircle className="h-12 w-12 text-brand-600 mx-auto mb-4" />
       <h3 className="text-lg font-semibold text-brand-300 mb-2">
-        No {type} appointments
+        {type === 'upcoming' ? t('customerAppointments.noUpcoming') : t('customerAppointments.noPast')}
       </h3>
       <p className="text-brand-500">
         {type === 'upcoming'
-          ? "You don't have any upcoming appointments. Book a service to get started!"
-          : "You haven't completed any appointments yet."
+          ? t('customerAppointments.noUpcomingDesc')
+          : t('customerAppointments.noPastDesc')
         }
       </p>
     </div>
@@ -176,8 +178,8 @@ export function CustomerAppointments() {
     <div className="max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">My Appointments</h1>
-        <p className="text-brand-400 text-sm">Manage your service appointments</p>
+        <h1 className="text-2xl font-bold text-white">{t('customerAppointments.myAppointments')}</h1>
+        <p className="text-brand-400 text-sm">{t('customerAppointments.manageAppointments')}</p>
       </div>
 
       {/* Tab Switcher */}
@@ -190,7 +192,7 @@ export function CustomerAppointments() {
               : 'text-brand-400 hover:text-brand-200'
           }`}
         >
-          Upcoming ({upcomingAppointments.length})
+          {t('customerAppointments.upcoming')} ({upcomingAppointments.length})
         </button>
         <button
           onClick={() => setActiveTab('past')}
@@ -200,7 +202,7 @@ export function CustomerAppointments() {
               : 'text-brand-400 hover:text-brand-200'
           }`}
         >
-          Past ({pastAppointments.length})
+          {t('customerAppointments.past')} ({pastAppointments.length})
         </button>
       </div>
 
@@ -271,7 +273,7 @@ export function CustomerAppointments() {
                 />
                 <div className="flex-1">
                   <h3 className="font-bold text-gray-900">{selectedDetailer.name}</h3>
-                  <p className="text-sm text-gray-500">Book a new service</p>
+                  <p className="text-sm text-gray-500">{t('customerAppointments.bookNewService')}</p>
                 </div>
                 <button
                   onClick={() => setShowDetailerProfile(false)}

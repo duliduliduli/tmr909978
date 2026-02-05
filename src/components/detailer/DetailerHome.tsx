@@ -4,8 +4,10 @@ import { useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { QrCode, DollarSign, Clock, X, Download, Share2, Copy, Check, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "@/lib/i18n";
 
 export function DetailerHome() {
+  const { t } = useTranslation();
   const { activeDetailerId, getQRCodeByDetailer } = useAppStore();
   const todaysAppointments = useAppStore.getState().getTodaysAppointments(activeDetailerId);
   const [showOnMap, setShowOnMap] = useState(true);
@@ -28,8 +30,10 @@ export function DetailerHome() {
         className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-accent-600 to-blue-700 p-8 shadow-2xl shadow-accent/10"
       >
         <div className="relative z-10 text-white">
-          <h1 className="text-3xl font-bold mb-2">Good morning, Alex!</h1>
-          <p className="text-blue-100 mb-8 max-w-md text-lg">You have {todaysAppointments.length} appointment{todaysAppointments.length !== 1 ? 's' : ''} remaining today.</p>
+          <h1 className="text-3xl font-bold mb-2">{t('detailerHome.goodMorning')}, Alex!</h1>
+          <p className="text-blue-100 mb-8 max-w-md text-lg">
+            {todaysAppointments.length} {todaysAppointments.length !== 1 ? t('detailerHome.appointmentsRemainingPlural') : t('detailerHome.appointmentsRemaining')} {t('detailerHome.remainingToday')}.
+          </p>
 
           <div className="flex flex-wrap items-center gap-6">
             <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md rounded-xl px-4 py-3 border border-white/10">
@@ -37,7 +41,7 @@ export function DetailerHome() {
                 <DollarSign className="h-5 w-5 text-white" />
               </div>
               <div>
-                <div className="text-sm text-blue-100">Projected</div>
+                <div className="text-sm text-blue-100">{t('detailerHome.projected')}</div>
                 <div className="font-bold text-xl">${projectedEarnings}</div>
               </div>
             </div>
@@ -46,8 +50,8 @@ export function DetailerHome() {
                 <Clock className="h-5 w-5 text-white" />
               </div>
               <div>
-                <div className="text-sm text-blue-100">Workload</div>
-                <div className="font-bold text-xl">{workloadHours} hrs</div>
+                <div className="text-sm text-blue-100">{t('detailerHome.workload')}</div>
+                <div className="font-bold text-xl">{workloadHours} {t('detailerHome.hrs')}</div>
               </div>
             </div>
           </div>
@@ -70,8 +74,8 @@ export function DetailerHome() {
             <QrCode className="h-6 w-6 text-purple-500" />
           </div>
           <div>
-            <h3 className="font-bold text-lg text-white mb-1">Share QR Code</h3>
-            <p className="text-sm text-brand-400">Get more customers with your booking QR code</p>
+            <h3 className="font-bold text-lg text-white mb-1">{t('detailerHome.shareQRCode')}</h3>
+            <p className="text-sm text-brand-400">{t('detailerHome.qrCodeDesc')}</p>
           </div>
         </div>
       </motion.button>
@@ -83,9 +87,9 @@ export function DetailerHome() {
             <div className={`h-3 w-3 rounded-full ${showOnMap ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse' : 'bg-brand-600'}`} />
           </div>
           <div>
-            <h3 className="font-bold text-white">Show on Map</h3>
+            <h3 className="font-bold text-white">{t('detailerHome.showOnMap')}</h3>
             <p className="text-sm text-brand-400">
-              {showOnMap ? 'Customers can find you on the map' : 'You are hidden from the map'}
+              {showOnMap ? t('detailerHome.customersCanFind') : t('detailerHome.hiddenFromMap')}
             </p>
           </div>
         </div>
@@ -126,7 +130,7 @@ export function DetailerHome() {
             >
               {/* Modal Header */}
               <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-                <h3 className="font-bold text-gray-900 text-lg">Share QR Code</h3>
+                <h3 className="font-bold text-gray-900 text-lg">{t('detailerHome.shareQRCode')}</h3>
                 <button
                   onClick={() => setShowQRModal(false)}
                   className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -148,7 +152,7 @@ export function DetailerHome() {
                     </div>
 
                     <p className="text-gray-600 text-sm mb-4">
-                      Customers can scan this to book with you instantly
+                      {t('detailerHome.customersScan')}
                     </p>
 
                     {/* Booking URL */}
@@ -189,7 +193,7 @@ export function DetailerHome() {
                         className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
                       >
                         <Download className="h-4 w-4" />
-                        Download
+                        {t('detailerHome.download')}
                       </button>
 
                       <button
@@ -197,8 +201,8 @@ export function DetailerHome() {
                           if (navigator.share) {
                             try {
                               await navigator.share({
-                                title: 'Book with us',
-                                text: 'Book your auto detailing service!',
+                                title: t('detailerHome.bookWithUs'),
+                                text: t('detailerHome.bookDetailingService'),
                                 url: qrCode.businessUrl,
                               });
                             } catch (error) {
@@ -209,7 +213,7 @@ export function DetailerHome() {
                         className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
                       >
                         <Share2 className="h-4 w-4" />
-                        Share
+                        {t('detailerHome.share')}
                       </button>
                     </div>
                   </div>
@@ -218,9 +222,9 @@ export function DetailerHome() {
                     <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
                       <AlertCircle className="h-8 w-8 text-amber-600" />
                     </div>
-                    <h4 className="font-semibold text-gray-900 mb-2">No QR Code Yet</h4>
+                    <h4 className="font-semibold text-gray-900 mb-2">{t('detailerHome.noQRCodeYet')}</h4>
                     <p className="text-gray-600 text-sm mb-4">
-                      You need to create a QR code first. Go to Account &gt; QR Code to generate one.
+                      {t('detailerHome.createQRCode')}
                     </p>
                     <button
                       onClick={() => {
@@ -229,7 +233,7 @@ export function DetailerHome() {
                       }}
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
-                      Go to QR Code Settings
+                      {t('detailerHome.goToQRSettings')}
                     </button>
                   </div>
                 )}
