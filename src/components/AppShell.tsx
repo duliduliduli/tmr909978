@@ -6,6 +6,7 @@ import { Home, Map, Wallet, User, HelpCircle, ChevronRight, Calendar, MessageCir
 import { useAppStore } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
 import { AccountDropdown } from "@/components/auth/AccountDropdown";
+import { MessagesInbox } from "@/components/messages/MessagesInbox";
 
 const navItems = [
   { key: "home", label: "Home", icon: Home, href: "/home" },
@@ -241,6 +242,11 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
           </div>
         </nav>
       </div>
+
+      {/* Messages Inbox Overlay */}
+      <AnimatePresence>
+        {showMessages && <MessagesInbox />}
+      </AnimatePresence>
     </div>
   );
 }
