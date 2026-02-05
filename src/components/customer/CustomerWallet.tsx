@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CreditCard, Plus, History, Gift, Coins, ChevronRight, ChevronLeft, Star, Building, Trash2, Check } from "lucide-react";
+import { CreditCard, History, Coins, ChevronLeft, Building, Trash2, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { BookingWizard } from "@/components/booking/BookingWizard";
 
 interface CoinBalance {
   id: string;
@@ -36,12 +37,33 @@ interface CoinBalanceResponse {
   businessCount: number;
 }
 
+// Map detailer IDs to their profile images
+const detailerImages: Record<string, string> = {
+  'det_1': '/images/detailers/detailer-1.webp',
+  'det_2': '/images/detailers/detailer-3.jpg',
+  'det_3': '/images/detailers/detailer-4.jpg',
+  'det_4': '/images/detailers/detailer-6.jpg',
+  'det_5': '/images/detailers/detailer-5.jpg',
+  'det_6': '/images/detailers/detailer-7.jpg',
+};
+
+// Map coin IDs to detailer IDs
+const coinToDetailer: Record<string, string> = {
+  'coin_det_1': 'det_1',
+  'coin_det_2': 'det_2',
+  'coin_det_3': 'det_3',
+  'coin_det_4': 'det_4',
+  'coin_det_5': 'det_5',
+  'coin_det_6': 'det_6',
+};
+
 export function CustomerWallet() {
   const [coinBalances, setCoinBalances] = useState<CoinBalance[]>([]);
   const [totalCoinValue, setTotalCoinValue] = useState("0.00");
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCoin, setSelectedCoin] = useState<CoinBalance | null>(null);
   const [currentView, setCurrentView] = useState<'main' | 'payment-methods' | 'transaction-history'>('main');
+  const [showBookingModal, setShowBookingModal] = useState(false);
 
   // Mock customer ID - in real app, get from auth context
   const customerId = "cust_1";
@@ -102,7 +124,7 @@ export function CustomerWallet() {
       isDefault: true,
     },
     {
-      id: "2", 
+      id: "2",
       type: "mastercard",
       last4: "8888",
       isDefault: false,
@@ -124,14 +146,21 @@ export function CustomerWallet() {
       color: "bg-purple-600",
       action: () => setCurrentView("transaction-history"),
     },
-    {
-      title: "Redeem Coins",
-      description: "Use coins for discounts",
-      icon: Gift,
-      color: "bg-accent-DEFAULT",
-      action: () => console.log("Redeem coins"),
-    },
   ];
+
+  const handleRedeemClick = (coinBalance: CoinBalance) => {
+    setSelectedCoin(coinBalance);
+    setShowBookingModal(true);
+  };
+
+  const getDetailerIdFromCoin = (coinBalance: CoinBalance): string => {
+    return coinToDetailer[coinBalance.coinId] || 'det_1';
+  };
+
+  const getDetailerImage = (coinBalance: CoinBalance): string => {
+    const detailerId = getDetailerIdFromCoin(coinBalance);
+    return detailerImages[detailerId] || '/images/detailers/detailer-1.webp';
+  };
 
   // Payment Methods View
   const renderPaymentMethodsView = () => (
@@ -284,7 +313,7 @@ export function CustomerWallet() {
               </div>
               <div className="text-right">
                 <p className={`font-semibold text-sm ${
-                  transaction.amount > 0 
+                  transaction.amount > 0
                     ? transaction.coinType ? 'text-yellow-400' : 'text-green-400'
                     : 'text-white'
                 }`}>
@@ -312,197 +341,178 @@ export function CustomerWallet() {
   }
 
   return (
-    <div className="p-6 space-y-8 pb-24 lg:pb-6">
-      {/* Coin Summary Card */}
+    <div className="p-6 space-y-6 pb-24 lg:pb-6">
+      {/* Coin Summary Card - Compact */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="p-6 rounded-2xl bg-gradient-to-br from-yellow-500 to-amber-600 text-white"
+        className="p-4 rounded-xl bg-gradient-to-br from-yellow-500 to-amber-600 text-white"
       >
-        <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center justify-between">
           <div>
-            <p className="text-yellow-100 text-sm">Total Reward Coins</p>
-            <p className="text-3xl font-bold">${totalCoinValue}</p>
-            <p className="text-xs text-yellow-200 mt-1">From {coinBalances.length} business{coinBalances.length !== 1 ? 'es' : ''}</p>
+            <p className="text-yellow-100 text-xs">Total Reward Coins</p>
+            <p className="text-2xl font-bold">${totalCoinValue}</p>
           </div>
-          <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
-            <Coins className="h-6 w-6" />
+          <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center">
+            <Coins className="h-5 w-5" />
           </div>
         </div>
-        <p className="text-yellow-100 text-sm">
-          Use your coins during booking for instant discounts!
-        </p>
       </motion.div>
 
-      {/* My Business Coins */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-white">My Business Coins</h2>
-          {coinBalances.length > 3 && (
-            <button className="text-accent-DEFAULT text-sm font-medium hover:text-accent-hover transition-colors">
-              View All
-            </button>
-          )}
-        </div>
-
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="p-4 rounded-xl bg-brand-900/50 border border-brand-800 animate-pulse">
-                <div className="h-4 bg-brand-800 rounded w-3/4 mb-2"></div>
-                <div className="h-6 bg-brand-800 rounded w-1/2 mb-2"></div>
-                <div className="h-3 bg-brand-800 rounded w-full"></div>
-              </div>
-            ))}
-          </div>
-        ) : coinBalances.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {coinBalances.slice(0, 6).map((coinBalance, index) => (
-              <motion.div
-                key={coinBalance.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.1 }}
-                className="p-4 rounded-xl bg-brand-900/50 border border-brand-800 hover:bg-brand-800/50 transition-all duration-300 cursor-pointer group"
-                onClick={() => setSelectedCoin(coinBalance)}
-                style={{ borderColor: coinBalance.coin.primaryColor + '40' }}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    {coinBalance.coin.iconUrl ? (
-                      <img 
-                        src={coinBalance.coin.iconUrl} 
-                        alt={coinBalance.coin.displayName}
-                        className="h-10 w-10 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div 
-                        className="h-10 w-10 rounded-full flex items-center justify-center"
-                        style={{ backgroundColor: coinBalance.coin.primaryColor + '20' }}
-                      >
-                        <Building className="h-5 w-5" style={{ color: coinBalance.coin.primaryColor }} />
-                      </div>
-                    )}
-                    <div>
-                      <h3 className="font-semibold text-white text-sm group-hover:text-accent-DEFAULT transition-colors">
-                        {coinBalance.coin.displayName}
-                      </h3>
-                      <p className="text-xs text-brand-500">{coinBalance.coin.provider.businessName}</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-brand-600 group-hover:text-accent-DEFAULT group-hover:translate-x-1 transition-all" />
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-brand-400 text-sm">Balance:</span>
-                    <span className="text-white font-semibold">{coinBalance.balance} coins</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-brand-400 text-sm">Value:</span>
-                    <span className="text-accent-DEFAULT font-semibold">${coinBalance.dollarValue}</span>
-                  </div>
-                  {coinBalance.balance >= coinBalance.coin.minimumRedemption && (
-                    <div className="mt-2 px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full text-center">
-                      Ready to redeem
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8 space-y-3">
-            <div className="h-16 w-16 rounded-full bg-brand-800 flex items-center justify-center mx-auto">
-              <Coins className="h-8 w-8 text-brand-600" />
-            </div>
-            <p className="text-brand-400">No business coins yet</p>
-            <p className="text-sm text-brand-500">Complete your first booking to start earning coins!</p>
-          </div>
-        )}
-      </div>
-
-      {/* Quick Actions */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-white">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Quick Actions - Now at top */}
+      <div className="space-y-3">
+        <h2 className="text-lg font-semibold text-white">Quick Actions</h2>
+        <div className="grid grid-cols-2 gap-3">
           {quickActions.map((action, index) => (
             <motion.button
               key={action.title}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: index * 0.1 }}
-              className="p-4 rounded-xl bg-brand-900/50 border border-brand-800 hover:bg-brand-800/80 transition-all duration-300 group text-left"
+              className="p-3 rounded-xl bg-brand-900/50 border border-brand-800 hover:bg-brand-800/80 transition-all duration-300 group text-left"
               onClick={action.action}
             >
-              <div className={`h-10 w-10 rounded-lg ${action.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
-                <action.icon className="h-5 w-5 text-white" />
+              <div className={`h-8 w-8 rounded-lg ${action.color} flex items-center justify-center mb-2 group-hover:scale-110 transition-transform`}>
+                <action.icon className="h-4 w-4 text-white" />
               </div>
               <h3 className="font-medium text-white text-sm group-hover:text-accent-DEFAULT transition-colors">
                 {action.title}
               </h3>
-              <p className="text-xs text-brand-500 mt-1">{action.description}</p>
             </motion.button>
           ))}
         </div>
       </div>
 
-      {/* Coin Detail Modal/Sheet (you can implement this later) */}
+      {/* Promotional Coins - Stacked vertically */}
+      <div className="space-y-3">
+        <h2 className="text-lg font-semibold text-white">Promotional Coins</h2>
+
+        {isLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="p-3 rounded-xl bg-brand-900/50 border border-brand-800 animate-pulse">
+                <div className="h-4 bg-brand-800 rounded w-3/4"></div>
+              </div>
+            ))}
+          </div>
+        ) : coinBalances.length > 0 ? (
+          <div className="space-y-2">
+            {coinBalances.map((coinBalance, index) => (
+              <motion.div
+                key={coinBalance.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="p-3 rounded-xl bg-brand-900/50 border border-brand-800"
+                style={{ borderColor: coinBalance.coin.primaryColor + '30' }}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  {/* Coin Icon & Name */}
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    {coinBalance.coin.iconUrl ? (
+                      <img
+                        src={coinBalance.coin.iconUrl}
+                        alt={coinBalance.coin.displayName}
+                        className="h-8 w-8 rounded-full object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <div
+                        className="h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: coinBalance.coin.primaryColor + '20' }}
+                      >
+                        <Building className="h-4 w-4" style={{ color: coinBalance.coin.primaryColor }} />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="font-medium text-white text-sm truncate">
+                        {coinBalance.coin.provider.businessName}
+                      </p>
+                      <p className="text-xs text-brand-500 truncate">{coinBalance.coin.displayName}</p>
+                    </div>
+                  </div>
+
+                  {/* Coin Amount */}
+                  <div className="text-center px-3">
+                    <p className="font-semibold text-white text-sm">{coinBalance.balance}</p>
+                    <p className="text-xs text-brand-500">coins</p>
+                  </div>
+
+                  {/* Dollar Value */}
+                  <div className="text-center px-3">
+                    <p className="font-semibold text-accent-DEFAULT text-sm">${coinBalance.dollarValue}</p>
+                    <p className="text-xs text-brand-500">value</p>
+                  </div>
+
+                  {/* Redeem Button */}
+                  <button
+                    onClick={() => handleRedeemClick(coinBalance)}
+                    className="px-3 py-1.5 bg-accent-DEFAULT hover:bg-accent-hover text-white text-xs font-medium rounded-lg transition-colors flex-shrink-0"
+                  >
+                    Redeem
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-6 space-y-2">
+            <div className="h-12 w-12 rounded-full bg-brand-800 flex items-center justify-center mx-auto">
+              <Coins className="h-6 w-6 text-brand-600" />
+            </div>
+            <p className="text-brand-400 text-sm">No promotional coins yet</p>
+            <p className="text-xs text-brand-500">Complete your first booking to start earning!</p>
+          </div>
+        )}
+      </div>
+
+      {/* Booking Modal */}
       <AnimatePresence>
-        {selectedCoin && (
+        {showBookingModal && selectedCoin && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50"
-            onClick={() => setSelectedCoin(null)}
+            className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowBookingModal(false)}
           >
             <motion.div
-              initial={{ y: "100%", opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: "100%", opacity: 0 }}
-              className="bg-brand-950 rounded-t-2xl sm:rounded-2xl p-6 w-full sm:max-w-md mx-4 mb-0 sm:mb-4"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col"
               onClick={e => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-white">{selectedCoin.coin.displayName}</h3>
-                <button 
-                  onClick={() => setSelectedCoin(null)}
-                  className="text-brand-400 hover:text-white transition-colors"
+              {/* Modal Header with Detailer Profile */}
+              <div className="p-4 border-b border-gray-200 flex items-center gap-4">
+                <img
+                  src={getDetailerImage(selectedCoin)}
+                  alt={selectedCoin.coin.provider.businessName}
+                  className="h-14 w-14 rounded-xl object-cover"
+                />
+                <div className="flex-1">
+                  <h3 className="font-bold text-gray-900">{selectedCoin.coin.provider.businessName}</h3>
+                  <p className="text-sm text-gray-500">
+                    Redeem {selectedCoin.balance} coins (${selectedCoin.dollarValue} value)
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowBookingModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                 >
-                  ×
+                  <X className="h-5 w-5 text-gray-500" />
                 </button>
               </div>
-              
-              <div className="space-y-4">
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-white">{selectedCoin.balance}</p>
-                  <p className="text-brand-400">Available Coins</p>
-                  <p className="text-accent-DEFAULT font-semibold">${selectedCoin.dollarValue} value</p>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div>
-                    <p className="text-xl font-semibold text-white">{selectedCoin.totalEarned}</p>
-                    <p className="text-xs text-brand-500">Total Earned</p>
-                  </div>
-                  <div>
-                    <p className="text-xl font-semibold text-white">{selectedCoin.totalRedeemed}</p>
-                    <p className="text-xs text-brand-500">Total Redeemed</p>
-                  </div>
-                </div>
-                
-                <div className="pt-4">
-                  <p className="text-sm text-brand-400 mb-2">From: {selectedCoin.coin.provider.businessName}</p>
-                  <p className="text-xs text-brand-500">Minimum redemption: {selectedCoin.coin.minimumRedemption} coins</p>
-                  <p className="text-xs text-brand-500">Coin value: ${selectedCoin.coin.redemptionValue.toFixed(3)} each</p>
-                </div>
-                
-                {selectedCoin.balance >= selectedCoin.coin.minimumRedemption && (
-                  <button className="w-full py-3 bg-accent-DEFAULT hover:bg-accent-hover text-white rounded-xl font-semibold transition-colors">
-                    Redeem Coins
-                  </button>
-                )}
+
+              {/* Booking Wizard */}
+              <div className="flex-1 overflow-y-auto p-4">
+                <BookingWizard
+                  providerId={getDetailerIdFromCoin(selectedCoin)}
+                  onComplete={(bookingId) => {
+                    setShowBookingModal(false);
+                    setSelectedCoin(null);
+                  }}
+                  compact
+                />
               </div>
             </motion.div>
           </motion.div>
