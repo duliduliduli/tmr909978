@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export type Role = "customer" | "detailer";
+export type Language = "en" | "es";
 
 interface MapViewState {
   center: [number, number];
@@ -199,6 +200,9 @@ interface AppState {
   // Messages inbox
   showMessages: boolean;
   setShowMessages: (show: boolean) => void;
+  // Language/i18n
+  language: Language;
+  setLanguage: (lang: Language) => void;
 }
 
 // Helper to get date strings relative to today
@@ -1322,6 +1326,9 @@ export const useAppStore = create<AppState>()(
       // Messages inbox
       showMessages: false,
       setShowMessages: (show: boolean) => set({ showMessages: show }),
+      // Language/i18n
+      language: 'en' as Language,
+      setLanguage: (language: Language) => set({ language }),
     }),
     {
       name: "app_state_v13",

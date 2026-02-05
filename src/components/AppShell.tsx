@@ -4,21 +4,22 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Home, Map, Wallet, User, HelpCircle, ChevronRight, Calendar, MessageCircle } from "lucide-react";
 import { useAppStore } from "@/lib/store";
+import { useTranslation } from "@/lib/i18n";
 import { motion, AnimatePresence } from "framer-motion";
 import { AccountDropdown } from "@/components/auth/AccountDropdown";
 import { MessagesInbox } from "@/components/messages/MessagesInbox";
 
-const navItems = [
-  { key: "home", label: "Home", icon: Home, href: "/home" },
-  { key: "map", label: "Map", icon: Map, href: "/map" },
-  { key: "appointments", label: "Appointments", icon: Calendar, href: "/appointments" },
-  { key: "wallet", label: "Wallet", icon: Wallet, href: "/wallet" },
-  { key: "account", label: "Account", icon: User, href: "/account" },
-  { key: "help", label: "Help", icon: HelpCircle, href: "/help" },
+const navItemKeys = [
+  { key: "home", labelKey: "nav.home", icon: Home, href: "/home" },
+  { key: "map", labelKey: "nav.map", icon: Map, href: "/map" },
+  { key: "appointments", labelKey: "nav.appointments", icon: Calendar, href: "/appointments" },
+  { key: "wallet", labelKey: "nav.wallet", icon: Wallet, href: "/wallet" },
+  { key: "account", labelKey: "nav.account", icon: User, href: "/account" },
+  { key: "help", labelKey: "nav.help", icon: HelpCircle, href: "/help" },
 ];
 
 // Bottom nav items exclude help to prevent overcrowding
-const bottomNavItems = navItems.filter(item => item.key !== "help");
+const bottomNavItemKeys = navItemKeys.filter(item => item.key !== "help");
 
 function cx(...c: Array<string | false | undefined>) {
   return c.filter(Boolean).join(" ");
@@ -28,6 +29,7 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
   const pathname = usePathname();
   const router = useRouter();
   const { role, setRole, showMessages, setShowMessages } = useAppStore();
+  const { t } = useTranslation();
 
   const base = role === "detailer" ? "/detailer" : "/customer";
 
@@ -46,15 +48,15 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
       <div className="hidden lg:flex">
         <aside className="fixed left-0 top-0 h-screen w-72 bg-brand-900 border-r border-brand-800 shadow-2xl z-20">
           <div className="h-20 px-6 flex items-center justify-center border-b border-brand-800/50">
-            <img 
-              src="/tumaro-logo.png" 
-              alt="Tumaro" 
+            <img
+              src="/tumaro-logo.png"
+              alt="Tumaro"
               className="h-8 object-contain"
             />
           </div>
 
           <nav className="p-4 space-y-2 mt-4">
-            {navItems.map((it) => {
+            {navItemKeys.map((it) => {
               const Icon = it.icon;
               const href = `${base}${it.href}`;
               const active = isActive(it.href.split("/").pop() || "");
@@ -78,7 +80,7 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
                     active ? "text-accent-DEFAULT" : "text-brand-400 group-hover:text-brand-200"
                   )}>
                     <Icon className={cx("h-5 w-5", active && "text-accent-DEFAULT")} />
-                    <span>{it.label}</span>
+                    <span>{t(it.labelKey)}</span>
                     {active && <motion.div layoutId="activeGlow" className="absolute right-3 w-1.5 h-1.5 rounded-full bg-accent-DEFAULT shadow-[0_0_8px_rgba(56,189,248,0.8)]" />}
                   </div>
                 </Link>
@@ -87,7 +89,7 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
           </nav>
 
           <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-brand-800/50 bg-brand-900">
-            <div className="text-xs uppercase tracking-wider text-brand-500 font-semibold mb-3">Switch Mode</div>
+            <div className="text-xs uppercase tracking-wider text-brand-500 font-semibold mb-3">{t('appShell.switchMode')}</div>
             <div className="flex bg-brand-950 p-1 rounded-xl border border-brand-800">
               <button
                 onClick={() => switchRole("customer")}
@@ -98,7 +100,7 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
                     : "text-brand-500 hover:text-brand-300"
                 )}
               >
-                Customer
+                {t('appShell.customer')}
               </button>
               <button
                 onClick={() => switchRole("detailer")}
@@ -109,14 +111,14 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
                     : "text-brand-500 hover:text-brand-300"
                 )}
               >
-                Detailer
+                {t('appShell.detailer')}
               </button>
             </div>
             <button
               onClick={() => useAppStore.getState().switchToTestAccount()}
               className="mt-2 w-full text-xs bg-green-500/20 text-green-400 border border-green-500/30 rounded-lg px-3 py-1.5 hover:bg-green-500/30 transition-colors"
             >
-              Switch Test Account
+              {t('appShell.switchTestAccount')}
             </button>
           </div>
         </aside>
@@ -141,7 +143,7 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
                   role === "customer" ? "bg-accent-DEFAULT shadow-[0_0_8px_rgba(56,189,248,0.5)]" : "bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]"
                 )} />
                 <span className="text-xs font-semibold text-brand-300 uppercase tracking-wide">
-                  {role === "customer" ? "Customer Mode" : "Detailer Mode"}
+                  {role === "customer" ? t('appShell.customerMode') : t('appShell.detailerMode')}
                 </span>
               </div>
               <div className="h-10 w-10 rounded-full bg-brand-800 border border-brand-700 flex items-center justify-center text-brand-300 hover:border-brand-600 transition-colors cursor-pointer">
@@ -192,7 +194,7 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
               className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-900 border border-brand-800 text-xs font-medium text-brand-300"
             >
               <div className={cx("w-2 h-2 rounded-full", role === 'customer' ? 'bg-accent-DEFAULT' : 'bg-purple-500')} />
-              {role === "customer" ? "Customer" : "Detailer"}
+              {role === "customer" ? t('appShell.customer') : t('appShell.detailer')}
             </button>
           </div>
         </header>
@@ -218,7 +220,7 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
           fullWidth ? "flex-shrink-0 z-20" : "fixed bottom-0 left-0 right-0 z-50"
         )}>
           <div className="grid grid-cols-5 h-full relative">
-            {bottomNavItems.map((it) => {
+            {bottomNavItemKeys.map((it) => {
               const Icon = it.icon;
               const href = `${base}${it.href}`;
               const active = isActive(it.href.split("/").pop() || "");
@@ -234,7 +236,7 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
                   )}
                   <Icon className={cx("h-6 w-6 transition-colors", active ? "text-accent-DEFAULT" : "text-brand-300")} />
                   <span className={cx("text-[10px] font-medium transition-colors", active ? "text-brand-100" : "text-brand-400")}>
-                    {it.label}
+                    {t(it.labelKey)}
                   </span>
                 </Link>
               );

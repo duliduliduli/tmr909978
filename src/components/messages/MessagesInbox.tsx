@@ -4,8 +4,10 @@ import { useState } from "react";
 import { X, Pin, Send, MessageCircle, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/lib/store";
+import { useTranslation } from "@/lib/i18n";
 
 export function MessagesInbox() {
+  const { t } = useTranslation();
   const {
     setShowMessages,
     conversations,
@@ -100,7 +102,7 @@ export function MessagesInbox() {
           <X className="h-5 w-5 text-brand-400" />
         </button>
         <MessageCircle className="h-5 w-5 text-accent-DEFAULT" />
-        <h1 className="text-xl font-bold text-white">Messages</h1>
+        <h1 className="text-xl font-bold text-white">{t('messagesInbox.messages')}</h1>
       </div>
 
       {/* Content */}
@@ -130,7 +132,7 @@ export function MessagesInbox() {
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {getMessagesForConversation(selectedConversation).length === 0 ? (
                 <div className="text-center text-brand-500 py-8">
-                  <p>No messages yet. Start the conversation!</p>
+                  <p>{t('messagesInbox.noMessagesYet')}</p>
                 </div>
               ) : (
                 getMessagesForConversation(selectedConversation).map((msg, idx) => (
@@ -163,7 +165,7 @@ export function MessagesInbox() {
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                  placeholder="Type a message..."
+                  placeholder={t('messagesInbox.typeMessage')}
                   className="flex-1 px-4 py-3 bg-brand-800 border border-brand-700 rounded-xl text-white placeholder-brand-500 focus:outline-none focus:ring-2 focus:ring-accent-DEFAULT"
                 />
                 <button
@@ -183,8 +185,8 @@ export function MessagesInbox() {
               {sortedConversations.length === 0 ? (
                 <div className="text-center py-12">
                   <MessageCircle className="h-12 w-12 text-brand-600 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-brand-300 mb-2">No conversations yet</h3>
-                  <p className="text-brand-500">Messages from detailers will appear here</p>
+                  <h3 className="text-lg font-semibold text-brand-300 mb-2">{t('messagesInbox.noConversations')}</h3>
+                  <p className="text-brand-500">{t('messagesInbox.messagesFromDetailers')}</p>
                 </div>
               ) : (
                 sortedConversations.map((conv) => (
@@ -256,19 +258,19 @@ export function MessagesInbox() {
                         className="mt-3 pt-3 border-t border-brand-800"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <p className="text-sm text-brand-400 mb-2">Delete this conversation?</p>
+                        <p className="text-sm text-brand-400 mb-2">{t('messagesInbox.deleteConversation')}</p>
                         <div className="flex gap-2">
                           <button
                             onClick={() => setShowDeleteConfirm(null)}
                             className="flex-1 px-3 py-1.5 bg-brand-800 hover:bg-brand-700 text-white text-sm rounded-lg transition-colors"
                           >
-                            Cancel
+                            {t('common.cancel')}
                           </button>
                           <button
                             onClick={() => handleDeleteConversation(conv.id)}
                             className="flex-1 px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 text-sm rounded-lg transition-colors"
                           >
-                            Delete
+                            {t('messagesInbox.delete')}
                           </button>
                         </div>
                       </motion.div>

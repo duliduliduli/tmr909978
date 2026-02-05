@@ -2,8 +2,18 @@
 
 import Link from "next/link";
 import { ChevronRight, Star, Shield, Zap } from "lucide-react";
+import { LanguageSwitch } from "@/components/LanguageSwitch";
+import { useTranslation } from "@/lib/i18n";
 
 export default function HomePage() {
+  const { t } = useTranslation();
+
+  const features = [
+    { titleKey: "landing.instantBooking", descKey: "landing.instantBookingDesc", icon: Zap, color: "text-amber-400" },
+    { titleKey: "landing.vettedPros", descKey: "landing.vettedProsDesc", icon: Shield, color: "text-accent-DEFAULT" },
+    { titleKey: "landing.topQuality", descKey: "landing.topQualityDesc", icon: Star, color: "text-purple-400" },
+  ];
+
   return (
     <div className="min-h-screen bg-brand-950 overflow-hidden relative selection:bg-accent-DEFAULT/30">
       {/* Background Gradients */}
@@ -15,20 +25,21 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-20 items-center justify-between">
             <div className="flex items-center">
-              {/* Logo removed from landing page header */}
+              {/* Language Switch - Only on landing page */}
+              <LanguageSwitch />
             </div>
             <div className="flex items-center space-x-6">
               <Link
                 href="/login"
                 className="text-sm font-medium text-brand-300 hover:text-white transition-colors hidden sm:block"
               >
-                Sign In
+                {t('landing.signIn')}
               </Link>
               <Link
                 href="/customer/home"
                 className="group relative inline-flex items-center justify-center overflow-hidden rounded-xl bg-accent-DEFAULT px-6 py-2.5 text-sm font-bold text-white shadow-[0_0_20px_rgba(56,189,248,0.3)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_rgba(56,189,248,0.5)]"
               >
-                <span className="z-10">Launch App</span>
+                <span className="z-10">{t('landing.launchApp')}</span>
               </Link>
             </div>
           </div>
@@ -41,18 +52,18 @@ export default function HomePage() {
           <div className="text-center max-w-4xl mx-auto">
 
             <div className="mb-8 flex flex-col items-center gap-6">
-              <img 
-                src="/tumaro-logo.png" 
-                alt="Tumaro" 
+              <img
+                src="/tumaro-logo.png"
+                alt="Tumaro"
                 className="h-12 sm:h-16 object-contain"
               />
               <h1 className="text-4xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-accent-DEFAULT to-blue-500 sm:text-6xl leading-tight">
-                Mobile services made easy
+                {t('landing.tagline')}
               </h1>
             </div>
 
             <p className="mx-auto max-w-2xl text-lg text-brand-400 mb-10 leading-relaxed">
-              Helping mobile businesses keep customers close while helping customers earn on their loyalty
+              {t('landing.subtitle')}
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -60,31 +71,27 @@ export default function HomePage() {
                 href="/customer/home"
                 className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white text-brand-950 font-bold text-lg shadow-xl shadow-white/10 hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"
               >
-                Customer Portal
+                {t('landing.customerPortal')}
                 <ChevronRight className="h-5 w-5" />
               </Link>
               <Link
                 href="/detailer/home"
                 className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-brand-900 border border-brand-700 text-white font-semibold text-lg hover:bg-brand-800 transition-all duration-300 flex items-center justify-center"
               >
-                Business Portal
+                {t('landing.businessPortal')}
               </Link>
             </div>
           </div>
 
           {/* Features Preview */}
           <div className="mt-24 grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              { title: "Instant Booking", desc: "Book in 60 seconds with our streamlined flow.", icon: Zap, color: "text-amber-400" },
-              { title: "Vetted Pros", desc: "Every detailer is background checked and verified.", icon: Shield, color: "text-accent-DEFAULT" },
-              { title: "Top Quality", desc: "Satisfaction guaranteed or your money back.", icon: Star, color: "text-purple-400" },
-            ].map((feature, i) => (
+            {features.map((feature, i) => (
               <div key={i} className="group p-6 rounded-3xl bg-brand-900/50 border border-brand-800 hover:bg-brand-800/80 hover:border-brand-700 transition-all duration-300 backdrop-blur-sm">
                 <div className={`h-12 w-12 rounded-2xl bg-brand-950 border border-brand-800 flex items-center justify-center mb-4 ${feature.color}`}>
                   <feature.icon className="h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">{feature.title}</h3>
-                <p className="text-brand-400">{feature.desc}</p>
+                <h3 className="text-xl font-bold text-white mb-2">{t(feature.titleKey)}</h3>
+                <p className="text-brand-400">{t(feature.descKey)}</p>
               </div>
             ))}
           </div>
@@ -96,26 +103,26 @@ export default function HomePage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
               <div className="relative z-10 pl-4 lg:pl-12">
                 <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
-                  Enterprise Power.<br />
-                  <span className="text-brand-400">Consumer Simplicity.</span>
+                  {t('landing.enterprisePower')}<br />
+                  <span className="text-brand-400">{t('landing.consumerSimplicity')}</span>
                 </h2>
                 <p className="text-brand-400 text-lg mb-8 max-w-md">
-                  Built with a robust state machine and Stripe Connect, our platform handles complex bookings with ease while staying beautiful.
+                  {t('landing.platformDesc')}
                 </p>
 
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center gap-4 p-4 rounded-2xl bg-brand-900/50 border border-brand-800/50">
                     <div className="h-10 w-10 text-2xl flex items-center justify-center bg-brand-800 rounded-xl">🚀</div>
                     <div>
-                      <div className="text-white font-semibold">Production Ready</div>
-                      <div className="text-sm text-brand-500">Full booking workflow & payments</div>
+                      <div className="text-white font-semibold">{t('landing.productionReady')}</div>
+                      <div className="text-sm text-brand-500">{t('landing.productionReadyDesc')}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-4 p-4 rounded-2xl bg-brand-900/50 border border-brand-800/50">
                     <div className="h-10 w-10 text-2xl flex items-center justify-center bg-brand-800 rounded-xl">💎</div>
                     <div>
-                      <div className="text-white font-semibold">Premium UX</div>
-                      <div className="text-sm text-brand-500">Dark mode, animations, & glassmorphism</div>
+                      <div className="text-white font-semibold">{t('landing.premiumUX')}</div>
+                      <div className="text-sm text-brand-500">{t('landing.premiumUXDesc')}</div>
                     </div>
                   </div>
                 </div>
@@ -124,7 +131,7 @@ export default function HomePage() {
                     href="/test-booking"
                     className="inline-flex items-center gap-2 text-accent-DEFAULT font-medium hover:text-accent-hover transition-colors"
                   >
-                    Explore Booking System <ChevronRight className="h-4 w-4" />
+                    {t('landing.exploreBooking')} <ChevronRight className="h-4 w-4" />
                   </Link>
                 </div>
               </div>
@@ -165,7 +172,7 @@ export default function HomePage() {
 
                   {/* Floating Badge */}
                   <div className="absolute -right-4 top-10 bg-accent-DEFAULT text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg transform rotate-12">
-                    Live Demo
+                    {t('landing.liveDemo')}
                   </div>
                 </div>
               </div>
