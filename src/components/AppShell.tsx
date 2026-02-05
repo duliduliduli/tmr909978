@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Map, Wallet, User, HelpCircle, ChevronRight, Calendar } from "lucide-react";
+import { Home, Map, Wallet, User, HelpCircle, ChevronRight, Calendar, MessageCircle } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
 import { AccountDropdown } from "@/components/auth/AccountDropdown";
@@ -26,7 +26,7 @@ function cx(...c: Array<string | false | undefined>) {
 export function AppShell({ children, title, fullWidth = false }: { children: React.ReactNode; title: string; fullWidth?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { role, setRole } = useAppStore();
+  const { role, setRole, showMessages, setShowMessages } = useAppStore();
 
   const base = role === "detailer" ? "/detailer" : "/customer";
 
@@ -125,6 +125,15 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
           <header className="sticky top-0 z-10 h-20 px-8 flex items-center justify-between bg-brand-950/80 backdrop-blur-md border-b border-brand-800/50">
             {/* No logo in desktop header - it's already in sidebar */}
             <div className="flex items-center gap-4">
+              <button
+                onClick={() => setShowMessages(true)}
+                className="relative p-2.5 rounded-full bg-brand-900 border border-brand-800 hover:border-brand-700 transition-colors"
+              >
+                <MessageCircle className="h-5 w-5 text-brand-300" />
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center border-2 border-brand-950">
+                  <span className="text-xs text-white font-bold">3</span>
+                </div>
+              </button>
               <div className="bg-brand-900 border border-brand-800 rounded-full px-4 py-1.5 flex items-center gap-2">
                 <div className={cx(
                   "w-2 h-2 rounded-full",
@@ -167,7 +176,16 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
             alt="Tumaro"
             className="h-5 object-contain"
           />
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowMessages(true)}
+              className="relative p-2 rounded-full bg-brand-900 border border-brand-800"
+            >
+              <MessageCircle className="h-4 w-4 text-brand-300" />
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center border-2 border-brand-950">
+                <span className="text-[10px] text-white font-bold">3</span>
+              </div>
+            </button>
             <button
               onClick={() => switchRole(role === "customer" ? "detailer" : "customer")}
               className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-900 border border-brand-800 text-xs font-medium text-brand-300"

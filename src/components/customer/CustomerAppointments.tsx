@@ -60,9 +60,8 @@ const mockConversations = [
 ];
 
 export function CustomerAppointments() {
-  const { appointments, updateAppointmentStatus, role, activeDetailerId, activeCustomerId } = useAppStore();
+  const { appointments, updateAppointmentStatus, role, activeDetailerId, activeCustomerId, showMessages, setShowMessages } = useAppStore();
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
-  const [showMessages, setShowMessages] = useState(false);
   const [selectedDetailer, setSelectedDetailer] = useState<{ id: string; name: string } | null>(null);
   const [showDetailerProfile, setShowDetailerProfile] = useState(false);
   const [conversations, setConversations] = useState(mockConversations);
@@ -121,8 +120,6 @@ export function CustomerAppointments() {
     // In real app, send to backend
     setNewMessage('');
   };
-
-  const totalUnread = conversations.reduce((sum, conv) => sum + conv.unread, 0);
 
   const AppointmentCard = ({ appointment, isPastAppointment = false }: { appointment: Appointment; isPastAppointment?: boolean }) => (
     <motion.div
@@ -375,23 +372,10 @@ export function CustomerAppointments() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Header with Messages Button */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">My Appointments</h1>
-          <p className="text-brand-400 text-sm">Manage your service appointments</p>
-        </div>
-        <button
-          onClick={() => setShowMessages(true)}
-          className="relative p-3 bg-brand-900/50 border border-brand-800 rounded-xl hover:border-brand-700 transition-colors"
-        >
-          <MessageCircle className="h-5 w-5 text-brand-300" />
-          {totalUnread > 0 && (
-            <div className="absolute -top-1 -right-1 w-5 h-5 bg-accent-DEFAULT rounded-full flex items-center justify-center">
-              <span className="text-xs text-white font-bold">{totalUnread}</span>
-            </div>
-          )}
-        </button>
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-white">My Appointments</h1>
+        <p className="text-brand-400 text-sm">Manage your service appointments</p>
       </div>
 
       {/* Tab Switcher */}

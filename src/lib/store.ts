@@ -178,6 +178,9 @@ interface AppState {
   detailerQRCodes: DetailerQRCode[];
   generateQRCode: (detailerId: string, businessName: string) => Promise<void>;
   getQRCodeByDetailer: (detailerId: string) => DetailerQRCode | undefined;
+  // Messages inbox
+  showMessages: boolean;
+  setShowMessages: (show: boolean) => void;
 }
 
 // Helper to get date strings relative to today
@@ -1243,6 +1246,9 @@ export const useAppStore = create<AppState>()(
         const state = useAppStore.getState();
         return state.detailerQRCodes.find(qr => qr.detailerId === detailerId);
       },
+      // Messages inbox
+      showMessages: false,
+      setShowMessages: (show: boolean) => set({ showMessages: show }),
     }),
     {
       name: "app_state_v13",
