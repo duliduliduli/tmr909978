@@ -24,6 +24,12 @@ export async function GET(request: NextRequest) {
     }
 
     const requestedDate = new Date(dateStr);
+    if (isNaN(requestedDate.getTime())) {
+      return NextResponse.json(
+        { error: 'Invalid date format' },
+        { status: 400 }
+      );
+    }
     const dayOfWeek = requestedDate.getDay();
 
     // For mock/testing: generate realistic time slots

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // POST /api/coins/redeem - Redeem coins for discount
 export async function POST(request: NextRequest) {
@@ -9,9 +7,23 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { customerId, coinId, coinsToRedeem, bookingTotal, bookingId } = body;
 
-    if (!customerId || !coinId || !coinsToRedeem || !bookingTotal) {
+    if (!customerId || !coinId || !coinsToRedeem || bookingTotal === undefined || bookingTotal === null) {
       return NextResponse.json(
         { error: 'Customer ID, coin ID, coins to redeem, and booking total are required' },
+        { status: 400 }
+      );
+    }
+
+    if (typeof coinsToRedeem !== 'number' || coinsToRedeem <= 0 || !Number.isInteger(coinsToRedeem)) {
+      return NextResponse.json(
+        { error: 'Coins to redeem must be a positive integer' },
+        { status: 400 }
+      );
+    }
+
+    if (typeof bookingTotal !== 'number' || bookingTotal < 0) {
+      return NextResponse.json(
+        { error: 'Booking total must be a non-negative number' },
         { status: 400 }
       );
     }
@@ -120,8 +132,6 @@ export async function POST(request: NextRequest) {
       { error: 'Failed to redeem coins' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -209,7 +219,5 @@ export async function GET(request: NextRequest) {
       { error: 'Failed to calculate redemption' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

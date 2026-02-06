@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     // For demo purposes, just return the address data
     const newAddress = {
-      id: `addr_${Date.now()}`,
+      id: `addr_${crypto.randomUUID()}`,
       customerId,
       label,
       address,
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       postalCode
     };
 
-    return NextResponse.json(newAddress);
+    return NextResponse.json(newAddress, { status: 201 });
   } catch (error) {
     console.error('Error saving address:', error);
     return NextResponse.json(

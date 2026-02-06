@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 import { mockCoinBalances } from '@/lib/mockData';
 
 // GET /api/coins/balance?customerId=xxx - Get customer's coin balances
@@ -51,9 +52,16 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { customerId, coinId, amount, description, bookingId, dollarAmount } = body;
 
-    if (!customerId || !coinId || !amount) {
+    if (!customerId || !coinId || amount === undefined || amount === null) {
       return NextResponse.json(
         { error: 'Customer ID, coin ID, and amount are required' },
+        { status: 400 }
+      );
+    }
+
+    if (typeof amount !== 'number' || amount <= 0 || !Number.isInteger(amount)) {
+      return NextResponse.json(
+        { error: 'Amount must be a positive integer' },
         { status: 400 }
       );
     }

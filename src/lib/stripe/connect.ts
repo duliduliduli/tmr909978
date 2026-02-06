@@ -1,8 +1,5 @@
 import { stripe, STRIPE_CONNECT_CONFIG, PLATFORM_CONFIG } from './config';
-import { PrismaClient } from '@prisma/client';
-import crypto from 'crypto-js';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // ===== STRIPE CONNECT ACCOUNT MANAGEMENT =====
 

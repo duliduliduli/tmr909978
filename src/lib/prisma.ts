@@ -7,7 +7,7 @@ declare global {
 
 // Create a singleton Prisma client that won't crash the app if DB is unavailable
 export const prisma = global.prisma || new PrismaClient({
-    log: process.env.NODE_ENV === 'development' ? [] : [],
+    log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
     errorFormat: 'minimal',
 });
 

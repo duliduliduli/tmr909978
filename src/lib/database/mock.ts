@@ -32,7 +32,7 @@ export const mockPrisma = {
   }
 };
 
-// Use mock in build environment
-export const prisma = typeof window === 'undefined' && process.env.NODE_ENV === 'production' 
-  ? mockPrisma 
-  : mockPrisma;
+// Use mock only in build environment or client-side; real Prisma in production server
+export const prisma = (typeof window !== 'undefined' || process.env.NODE_ENV !== 'production')
+  ? mockPrisma
+  : require('@/lib/prisma').prisma;

@@ -107,6 +107,18 @@ export interface Appointment {
   completedAt?: string;
   rating?: Rating;
   awaitingRating?: boolean; // True when business marks complete, awaiting customer rating
+  // Arrival tracking
+  isArrived: boolean;
+  arrivedAt?: string;
+  // Reschedule tracking
+  originalScheduledDate?: string;
+  originalScheduledTime?: string;
+  rescheduleCount: number;
+  lastRescheduledAt?: string;
+  rescheduleReason?: string;
+  // Missed tracking
+  isMissed: boolean;
+  missedAt?: string;
 }
 
 interface DetailerQRCode {
@@ -131,6 +143,89 @@ export interface Conversation {
   lastMessageTime: string;
   unread: number;
   isPinned: boolean;
+}
+
+// ============================================
+// NEW: Account & Availability System Interfaces
+// ============================================
+
+// Working hours per day
+export interface DayHours {
+  open: string;  // "08:00" format (24-hour)
+  close: string;
+  closed: boolean;
+}
+
+export interface WorkingHours {
+  monday: DayHours;
+  tuesday: DayHours;
+  wednesday: DayHours;
+  thursday: DayHours;
+  friday: DayHours;
+  saturday: DayHours;
+  sunday: DayHours;
+}
+
+export interface LunchBreak {
+  enabled: boolean;
+  start: string;  // "12:00"
+  end: string;    // "13:00"
+}
+
+// Detailer availability configuration
+export interface DetailerAvailabilityConfig {
+  detailerId: string;
+  workingHours: WorkingHours;
+  lunchBreak: LunchBreak;
+  bufferMinutes: number;      // 15 min default
+  travelSpeedMph: number;     // 25 mph default (city driving)
+}
+
+// Account profile (for customers and detailers)
+export interface AccountProfile {
+  id: string;
+  type: 'customer' | 'detailer';
+  name: string;
+  email: string;
+  phone: string;
+  profileImage?: string;
+  // Detailer-specific
+  businessName?: string;
+}
+
+// Availability slot result
+export interface AvailabilitySlot {
+  startTime: string;  // "HH:MM" format
+  endTime: string;
+  available: boolean;
+  reason?: 'booked' | 'lunch' | 'travel' | 'closed' | 'buffer';
+}
+
+// Enhanced Conversation for bidirectional messaging
+export interface BidirectionalConversation {
+  id: string;                 // Format: "{detailerId}_{customerId}"
+  detailerId: string;
+  customerId: string;
+  detailerName: string;
+  customerName: string;
+  detailerImage?: string;
+  customerImage?: string;
+  lastMessage: string;
+  lastMessageTime: string;
+  detailerUnread: number;
+  customerUnread: number;
+  isPinnedByDetailer: boolean;
+  isPinnedByCustomer: boolean;
+}
+
+// Enhanced ChatMessage for bidirectional messaging
+export interface BidirectionalChatMessage {
+  id: string;
+  text: string;
+  senderId: string;
+  senderType: 'customer' | 'detailer';
+  timestamp: string;
+  read: boolean;
 }
 
 interface AppState {
@@ -164,6 +259,13 @@ interface AppState {
   getUpcomingAppointments: () => Appointment[];
   getPastAppointments: () => Appointment[];
   getTodaysAppointments: (detailerId: string) => Appointment[];
+  // Appointment reliability features
+  rescheduleAppointment: (appointmentId: string, newDate: string, newTime: string, reason?: string) => boolean;
+  markAppointmentArrived: (appointmentId: string) => void;
+  markAppointmentMissed: (appointmentId: string) => void;
+  missedAppointmentAlerts: string[];
+  dismissMissedAlert: (appointmentId: string) => void;
+  addMissedAlert: (appointmentId: string) => void;
   // Favorites storage
   favoriteDetailers: string[];
   addFavoriteDetailer: (detailerId: string) => void;
@@ -203,6 +305,44 @@ interface AppState {
   // Language/i18n
   language: Language;
   setLanguage: (lang: Language) => void;
+
+  // ============================================
+  // Account & Availability System
+  // ============================================
+
+  // Account profiles (pre-seeded)
+  accounts: AccountProfile[];
+  getAccountById: (id: string) => AccountProfile | undefined;
+  getCurrentAccount: () => AccountProfile | undefined;
+
+  // Detailer availability configurations
+  detailerConfigs: DetailerAvailabilityConfig[];
+  getDetailerConfig: (detailerId: string) => DetailerAvailabilityConfig | undefined;
+  updateDetailerConfig: (detailerId: string, updates: Partial<DetailerAvailabilityConfig>) => void;
+
+  // Per-customer favorites (replaces favoriteDetailers for multi-account)
+  favoritesByCustomer: Record<string, string[]>;
+  getMyFavorites: () => string[];
+
+  // Bidirectional messaging
+  bidirectionalConversations: BidirectionalConversation[];
+  bidirectionalChatLogs: Record<string, BidirectionalChatMessage[]>;
+  sendMessage: (conversationId: string, text: string) => void;
+  startConversation: (detailerId: string) => string;
+  getMyConversations: () => BidirectionalConversation[];
+  markBidirectionalConversationRead: (conversationId: string) => void;
+  getUnreadCount: () => number;
+
+  // Perspective-aware selectors
+  getMyAppointments: () => Appointment[];
+
+  // Availability calculation
+  calculateAvailableSlots: (
+    detailerId: string,
+    date: string,
+    serviceDuration: number,
+    appointmentLocation?: { lat: number; lng: number }
+  ) => AvailabilitySlot[];
 }
 
 // Helper to get date strings relative to today
@@ -212,6 +352,261 @@ const getRelativeDate = (daysOffset: number): string => {
   return d.toISOString().split('T')[0];
 };
 const todayStr = getRelativeDate(0);
+
+// ============================================
+// Default Working Hours Configurations
+// ============================================
+
+const DEFAULT_WORKING_HOURS: WorkingHours = {
+  monday: { open: '08:00', close: '18:00', closed: false },
+  tuesday: { open: '08:00', close: '18:00', closed: false },
+  wednesday: { open: '08:00', close: '18:00', closed: false },
+  thursday: { open: '08:00', close: '18:00', closed: false },
+  friday: { open: '08:00', close: '18:00', closed: false },
+  saturday: { open: '09:00', close: '17:00', closed: false },
+  sunday: { open: '10:00', close: '16:00', closed: true },
+};
+
+const DEFAULT_LUNCH_BREAK: LunchBreak = {
+  enabled: true,
+  start: '12:00',
+  end: '13:00',
+};
+
+// Pre-seeded account profiles
+const INITIAL_ACCOUNTS: AccountProfile[] = [
+  // Customers
+  { id: 'cust_1', type: 'customer', name: 'John Smith', email: 'john.smith@test.com', phone: '(555) 111-2233', profileImage: '/images/customers/customer-1.webp' },
+  { id: 'cust_2', type: 'customer', name: 'Maria Garcia', email: 'maria.garcia@test.com', phone: '(555) 444-5566', profileImage: '/images/customers/customer-2.webp' },
+  { id: 'cust_3', type: 'customer', name: 'David Park', email: 'david.park@test.com', phone: '(555) 777-8899', profileImage: '/images/customers/customer-3.webp' },
+  // Detailers
+  { id: 'det_1', type: 'detailer', name: 'Alex Johnson', email: 'alex@premiumautospa.com', phone: '(555) 123-4567', businessName: 'Premium Auto Spa', profileImage: '/images/detailers/detailer-1.webp' },
+  { id: 'det_2', type: 'detailer', name: 'Sarah Wilson', email: 'sarah@elitedetailing.com', phone: '(555) 234-5678', businessName: 'Elite Detailing Co', profileImage: '/images/detailers/detailer-2.jpg' },
+  { id: 'det_3', type: 'detailer', name: 'Carlos Martinez', email: 'carlos@premiumautocare.com', phone: '(555) 345-6789', businessName: 'Premium Auto Care', profileImage: '/images/detailers/detailer-3.jpg' },
+  { id: 'det_4', type: 'detailer', name: 'Mike Chen', email: 'mike@speedyclean.com', phone: '(555) 456-7890', businessName: 'Speedy Clean', profileImage: '/images/detailers/detailer-4.jpg' },
+  { id: 'det_5', type: 'detailer', name: 'Jessica Brown', email: 'jessica@luxuryautospa.com', phone: '(555) 567-8901', businessName: 'Luxury Auto Spa', profileImage: '/images/detailers/detailer-5.jpg' },
+  { id: 'det_6', type: 'detailer', name: 'Emma Thompson', email: 'emma@testdrivedetail.com', phone: '(555) 678-9012', businessName: 'Test Drive Detailing', profileImage: '/images/detailers/detailer-6.jpg' },
+];
+
+// Detailer availability configurations with varied hours
+const INITIAL_DETAILER_CONFIGS: DetailerAvailabilityConfig[] = [
+  {
+    detailerId: 'det_1',
+    workingHours: DEFAULT_WORKING_HOURS,
+    lunchBreak: DEFAULT_LUNCH_BREAK,
+    bufferMinutes: 15,
+    travelSpeedMph: 25,
+  },
+  {
+    detailerId: 'det_2',
+    workingHours: {
+      ...DEFAULT_WORKING_HOURS,
+      monday: { open: '07:00', close: '19:00', closed: false },
+      tuesday: { open: '07:00', close: '19:00', closed: false },
+      wednesday: { open: '07:00', close: '19:00', closed: false },
+      thursday: { open: '07:00', close: '19:00', closed: false },
+      friday: { open: '07:00', close: '19:00', closed: false },
+      saturday: { open: '08:00', close: '18:00', closed: false },
+    },
+    lunchBreak: { enabled: true, start: '12:30', end: '13:00' },
+    bufferMinutes: 15,
+    travelSpeedMph: 25,
+  },
+  {
+    detailerId: 'det_3',
+    workingHours: {
+      ...DEFAULT_WORKING_HOURS,
+      monday: { open: '09:00', close: '17:00', closed: false },
+      tuesday: { open: '09:00', close: '17:00', closed: false },
+      wednesday: { open: '09:00', close: '17:00', closed: false },
+      thursday: { open: '09:00', close: '17:00', closed: false },
+      friday: { open: '09:00', close: '17:00', closed: false },
+      saturday: { open: '10:00', close: '15:00', closed: false },
+    },
+    lunchBreak: DEFAULT_LUNCH_BREAK,
+    bufferMinutes: 15,
+    travelSpeedMph: 25,
+  },
+  {
+    detailerId: 'det_4',
+    workingHours: {
+      monday: { open: '08:00', close: '20:00', closed: false },
+      tuesday: { open: '08:00', close: '20:00', closed: false },
+      wednesday: { open: '08:00', close: '20:00', closed: false },
+      thursday: { open: '08:00', close: '20:00', closed: false },
+      friday: { open: '08:00', close: '20:00', closed: false },
+      saturday: { open: '08:00', close: '20:00', closed: false },
+      sunday: { open: '10:00', close: '18:00', closed: false },
+    },
+    lunchBreak: { enabled: true, start: '12:00', end: '12:30' },
+    bufferMinutes: 10,
+    travelSpeedMph: 30,
+  },
+  {
+    detailerId: 'det_5',
+    workingHours: {
+      monday: { open: '10:00', close: '18:00', closed: true },
+      tuesday: { open: '10:00', close: '18:00', closed: false },
+      wednesday: { open: '10:00', close: '18:00', closed: false },
+      thursday: { open: '10:00', close: '18:00', closed: false },
+      friday: { open: '10:00', close: '18:00', closed: false },
+      saturday: { open: '09:00', close: '17:00', closed: false },
+      sunday: { open: '10:00', close: '16:00', closed: true },
+    },
+    lunchBreak: { enabled: true, start: '13:00', end: '14:00' },
+    bufferMinutes: 20,
+    travelSpeedMph: 25,
+  },
+  {
+    detailerId: 'det_6',
+    workingHours: {
+      ...DEFAULT_WORKING_HOURS,
+      saturday: { open: '09:00', close: '17:00', closed: true },
+    },
+    lunchBreak: DEFAULT_LUNCH_BREAK,
+    bufferMinutes: 15,
+    travelSpeedMph: 25,
+  },
+];
+
+// Pre-seeded bidirectional conversations
+const INITIAL_BIDIRECTIONAL_CONVERSATIONS: BidirectionalConversation[] = [
+  {
+    id: 'det_1_cust_1',
+    detailerId: 'det_1',
+    customerId: 'cust_1',
+    detailerName: 'Premium Auto Spa',
+    customerName: 'John Smith',
+    detailerImage: '/images/detailers/detailer-1.webp',
+    customerImage: '/images/customers/customer-1.webp',
+    lastMessage: 'Great! I\'ve confirmed your appointment. See you tomorrow!',
+    lastMessageTime: '2 hours ago',
+    detailerUnread: 0,
+    customerUnread: 0,
+    isPinnedByDetailer: false,
+    isPinnedByCustomer: true,
+  },
+  {
+    id: 'det_1_cust_2',
+    detailerId: 'det_1',
+    customerId: 'cust_2',
+    detailerName: 'Premium Auto Spa',
+    customerName: 'Maria Garcia',
+    detailerImage: '/images/detailers/detailer-1.webp',
+    customerImage: '/images/customers/customer-2.webp',
+    lastMessage: 'Yes, I can do the ceramic coating next week!',
+    lastMessageTime: '1 day ago',
+    detailerUnread: 1,
+    customerUnread: 0,
+    isPinnedByDetailer: false,
+    isPinnedByCustomer: false,
+  },
+  {
+    id: 'det_2_cust_1',
+    detailerId: 'det_2',
+    customerId: 'cust_1',
+    detailerName: 'Elite Detailing Co',
+    customerName: 'John Smith',
+    detailerImage: '/images/detailers/detailer-2.jpg',
+    customerImage: '/images/customers/customer-1.webp',
+    lastMessage: 'Thanks for your business! Hope to see you again soon.',
+    lastMessageTime: '3 days ago',
+    detailerUnread: 0,
+    customerUnread: 0,
+    isPinnedByDetailer: false,
+    isPinnedByCustomer: false,
+  },
+  {
+    id: 'det_3_cust_3',
+    detailerId: 'det_3',
+    customerId: 'cust_3',
+    detailerName: 'Premium Auto Care',
+    customerName: 'David Park',
+    detailerImage: '/images/detailers/detailer-3.jpg',
+    customerImage: '/images/customers/customer-3.webp',
+    lastMessage: 'Hi David! Welcome to Premium Auto Care. How can I help you?',
+    lastMessageTime: '5 hours ago',
+    detailerUnread: 0,
+    customerUnread: 1,
+    isPinnedByDetailer: true,
+    isPinnedByCustomer: false,
+  },
+];
+
+// Pre-seeded bidirectional chat logs
+const INITIAL_BIDIRECTIONAL_CHAT_LOGS: Record<string, BidirectionalChatMessage[]> = {
+  'det_1_cust_1': [
+    { id: 'msg_1', text: 'Hi! When can you come detail my Tesla?', senderId: 'cust_1', senderType: 'customer', timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), read: true },
+    { id: 'msg_2', text: 'Hi John! I have availability tomorrow at 10 AM. Would that work?', senderId: 'det_1', senderType: 'detailer', timestamp: new Date(Date.now() - 3.5 * 60 * 60 * 1000).toISOString(), read: true },
+    { id: 'msg_3', text: 'Perfect! Book me in.', senderId: 'cust_1', senderType: 'customer', timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), read: true },
+    { id: 'msg_4', text: 'Great! I\'ve confirmed your appointment. See you tomorrow!', senderId: 'det_1', senderType: 'detailer', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), read: true },
+  ],
+  'det_1_cust_2': [
+    { id: 'msg_5', text: 'Do you do ceramic coating?', senderId: 'cust_2', senderType: 'customer', timestamp: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(), read: true },
+    { id: 'msg_6', text: 'Yes! It\'s $300 and takes about 4 hours.', senderId: 'det_1', senderType: 'detailer', timestamp: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(), read: true },
+    { id: 'msg_7', text: 'Can I book for next week?', senderId: 'cust_2', senderType: 'customer', timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), read: false },
+    { id: 'msg_8', text: 'Yes, I can do the ceramic coating next week!', senderId: 'det_1', senderType: 'detailer', timestamp: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString(), read: true },
+  ],
+  'det_2_cust_1': [
+    { id: 'msg_9', text: 'Thanks for the great detail yesterday!', senderId: 'cust_1', senderType: 'customer', timestamp: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(), read: true },
+    { id: 'msg_10', text: 'Thanks for your business! Hope to see you again soon.', senderId: 'det_2', senderType: 'detailer', timestamp: new Date(Date.now() - 71 * 60 * 60 * 1000).toISOString(), read: true },
+  ],
+  'det_3_cust_3': [
+    { id: 'msg_11', text: 'Hi, I\'m new to the area. What services do you offer?', senderId: 'cust_3', senderType: 'customer', timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), read: true },
+    { id: 'msg_12', text: 'Hi David! Welcome to Premium Auto Care. How can I help you?', senderId: 'det_3', senderType: 'detailer', timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), read: false },
+  ],
+};
+
+// Initial favorites by customer
+const INITIAL_FAVORITES_BY_CUSTOMER: Record<string, string[]> = {
+  'cust_1': ['det_1', 'det_2'],
+  'cust_2': ['det_1'],
+  'cust_3': ['det_3', 'det_4'],
+};
+
+// ============================================
+// Availability Calculation Helpers
+// ============================================
+
+function timeToMinutes(time: string): number {
+  // Handle "HH:MM" format
+  if (time.includes(':') && !time.includes(' ')) {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  }
+  // Handle "10:00 AM" format
+  const parts = time.split(' ');
+  const [timePart, meridiem] = parts;
+  const [hours, minutes] = timePart.split(':').map(Number);
+  let hour24 = hours;
+  if (meridiem === 'PM' && hours !== 12) hour24 += 12;
+  if (meridiem === 'AM' && hours === 12) hour24 = 0;
+  return hour24 * 60 + minutes;
+}
+
+function minutesToTime(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+}
+
+function getDayOfWeek(dateStr: string): keyof WorkingHours {
+  const date = new Date(dateStr);
+  const days: (keyof WorkingHours)[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  return days[date.getDay()];
+}
+
+// Haversine distance calculation (copied from utils.ts for use here)
+function calculateDistanceForAvailability(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 3959; // Earth's radius in miles
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -280,7 +675,8 @@ export const useAppStore = create<AppState>()(
       ],
       getConversations: (userId, role) => {
         const state = useAppStore.getState();
-        return state.conversations;
+        if (!userId) return state.conversations;
+        return state.conversations.filter(conv => conv.participantId === userId || conv.id?.includes(userId));
       },
       togglePinConversation: (conversationId) => set((state) => ({
         conversations: state.conversations.map(conv =>
@@ -323,7 +719,10 @@ export const useAppStore = create<AppState>()(
           phone: "(555) 111-2233",
           status: "confirmed" as const,
           bookedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          notes: "White Tesla Model 3, parked in driveway"
+          notes: "White Tesla Model 3, parked in driveway",
+          isArrived: false,
+          rescheduleCount: 0,
+          isMissed: false,
         },
         {
           id: "apt_today_2",
@@ -345,7 +744,10 @@ export const useAppStore = create<AppState>()(
           phone: "(555) 444-5566",
           status: "confirmed" as const,
           bookedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-          notes: "Black BMW X5, garage code is 4421"
+          notes: "Black BMW X5, garage code is 4421",
+          isArrived: false,
+          rescheduleCount: 0,
+          isMissed: false,
         },
         {
           id: "apt_today_3",
@@ -367,7 +769,10 @@ export const useAppStore = create<AppState>()(
           phone: "(555) 777-8899",
           status: "scheduled" as const,
           bookedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          notes: "Red Porsche 911, please be extra careful with the paint"
+          notes: "Red Porsche 911, please be extra careful with the paint",
+          isArrived: false,
+          rescheduleCount: 0,
+          isMissed: false,
         },
         {
           id: "apt_today_4",
@@ -389,6 +794,9 @@ export const useAppStore = create<AppState>()(
           phone: "(555) 222-3344",
           status: "confirmed" as const,
           bookedAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+          isArrived: false,
+          rescheduleCount: 0,
+          isMissed: false,
         },
         {
           id: "apt_today_5",
@@ -410,7 +818,10 @@ export const useAppStore = create<AppState>()(
           phone: "(555) 333-4455",
           status: "scheduled" as const,
           bookedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-          notes: "Silver Mercedes GLE, apartment complex - buzz #204"
+          notes: "Silver Mercedes GLE, apartment complex - buzz #204",
+          isArrived: false,
+          rescheduleCount: 0,
+          isMissed: false,
         },
         {
           id: "apt_today_6",
@@ -432,7 +843,10 @@ export const useAppStore = create<AppState>()(
           phone: "(555) 666-7788",
           status: "confirmed" as const,
           bookedAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-          notes: "Blue Range Rover Sport, pet hair removal needed"
+          notes: "Blue Range Rover Sport, pet hair removal needed",
+          isArrived: false,
+          rescheduleCount: 0,
+          isMissed: false,
         },
         {
           id: "apt_today_7",
@@ -454,7 +868,10 @@ export const useAppStore = create<AppState>()(
           phone: "(555) 888-9900",
           status: "scheduled" as const,
           bookedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-          notes: "Gray Honda Civic, street parking near the coffee shop"
+          notes: "Gray Honda Civic, street parking near the coffee shop",
+          isArrived: false,
+          rescheduleCount: 0,
+          isMissed: false,
         },
         {
           id: "apt_today_8",
@@ -476,7 +893,10 @@ export const useAppStore = create<AppState>()(
           phone: "(555) 112-2334",
           status: "scheduled" as const,
           bookedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-          notes: "White Audi Q7, please text on arrival"
+          notes: "White Audi Q7, please text on arrival",
+          isArrived: false,
+          rescheduleCount: 0,
+          isMissed: false,
         },
         // Upcoming appointments for det_1 (Premium Auto Spa) on future days
         {
@@ -499,7 +919,10 @@ export const useAppStore = create<AppState>()(
           phone: "(555) 444-5566",
           status: "confirmed" as const,
           bookedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          notes: "Black BMW X5, recurring weekly detail"
+          notes: "Black BMW X5, recurring weekly detail",
+          isArrived: false,
+          rescheduleCount: 0,
+          isMissed: false,
         },
         {
           id: "apt_upcoming_det1_2",
@@ -521,7 +944,10 @@ export const useAppStore = create<AppState>()(
           phone: "(555) 777-8899",
           status: "scheduled" as const,
           bookedAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-          notes: "Red Porsche 911"
+          notes: "Red Porsche 911",
+          isArrived: false,
+          rescheduleCount: 0,
+          isMissed: false,
         },
         {
           id: "apt_upcoming_det1_3",
@@ -543,6 +969,9 @@ export const useAppStore = create<AppState>()(
           phone: "(555) 222-3344",
           status: "confirmed" as const,
           bookedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+          isArrived: false,
+          rescheduleCount: 0,
+          isMissed: false,
         },
         {
           id: "apt_upcoming_det1_4",
@@ -564,7 +993,10 @@ export const useAppStore = create<AppState>()(
           phone: "(555) 333-4455",
           status: "scheduled" as const,
           bookedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-          notes: "Silver Mercedes GLE"
+          notes: "Silver Mercedes GLE",
+          isArrived: false,
+          rescheduleCount: 0,
+          isMissed: false,
         },
         // Sample upcoming appointment (future day)
         {
@@ -587,7 +1019,10 @@ export const useAppStore = create<AppState>()(
           phone: "(555) 789-0123",
           status: "confirmed" as const,
           bookedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-          notes: "This is a free test service to try out the app functionality"
+          notes: "This is a free test service to try out the app functionality",
+          isArrived: false,
+          rescheduleCount: 0,
+          isMissed: false,
         },
         // Sample past appointment
         {
@@ -610,6 +1045,9 @@ export const useAppStore = create<AppState>()(
           phone: "(555) 234-5678",
           status: "completed" as const,
           bookedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+          isArrived: false,
+          rescheduleCount: 0,
+          isMissed: false,
         },
         // Additional upcoming appointments
         {
@@ -632,7 +1070,10 @@ export const useAppStore = create<AppState>()(
           phone: "(555) 456-7890",
           status: "scheduled" as const,
           bookedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          notes: "Please use eco-friendly products if available"
+          notes: "Please use eco-friendly products if available",
+          isArrived: false,
+          rescheduleCount: 0,
+          isMissed: false,
         },
         {
           id: "apt_sample_4",
@@ -654,6 +1095,9 @@ export const useAppStore = create<AppState>()(
           phone: "(555) 987-6543",
           status: "confirmed" as const,
           bookedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+          isArrived: false,
+          rescheduleCount: 0,
+          isMissed: false,
         },
         // Additional past appointments
         {
@@ -676,7 +1120,10 @@ export const useAppStore = create<AppState>()(
           phone: "(555) 321-0987",
           status: "completed" as const,
           bookedAt: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString(),
-          notes: "Great service, very professional"
+          notes: "Great service, very professional",
+          isArrived: false,
+          rescheduleCount: 0,
+          isMissed: false,
         },
         {
           id: "apt_sample_6",
@@ -698,7 +1145,10 @@ export const useAppStore = create<AppState>()(
           phone: "(555) 654-3210",
           status: "cancelled" as const,
           bookedAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(),
-          notes: "Cancelled due to weather conditions"
+          notes: "Cancelled due to weather conditions",
+          isArrived: false,
+          rescheduleCount: 0,
+          isMissed: false,
         }
       ],
       addAppointment: (appointment) => set((state) => ({ 
@@ -712,16 +1162,22 @@ export const useAppStore = create<AppState>()(
       getUpcomingAppointments: () => {
         const state = useAppStore.getState();
         const now = new Date();
-        return state.appointments.filter(apt => {
-          const appointmentDate = new Date(`${apt.scheduledDate} ${apt.scheduledTime}`);
+        const myAppointments = state.role === 'customer'
+          ? state.appointments.filter(apt => apt.customerId === state.activeCustomerId)
+          : state.appointments.filter(apt => apt.detailerId === state.activeDetailerId);
+        return myAppointments.filter(apt => {
+          const appointmentDate = new Date(`${apt.scheduledDate}T${apt.scheduledTime}`);
           return appointmentDate > now && apt.status !== 'completed' && apt.status !== 'cancelled';
         });
       },
       getPastAppointments: () => {
         const state = useAppStore.getState();
         const now = new Date();
-        return state.appointments.filter(apt => {
-          const appointmentDate = new Date(`${apt.scheduledDate} ${apt.scheduledTime}`);
+        const myAppointments = state.role === 'customer'
+          ? state.appointments.filter(apt => apt.customerId === state.activeCustomerId)
+          : state.appointments.filter(apt => apt.detailerId === state.activeDetailerId);
+        return myAppointments.filter(apt => {
+          const appointmentDate = new Date(`${apt.scheduledDate}T${apt.scheduledTime}`);
           return appointmentDate <= now || apt.status === 'completed' || apt.status === 'cancelled';
         });
       },
@@ -742,25 +1198,116 @@ export const useAppStore = create<AppState>()(
             return timeA - timeB;
           });
       },
-      // Favorites functionality
-      favoriteDetailers: [],
-      addFavoriteDetailer: (detailerId: string) => set((state) => ({
-        favoriteDetailers: [...new Set([...state.favoriteDetailers, detailerId])]
+      // Appointment reliability features
+      rescheduleAppointment: (appointmentId, newDate, newTime, reason) => {
+        const state = useAppStore.getState();
+        const appointment = state.appointments.find(apt => apt.id === appointmentId);
+        if (!appointment) return false;
+
+        // Check reschedule limit (max 3)
+        if (appointment.rescheduleCount >= 3) return false;
+
+        set((state) => ({
+          appointments: state.appointments.map(apt =>
+            apt.id === appointmentId
+              ? {
+                  ...apt,
+                  originalScheduledDate: apt.originalScheduledDate || apt.scheduledDate,
+                  originalScheduledTime: apt.originalScheduledTime || apt.scheduledTime,
+                  scheduledDate: newDate,
+                  scheduledTime: newTime,
+                  rescheduleCount: apt.rescheduleCount + 1,
+                  lastRescheduledAt: new Date().toISOString(),
+                  rescheduleReason: reason,
+                  // Reset missed status if rescheduled
+                  isMissed: false,
+                  missedAt: undefined,
+                }
+              : apt
+          ),
+          // Remove from missed alerts if it was there
+          missedAppointmentAlerts: state.missedAppointmentAlerts.filter(id => id !== appointmentId),
+        }));
+        return true;
+      },
+      markAppointmentArrived: (appointmentId) => set((state) => ({
+        appointments: state.appointments.map(apt =>
+          apt.id === appointmentId
+            ? { ...apt, isArrived: true, arrivedAt: new Date().toISOString() }
+            : apt
+        ),
+        // Remove from missed alerts if present
+        missedAppointmentAlerts: state.missedAppointmentAlerts.filter(id => id !== appointmentId),
       })),
-      removeFavoriteDetailer: (detailerId: string) => set((state) => ({
-        favoriteDetailers: state.favoriteDetailers.filter(id => id !== detailerId)
+      markAppointmentMissed: (appointmentId) => set((state) => ({
+        appointments: state.appointments.map(apt =>
+          apt.id === appointmentId
+            ? { ...apt, isMissed: true, missedAt: new Date().toISOString() }
+            : apt
+        ),
       })),
+      missedAppointmentAlerts: [],
+      dismissMissedAlert: (appointmentId) => set((state) => ({
+        missedAppointmentAlerts: state.missedAppointmentAlerts.filter(id => id !== appointmentId),
+      })),
+      addMissedAlert: (appointmentId) => set((state) => ({
+        missedAppointmentAlerts: state.missedAppointmentAlerts.includes(appointmentId)
+          ? state.missedAppointmentAlerts
+          : [...state.missedAppointmentAlerts, appointmentId],
+      })),
+      // Favorites functionality (now per-customer)
+      favoriteDetailers: [], // Keep for backwards compatibility
+      addFavoriteDetailer: (detailerId: string) => set((state) => {
+        const customerId = state.activeCustomerId;
+        const currentFavorites = state.favoritesByCustomer[customerId] || [];
+        return {
+          favoritesByCustomer: {
+            ...state.favoritesByCustomer,
+            [customerId]: [...new Set([...currentFavorites, detailerId])],
+          },
+          // Also update legacy field for compatibility
+          favoriteDetailers: [...new Set([...state.favoriteDetailers, detailerId])],
+        };
+      }),
+      removeFavoriteDetailer: (detailerId: string) => set((state) => {
+        const customerId = state.activeCustomerId;
+        const currentFavorites = state.favoritesByCustomer[customerId] || [];
+        return {
+          favoritesByCustomer: {
+            ...state.favoritesByCustomer,
+            [customerId]: currentFavorites.filter(id => id !== detailerId),
+          },
+          favoriteDetailers: state.favoriteDetailers.filter(id => id !== detailerId),
+        };
+      }),
       toggleFavoriteDetailer: (detailerId: string) => set((state) => {
-        const isFavorite = state.favoriteDetailers.includes(detailerId);
+        const customerId = state.activeCustomerId;
+        const currentFavorites = state.favoritesByCustomer[customerId] || [];
+        const isFavorite = currentFavorites.includes(detailerId);
+
         if (isFavorite) {
-          return { favoriteDetailers: state.favoriteDetailers.filter(id => id !== detailerId) };
+          return {
+            favoritesByCustomer: {
+              ...state.favoritesByCustomer,
+              [customerId]: currentFavorites.filter(id => id !== detailerId),
+            },
+            favoriteDetailers: state.favoriteDetailers.filter(id => id !== detailerId),
+          };
         } else {
-          return { favoriteDetailers: [...new Set([...state.favoriteDetailers, detailerId])] };
+          return {
+            favoritesByCustomer: {
+              ...state.favoritesByCustomer,
+              [customerId]: [...new Set([...currentFavorites, detailerId])],
+            },
+            favoriteDetailers: [...new Set([...state.favoriteDetailers, detailerId])],
+          };
         }
       }),
       isFavoriteDetailer: (detailerId: string) => {
         const state = useAppStore.getState();
-        return state.favoriteDetailers.includes(detailerId);
+        const customerId = state.activeCustomerId;
+        const currentFavorites = state.favoritesByCustomer[customerId] || [];
+        return currentFavorites.includes(detailerId);
       },
       // Saved addresses implementation
       savedAddresses: [
@@ -825,12 +1372,18 @@ export const useAppStore = create<AppState>()(
             return 0;
           });
       },
-      setDefaultAddress: (id) => set((state) => ({
-        savedAddresses: state.savedAddresses.map(addr => ({
-          ...addr,
-          isDefault: addr.id === id
-        }))
-      })),
+      setDefaultAddress: (id) => set((state) => {
+        // Find the target address to get its customerId
+        const targetAddr = state.savedAddresses.find(a => a.id === id);
+        const targetCustomerId = targetAddr?.customerId;
+        return {
+          savedAddresses: state.savedAddresses.map(addr => ({
+            ...addr,
+            // Only toggle isDefault for addresses belonging to the same customer
+            isDefault: addr.customerId === targetCustomerId ? addr.id === id : addr.isDefault
+          }))
+        };
+      }),
       updateAddressLastUsed: (id) => set((state) => ({
         savedAddresses: state.savedAddresses.map(addr =>
           addr.id === id ? { ...addr, lastUsed: new Date().toISOString() } : addr
@@ -1329,11 +1882,269 @@ export const useAppStore = create<AppState>()(
       // Language/i18n
       language: 'en' as Language,
       setLanguage: (language: Language) => set({ language }),
+
+      // ============================================
+      // Account & Availability System Implementation
+      // ============================================
+
+      // Account profiles
+      accounts: INITIAL_ACCOUNTS,
+      getAccountById: (id: string) => {
+        const state = useAppStore.getState();
+        return state.accounts.find(a => a.id === id);
+      },
+      getCurrentAccount: () => {
+        const state = useAppStore.getState();
+        const id = state.role === 'customer' ? state.activeCustomerId : state.activeDetailerId;
+        return state.accounts.find(a => a.id === id);
+      },
+
+      // Detailer availability configurations
+      detailerConfigs: INITIAL_DETAILER_CONFIGS,
+      getDetailerConfig: (detailerId: string) => {
+        const state = useAppStore.getState();
+        return state.detailerConfigs.find(c => c.detailerId === detailerId);
+      },
+      updateDetailerConfig: (detailerId: string, updates: Partial<DetailerAvailabilityConfig>) => set((state) => ({
+        detailerConfigs: state.detailerConfigs.map(c =>
+          c.detailerId === detailerId ? { ...c, ...updates } : c
+        )
+      })),
+
+      // Per-customer favorites
+      favoritesByCustomer: INITIAL_FAVORITES_BY_CUSTOMER,
+      getMyFavorites: () => {
+        const state = useAppStore.getState();
+        return state.favoritesByCustomer[state.activeCustomerId] || [];
+      },
+
+      // Bidirectional messaging
+      bidirectionalConversations: INITIAL_BIDIRECTIONAL_CONVERSATIONS,
+      bidirectionalChatLogs: INITIAL_BIDIRECTIONAL_CHAT_LOGS,
+
+      sendMessage: (conversationId: string, text: string) => set((state) => {
+        // ConversationId format is "det_1_cust_1" - split on first "_cust_" to get both parts
+        const custSepIndex = conversationId.indexOf('_cust_');
+        const detailerId = custSepIndex !== -1 ? conversationId.substring(0, custSepIndex) : conversationId.split('_')[0];
+        const customerId = custSepIndex !== -1 ? conversationId.substring(custSepIndex + 1) : conversationId.split('_')[1];
+        const newMessage: BidirectionalChatMessage = {
+          id: `msg_${Date.now()}`,
+          text,
+          senderId: state.role === 'customer' ? state.activeCustomerId : state.activeDetailerId,
+          senderType: state.role,
+          timestamp: new Date().toISOString(),
+          read: false,
+        };
+
+        return {
+          bidirectionalChatLogs: {
+            ...state.bidirectionalChatLogs,
+            [conversationId]: [...(state.bidirectionalChatLogs[conversationId] || []), newMessage],
+          },
+          bidirectionalConversations: state.bidirectionalConversations.map(conv =>
+            conv.id === conversationId
+              ? {
+                  ...conv,
+                  lastMessage: text,
+                  lastMessageTime: 'Just now',
+                  detailerUnread: state.role === 'customer' ? conv.detailerUnread + 1 : conv.detailerUnread,
+                  customerUnread: state.role === 'detailer' ? conv.customerUnread + 1 : conv.customerUnread,
+                }
+              : conv
+          ),
+        };
+      }),
+
+      startConversation: (detailerId: string) => {
+        const state = useAppStore.getState();
+        const customerId = state.activeCustomerId;
+        const conversationId = `${detailerId}_${customerId}`;
+
+        // Check if conversation exists
+        const existing = state.bidirectionalConversations.find(c => c.id === conversationId);
+        if (existing) return conversationId;
+
+        // Create new conversation
+        const detailer = state.accounts.find(a => a.id === detailerId);
+        const customer = state.accounts.find(a => a.id === customerId);
+
+        const newConv: BidirectionalConversation = {
+          id: conversationId,
+          detailerId,
+          customerId,
+          detailerName: detailer?.businessName || detailer?.name || 'Detailer',
+          customerName: customer?.name || 'Customer',
+          detailerImage: detailer?.profileImage,
+          customerImage: customer?.profileImage,
+          lastMessage: '',
+          lastMessageTime: '',
+          detailerUnread: 0,
+          customerUnread: 0,
+          isPinnedByDetailer: false,
+          isPinnedByCustomer: false,
+        };
+
+        useAppStore.setState((state) => ({
+          bidirectionalConversations: [...state.bidirectionalConversations, newConv],
+        }));
+
+        return conversationId;
+      },
+
+      getMyConversations: () => {
+        const state = useAppStore.getState();
+        const { role, activeCustomerId, activeDetailerId } = state;
+
+        return state.bidirectionalConversations
+          .filter(conv => {
+            if (role === 'customer') return conv.customerId === activeCustomerId;
+            return conv.detailerId === activeDetailerId;
+          })
+          .map(conv => ({
+            ...conv,
+            // For display, participantId/Name refer to the OTHER party
+            participantId: role === 'customer' ? conv.detailerId : conv.customerId,
+            participantName: role === 'customer' ? conv.detailerName : conv.customerName,
+            participantImage: role === 'customer' ? conv.detailerImage : conv.customerImage,
+            unread: role === 'customer' ? conv.customerUnread : conv.detailerUnread,
+            isPinned: role === 'customer' ? conv.isPinnedByCustomer : conv.isPinnedByDetailer,
+          }));
+      },
+
+      markBidirectionalConversationRead: (conversationId: string) => set((state) => ({
+        bidirectionalConversations: state.bidirectionalConversations.map(conv =>
+          conv.id === conversationId
+            ? {
+                ...conv,
+                detailerUnread: state.role === 'detailer' ? 0 : conv.detailerUnread,
+                customerUnread: state.role === 'customer' ? 0 : conv.customerUnread,
+              }
+            : conv
+        ),
+        bidirectionalChatLogs: {
+          ...state.bidirectionalChatLogs,
+          [conversationId]: (state.bidirectionalChatLogs[conversationId] || []).map(msg => ({
+            ...msg,
+            read: msg.senderType !== state.role ? true : msg.read,
+          })),
+        },
+      })),
+
+      getUnreadCount: () => {
+        const state = useAppStore.getState();
+        const { role, activeCustomerId, activeDetailerId } = state;
+
+        return state.bidirectionalConversations
+          .filter(conv => {
+            if (role === 'customer') return conv.customerId === activeCustomerId;
+            return conv.detailerId === activeDetailerId;
+          })
+          .reduce((total, conv) => {
+            return total + (role === 'customer' ? conv.customerUnread : conv.detailerUnread);
+          }, 0);
+      },
+
+      // Perspective-aware selectors
+      getMyAppointments: () => {
+        const state = useAppStore.getState();
+        const { role, activeCustomerId, activeDetailerId } = state;
+
+        if (role === 'customer') {
+          return state.appointments.filter(apt => apt.customerId === activeCustomerId);
+        }
+        return state.appointments.filter(apt => apt.detailerId === activeDetailerId);
+      },
+
+      // Availability calculation
+      calculateAvailableSlots: (
+        detailerId: string,
+        date: string,
+        serviceDuration: number,
+        appointmentLocation?: { lat: number; lng: number }
+      ): AvailabilitySlot[] => {
+        const state = useAppStore.getState();
+        const config = state.detailerConfigs.find(c => c.detailerId === detailerId);
+
+        if (!config) return [];
+
+        const dayOfWeek = getDayOfWeek(date);
+        const dayConfig = config.workingHours[dayOfWeek];
+
+        // If closed, return empty
+        if (dayConfig.closed) return [];
+
+        // Get existing appointments for this detailer on this date
+        const dayAppointments = state.appointments
+          .filter(apt =>
+            apt.detailerId === detailerId &&
+            apt.scheduledDate === date &&
+            apt.status !== 'cancelled'
+          )
+          .sort((a, b) => timeToMinutes(a.scheduledTime) - timeToMinutes(b.scheduledTime));
+
+        const slots: AvailabilitySlot[] = [];
+        const startMinutes = timeToMinutes(dayConfig.open);
+        const endMinutes = timeToMinutes(dayConfig.close);
+
+        // Generate 30-minute interval slots
+        for (let current = startMinutes; current + serviceDuration <= endMinutes; current += 30) {
+          const slotStart = minutesToTime(current);
+          const slotEnd = minutesToTime(current + serviceDuration);
+          let available = true;
+          let reason: AvailabilitySlot['reason'] = undefined;
+
+          // Check lunch break
+          if (config.lunchBreak.enabled) {
+            const lunchStart = timeToMinutes(config.lunchBreak.start);
+            const lunchEnd = timeToMinutes(config.lunchBreak.end);
+            if (current < lunchEnd && current + serviceDuration > lunchStart) {
+              available = false;
+              reason = 'lunch';
+            }
+          }
+
+          // Check appointment conflicts (with buffer)
+          if (available) {
+            for (const apt of dayAppointments) {
+              const aptStart = timeToMinutes(apt.scheduledTime);
+              const aptEnd = aptStart + apt.duration + config.bufferMinutes;
+
+              // Check if slot overlaps with appointment + buffer
+              if (current < aptEnd && current + serviceDuration > aptStart - config.bufferMinutes) {
+                available = false;
+                reason = 'booked';
+                break;
+              }
+
+              // Calculate travel time if location provided
+              if (appointmentLocation && apt.latitude && apt.longitude) {
+                const distance = calculateDistanceForAvailability(
+                  apt.latitude, apt.longitude,
+                  appointmentLocation.lat, appointmentLocation.lng
+                );
+                const travelMinutes = Math.ceil((distance / config.travelSpeedMph) * 60);
+
+                // If this slot starts right after an appointment, account for travel
+                if (current >= aptStart && current < aptEnd + travelMinutes) {
+                  available = false;
+                  reason = 'travel';
+                  break;
+                }
+              }
+            }
+          }
+
+          slots.push({ startTime: slotStart, endTime: slotEnd, available, reason });
+        }
+
+        return slots;
+      },
     }),
     {
-      name: "app_state_v13",
+      name: "app_state_v15", // Bumped version for account system
       merge: (persistedState: any, currentState: AppState) => {
         const merged = { ...currentState, ...persistedState };
+
         // Refresh "today" appointment dates so they always match the current day
         // This prevents stale persisted dates from hiding mock appointments
         const now = new Date();
@@ -1343,11 +2154,29 @@ export const useAppStore = create<AppState>()(
           'apt_today_5', 'apt_today_6', 'apt_today_7', 'apt_today_8'
         ];
         merged.appointments = merged.appointments.map((apt: Appointment) => {
+          // Add default values for new reliability fields
+          const updatedApt = {
+            ...apt,
+            isArrived: apt.isArrived ?? false,
+            rescheduleCount: apt.rescheduleCount ?? 0,
+            isMissed: apt.isMissed ?? false,
+          };
           if (todayIds.includes(apt.id)) {
-            return { ...apt, scheduledDate: freshToday };
+            return { ...updatedApt, scheduledDate: freshToday };
           }
-          return apt;
+          return updatedApt;
         });
+
+        // Ensure missedAppointmentAlerts exists
+        merged.missedAppointmentAlerts = merged.missedAppointmentAlerts ?? [];
+
+        // Ensure new account system state exists with fresh defaults
+        merged.accounts = INITIAL_ACCOUNTS;
+        merged.detailerConfigs = INITIAL_DETAILER_CONFIGS;
+        merged.favoritesByCustomer = merged.favoritesByCustomer ?? INITIAL_FAVORITES_BY_CUSTOMER;
+        merged.bidirectionalConversations = merged.bidirectionalConversations ?? INITIAL_BIDIRECTIONAL_CONVERSATIONS;
+        merged.bidirectionalChatLogs = merged.bidirectionalChatLogs ?? INITIAL_BIDIRECTIONAL_CHAT_LOGS;
+
         return merged;
       },
     }

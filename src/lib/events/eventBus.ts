@@ -1,8 +1,6 @@
 import { EventEmitter } from 'events';
 import { NotificationService } from './notificationService';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // ===== EVENT TYPES =====
 
@@ -376,7 +374,6 @@ class BookingEventBus extends EventEmitter {
       const updates: any = {};
 
       switch (metricType) {
-        case 'booking_received':
         case 'booking_confirmed':
           updates.totalBookings = { increment: 1 };
           break;

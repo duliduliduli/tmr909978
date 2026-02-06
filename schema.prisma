@@ -125,7 +125,8 @@ model ProviderProfile {
   availabilityRules AvailabilityRule[]
   bookings          Booking[]
   businessCoin      BusinessCoin?
-  
+  serviceAreas      ServiceArea[]
+
   @@map("provider_profiles")
 }
 
@@ -159,7 +160,8 @@ model Service {
   
   // Relationships
   bookings Booking[]
-  
+
+  @@index([providerId])
   @@map("services")
 }
 
@@ -300,7 +302,11 @@ model Booking {
   events  BookingEvent[]
   review  Review?
   coinTransactions CoinTransaction[]
-  
+
+  @@index([customerId])
+  @@index([providerId])
+  @@index([status])
+  @@index([scheduledStartTime])
   @@map("bookings")
 }
 
@@ -420,7 +426,8 @@ model Review {
 model ServiceArea {
   id           String @id @default(cuid())
   providerId   String
-  
+  provider     ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
   // Geographic boundaries
   centerLat    Float
   centerLng    Float

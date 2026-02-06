@@ -7,12 +7,12 @@ const nextConfig = {
   },
   // Configure transpilation for mapbox-gl
   transpilePackages: ['mapbox-gl'],
-  // Skip type checking during build for faster deployment
+  // Type checking and linting run during builds
   typescript: {
-    ignoreBuildErrors: process.env.NODE_ENV === 'production',
+    ignoreBuildErrors: false,
   },
   eslint: {
-    ignoreDuringBuilds: process.env.NODE_ENV === 'production',
+    ignoreDuringBuilds: false,
   },
   // Configure webpack for mapbox-gl
   webpack: (config, { isServer }) => {

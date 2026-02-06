@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // GET /api/coins/business?providerId=xxx - Get business coin configuration
 export async function GET(request: NextRequest) {
@@ -90,8 +88,6 @@ export async function GET(request: NextRequest) {
       { error: 'Failed to fetch business coin' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -118,6 +114,20 @@ export async function POST(request: NextRequest) {
         { error: 'Provider ID, name, and display name are required' },
         { status: 400 }
       );
+    }
+
+    // Validate financial fields if provided
+    if (earnRate !== undefined && (typeof earnRate !== 'number' || earnRate < 0)) {
+      return NextResponse.json({ error: 'Earn rate must be a non-negative number' }, { status: 400 });
+    }
+    if (redemptionValue !== undefined && (typeof redemptionValue !== 'number' || redemptionValue <= 0)) {
+      return NextResponse.json({ error: 'Redemption value must be a positive number' }, { status: 400 });
+    }
+    if (minimumRedemption !== undefined && (typeof minimumRedemption !== 'number' || minimumRedemption < 0 || !Number.isInteger(minimumRedemption))) {
+      return NextResponse.json({ error: 'Minimum redemption must be a non-negative integer' }, { status: 400 });
+    }
+    if (maxRedemptionPerBooking !== undefined && maxRedemptionPerBooking !== null && (typeof maxRedemptionPerBooking !== 'number' || maxRedemptionPerBooking < 0)) {
+      return NextResponse.json({ error: 'Max redemption per booking must be a non-negative number' }, { status: 400 });
     }
 
     // Check if business coin already exists
@@ -173,8 +183,6 @@ export async function POST(request: NextRequest) {
       { error: 'Failed to create/update business coin' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -208,7 +216,5 @@ export async function DELETE(request: NextRequest) {
       { error: 'Failed to delete business coin' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

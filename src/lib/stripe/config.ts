@@ -31,6 +31,10 @@ export const STRIPE_CONNECT_CONFIG = {
 // Webhook endpoint secret
 export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 
+if (!STRIPE_WEBHOOK_SECRET && process.env.NODE_ENV === 'production') {
+  console.warn('WARNING: STRIPE_WEBHOOK_SECRET is not set. Webhook signature verification will fail.');
+}
+
 // Platform account configuration
 export const PLATFORM_CONFIG = {
   business_name: 'Tumaro',

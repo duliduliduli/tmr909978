@@ -62,6 +62,11 @@ export const BOOKING_TRANSITIONS: StateTransition[] = [
     event: 'PAYMENT_FAILED'
   },
   {
+    from: BookingStatus.PENDING_PAYMENT,
+    to: BookingStatus.CANCELLED,
+    event: 'CANCEL_BOOKING'
+  },
+  {
     from: BookingStatus.PAYMENT_FAILED,
     to: BookingStatus.PENDING_PAYMENT,
     event: 'RETRY_PAYMENT'
@@ -155,8 +160,22 @@ export const BOOKING_TRANSITIONS: StateTransition[] = [
   {
     from: BookingStatus.PROVIDER_ASSIGNED,
     to: BookingStatus.NO_SHOW_PROVIDER,
-    event: 'PROVIDER_NO_SHOW', 
+    event: 'PROVIDER_NO_SHOW',
     guard: (context) => context.user.role === 'customer'
+  },
+
+  // No-show resolution transitions
+  {
+    from: BookingStatus.NO_SHOW_CUSTOMER,
+    to: BookingStatus.CANCELLED,
+    event: 'RESOLVE_NO_SHOW',
+    guard: (context) => context.user.role === 'platform'
+  },
+  {
+    from: BookingStatus.NO_SHOW_CUSTOMER,
+    to: BookingStatus.REFUNDED,
+    event: 'PROCESS_REFUND',
+    guard: (context) => context.user.role === 'platform'
   },
 
   // Dispute transitions
@@ -175,6 +194,12 @@ export const BOOKING_TRANSITIONS: StateTransition[] = [
     from: BookingStatus.DISPUTED,
     to: BookingStatus.REFUNDED,
     event: 'RESOLVE_DISPUTE_REFUND',
+    guard: (context) => context.user.role === 'platform'
+  },
+  {
+    from: BookingStatus.DISPUTED,
+    to: BookingStatus.COMPLETED,
+    event: 'RESOLVE_DISPUTE_NO_REFUND',
     guard: (context) => context.user.role === 'platform'
   }
 ];
@@ -293,11 +318,8 @@ export class BookingStateMachine {
    * Check if state is terminal (no outgoing transitions)
    */
   isTerminalState(state: BookingStatus): boolean {
-    const terminalStates = [
-      BookingStatus.COMPLETED,
-      BookingStatus.CANCELLED, 
-      BookingStatus.NO_SHOW_CUSTOMER,
-      BookingStatus.NO_SHOW_PROVIDER,
+    const terminalStates: BookingStatus[] = [
+      BookingStatus.CANCELLED,
       BookingStatus.REFUNDED
     ];
     return terminalStates.includes(state);

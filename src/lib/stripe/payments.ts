@@ -1,7 +1,5 @@
 import { stripe, STRIPE_CONNECT_CONFIG, PAYMENT_CONFIG } from './config';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // ===== PAYMENT PROCESSING =====
 

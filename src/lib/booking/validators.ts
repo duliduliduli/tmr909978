@@ -6,9 +6,7 @@ import {
   BookingValidationError,
   BookingConflictError 
 } from './types';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // ===== VALIDATION UTILITIES =====
 
@@ -234,10 +232,10 @@ export async function validateServiceArea(data: any) {
     const provider = await prisma.providerProfile.findUnique({
       where: { id: providerId },
       select: {
-        serviceRadius,
-        baseLatitude,
-        baseLongitude,
-        serviceCities
+        serviceRadius: true,
+        baseLatitude: true,
+        baseLongitude: true,
+        serviceCities: true
       }
     });
 
