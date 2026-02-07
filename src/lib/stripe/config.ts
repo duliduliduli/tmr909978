@@ -1,18 +1,17 @@
 import Stripe from 'stripe';
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('STRIPE_SECRET_KEY environment variable is required');
+// Warn at build time instead of throwing (static export evaluates all modules)
+if (!process.env.STRIPE_SECRET_KEY && typeof window === 'undefined') {
+  console.warn('STRIPE_SECRET_KEY is not set — Stripe server calls will fail at runtime.');
 }
 
-if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
-  throw new Error('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY environment variable is required');
-}
-
-// Initialize Stripe with API version
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2026-01-28.clover',
-  typescript: true
-});
+// Initialize Stripe lazily so static export doesn't crash
+export const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2026-01-28.clover',
+      typescript: true,
+    })
+  : (null as unknown as Stripe);
 
 // Stripe Connect configuration
 export const STRIPE_CONNECT_CONFIG = {

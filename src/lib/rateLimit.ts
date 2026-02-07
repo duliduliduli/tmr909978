@@ -1,10 +1,12 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
+const redis = (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
+  ? new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    })
+  : (null as unknown as Redis);
 
 // General API rate limit: 20 requests per 10 seconds per IP
 export const apiRateLimit = new Ratelimit({
