@@ -41,9 +41,9 @@ export function ConfirmationStep({
     setError(null);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      const mockBookingId = `TUM${Date.now()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      const mockBookingId = bookingData.stripePaymentIntentId
+        ? bookingData.stripePaymentIntentId
+        : `TUM${Date.now()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       setBookingId(mockBookingId);
 
       // Create one appointment per vehicle
@@ -267,7 +267,7 @@ export function ConfirmationStep({
             <li>Your provider will be notified and will confirm the appointment</li>
             <li>You will receive notifications with updates</li>
             <li>The provider will arrive at your scheduled time</li>
-            <li>Payment will be processed after service completion</li>
+            <li>Payment confirmed</li>
           </ul>
         </div>
       </div>

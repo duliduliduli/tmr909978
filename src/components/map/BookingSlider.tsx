@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Calendar, Clock, CreditCard, MapPin, User, X, ChevronLeft, CheckCircle } from 'lucide-react';
-import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { getStripe } from '@/lib/stripe/getStripe';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+const stripePromise = getStripe();
 
 interface Service {
   id: string;

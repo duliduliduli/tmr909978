@@ -2,11 +2,11 @@
 
 import { useState, useEffect, Fragment } from 'react';
 import { Star, Clock, Phone, X, Calendar, CreditCard, ChevronLeft, CheckCircle, Car, ChevronUp, ChevronDown, Crown } from 'lucide-react';
-import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
+import { getStripe } from '@/lib/stripe/getStripe';
 import { mockCustomers, type Vehicle } from '@/lib/mockData';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+const stripePromise = getStripe();
 
 interface Service {
   id: string;

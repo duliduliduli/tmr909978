@@ -51,6 +51,7 @@ export interface BookingData {
   promotionCode?: string;
   paymentMethodId?: string;
   tipAmount?: number;
+  stripePaymentIntentId?: string;
   // Legacy fields kept for compatibility with existing step components
   serviceId?: string;
   vehicleInfo?: {
