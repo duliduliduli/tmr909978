@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mockCustomers } from '@/lib/mockData';
+import { apiRateLimit, checkRateLimit } from '@/lib/rateLimit';
 
 export async function GET(request: NextRequest) {
   try {
+    const ip = request.headers.get("x-forwarded-for") || "anonymous";
+    const { success } = await checkRateLimit(apiRateLimit, ip);
+    if (!success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const { searchParams } = new URL(request.url);
     const customerId = searchParams.get('customerId');
 
@@ -31,6 +38,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get("x-forwarded-for") || "anonymous";
+    const { success } = await checkRateLimit(apiRateLimit, ip);
+    if (!success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const body = await request.json();
     const { customerId, label, address, latitude, longitude, city, state, postalCode } = body;
 

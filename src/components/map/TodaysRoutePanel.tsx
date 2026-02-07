@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Phone, MessageCircle, Clock, MapPin, Navigation, Send, ChevronDown, ChevronUp, DollarSign, ChevronRight } from 'lucide-react';
+import { X, Phone, MessageCircle, Clock, MapPin, Navigation, Send, ChevronDown, ChevronUp, DollarSign, ChevronRight, Calendar, Check, CheckCircle2 } from 'lucide-react';
 import type { Appointment } from '@/lib/store';
 import { useAppStore } from '@/lib/store';
+import { RescheduleModal } from '@/components/appointment/RescheduleModal';
+import { useTranslation } from '@/lib/i18n';
 
 interface TodaysRoutePanelProps {
   isOpen: boolean;
@@ -20,9 +22,11 @@ interface TodaysRoutePanelProps {
 export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, onJobClick, onFitAllMarkers, isCollapsed = false, onToggleCollapse }: TodaysRoutePanelProps) {
   const [expandedChatId, setExpandedChatId] = useState<string | null>(null);
   const [chatInput, setChatInput] = useState('');
+  const [rescheduleAppointment, setRescheduleAppointment] = useState<Appointment | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  const { activeDetailerId, addChatMessage, getChatMessages } = useAppStore();
+  const { t } = useTranslation();
+  const { activeDetailerId, addChatMessage, getChatMessages, markAppointmentArrived } = useAppStore();
 
   const totalEarnings = appointments.reduce((sum, apt) => sum + apt.price, 0);
 
@@ -169,10 +173,22 @@ export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, on
                       {/* Job number and time */}
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full text-gray-800 flex items-center justify-center text-xs font-bold" style={{ backgroundColor: '#B7E892' }}>
-                            {index + 1}
+                          <div
+                            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
+                            style={{ backgroundColor: apt.isArrived ? '#10B981' : '#B7E892' }}
+                          >
+                            {apt.isArrived ? (
+                              <Check className="h-4 w-4 text-white" />
+                            ) : (
+                              <span className="text-gray-800">{index + 1}</span>
+                            )}
                           </div>
                           <span className="font-semibold text-gray-900">{apt.serviceName}</span>
+                          {apt.isArrived && (
+                            <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] rounded-full font-medium">
+                              {t('todaysRoute.arrived') || 'Arrived'}
+                            </span>
+                          )}
                         </div>
                         <div className="text-right">
                           <div className="text-sm font-medium text-gray-900">{apt.scheduledTime}</div>
@@ -209,7 +225,7 @@ export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, on
                     </div>
 
                     {/* Action buttons */}
-                    <div className="px-5 pb-3 flex items-center gap-2">
+                    <div className="px-5 pb-3 flex flex-wrap items-center gap-2">
                       <a
                         href={`tel:${apt.phone}`}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-xs font-medium hover:bg-green-100 transition-colors"
@@ -226,7 +242,7 @@ export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, on
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors"
                       >
                         <MessageCircle className="h-3.5 w-3.5" />
-                        Message
+                        {t('todaysRoute.message') || 'Message'}
                         {messages.length > 0 && (
                           <span className="ml-0.5 w-4 h-4 rounded-full bg-blue-500 text-white text-[10px] flex items-center justify-center">
                             {messages.length}
@@ -234,6 +250,28 @@ export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, on
                         )}
                         {expandedChatId === apt.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                       </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRescheduleAppointment(apt);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-xs font-medium hover:bg-amber-100 transition-colors"
+                      >
+                        <Calendar className="h-3.5 w-3.5" />
+                        {t('todaysRoute.reschedule') || 'Reschedule'}
+                      </button>
+                      {!apt.isArrived && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markAppointmentArrived(apt.id);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-50 text-teal-700 rounded-lg text-xs font-medium hover:bg-teal-100 transition-colors"
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          {t('todaysRoute.markArrived') || 'Mark Arrived'}
+                        </button>
+                      )}
                     </div>
 
                     {/* Inline Chat */}
@@ -301,6 +339,19 @@ export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, on
             )}
           </div>
         </motion.div>
+          )}
+
+          {/* Reschedule Modal */}
+          {rescheduleAppointment && (
+            <RescheduleModal
+              appointment={rescheduleAppointment}
+              isOpen={true}
+              onClose={() => setRescheduleAppointment(null)}
+              onReschedule={(newDate, newTime) => {
+                console.log(`Rescheduled to ${newDate} at ${newTime}`);
+                setRescheduleAppointment(null);
+              }}
+            />
           )}
         </>
       )}

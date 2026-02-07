@@ -1,34 +1,65 @@
 "use client";
 
 import { AppShell } from "@/components/AppShell";
-import { Settings, Clock, MapPin, Package, QrCode, X, Camera, Edit3, Check } from "lucide-react";
+import { Settings, Clock, MapPin, Package, QrCode, X, Camera, Edit3, Check, Coffee, Car } from "lucide-react";
 import { ServiceManager } from "@/components/detailer/ServiceManager";
 import { QRCodeManager } from "@/components/detailer/QRCodeManager";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAppStore, type WorkingHours, type LunchBreak } from "@/lib/store";
 
-const defaultHours = {
-  monday: { open: '08:00', close: '18:00', closed: false },
-  tuesday: { open: '08:00', close: '18:00', closed: false },
-  wednesday: { open: '08:00', close: '18:00', closed: false },
-  thursday: { open: '08:00', close: '18:00', closed: false },
-  friday: { open: '08:00', close: '18:00', closed: false },
-  saturday: { open: '09:00', close: '17:00', closed: false },
-  sunday: { open: '10:00', close: '16:00', closed: true },
-};
-
-type DayKey = keyof typeof defaultHours;
+type DayKey = keyof WorkingHours;
 type EditingField = 'name' | 'phone' | 'description' | null;
 
+// Default config for when no config is found
+const defaultConfig = {
+  workingHours: {
+    monday: { open: '08:00', close: '18:00', closed: false },
+    tuesday: { open: '08:00', close: '18:00', closed: false },
+    wednesday: { open: '08:00', close: '18:00', closed: false },
+    thursday: { open: '08:00', close: '18:00', closed: false },
+    friday: { open: '08:00', close: '18:00', closed: false },
+    saturday: { open: '09:00', close: '17:00', closed: false },
+    sunday: { open: '10:00', close: '16:00', closed: true },
+  } as WorkingHours,
+  lunchBreak: { enabled: true, start: '12:00', end: '13:00' } as LunchBreak,
+  bufferMinutes: 15,
+};
+
 export default function DetailerAccountPage() {
+  const { activeDetailerId, getDetailerConfig, updateDetailerConfig, getCurrentAccount } = useAppStore();
+  const currentAccount = getCurrentAccount();
+  const config = getDetailerConfig(activeDetailerId) || defaultConfig;
+
   const [activeTab, setActiveTab] = useState<'profile' | 'services' | 'qrcode'>('profile');
   const [showHoursModal, setShowHoursModal] = useState(false);
-  const [workingHours, setWorkingHours] = useState(defaultHours);
-  const [tempHours, setTempHours] = useState(defaultHours);
-  const [businessName, setBusinessName] = useState('Premium Auto Spa');
+  const [showLunchModal, setShowLunchModal] = useState(false);
+  const [showBufferModal, setShowBufferModal] = useState(false);
+
+  // Initialize from store config
+  const [workingHours, setWorkingHours] = useState<WorkingHours>(config.workingHours);
+  const [tempHours, setTempHours] = useState<WorkingHours>(config.workingHours);
+  const [lunchBreak, setLunchBreak] = useState<LunchBreak>(config.lunchBreak);
+  const [tempLunch, setTempLunch] = useState<LunchBreak>(config.lunchBreak);
+  const [bufferMinutes, setBufferMinutes] = useState(config.bufferMinutes);
+  const [tempBuffer, setTempBuffer] = useState(config.bufferMinutes);
+
+  const [businessName, setBusinessName] = useState(currentAccount?.businessName || 'Premium Auto Spa');
   const [phone, setPhone] = useState('(323) 555-0101');
   const [description, setDescription] = useState('Professional mobile auto detailing service. We come to you!');
-  const [profileImage, setProfileImage] = useState('/images/detailers/detailer-1.webp');
+  const [profileImage, setProfileImage] = useState(currentAccount?.profileImage || '/images/detailers/detailer-1.webp');
+
+  // Sync state when config changes
+  useEffect(() => {
+    if (config) {
+      setWorkingHours(config.workingHours);
+      setTempHours(config.workingHours);
+      setLunchBreak(config.lunchBreak);
+      setTempLunch(config.lunchBreak);
+      setBufferMinutes(config.bufferMinutes);
+      setTempBuffer(config.bufferMinutes);
+    }
+  }, [config]);
 
   // Editing states
   const [editingField, setEditingField] = useState<EditingField>(null);
@@ -54,7 +85,20 @@ export default function DetailerAccountPage() {
 
   const handleSaveHours = () => {
     setWorkingHours(tempHours);
+    updateDetailerConfig(activeDetailerId, { workingHours: tempHours });
     setShowHoursModal(false);
+  };
+
+  const handleSaveLunch = () => {
+    setLunchBreak(tempLunch);
+    updateDetailerConfig(activeDetailerId, { lunchBreak: tempLunch });
+    setShowLunchModal(false);
+  };
+
+  const handleSaveBuffer = () => {
+    setBufferMinutes(tempBuffer);
+    updateDetailerConfig(activeDetailerId, { bufferMinutes: tempBuffer });
+    setShowBufferModal(false);
   };
 
   return (
@@ -301,6 +345,60 @@ export default function DetailerAccountPage() {
           </div>
         </div>
 
+        {/* Lunch Break */}
+        <div className="bg-brand-900 rounded-xl p-6 border border-brand-700">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <Coffee className="h-5 w-5 text-amber-400" />
+              <h2 className="text-xl font-bold text-gray-100">Lunch Break</h2>
+            </div>
+            <button
+              onClick={() => {
+                setTempLunch(lunchBreak);
+                setShowLunchModal(true);
+              }}
+              className="text-teal-400 text-sm font-medium hover:text-teal-300 transition-colors"
+            >
+              Edit
+            </button>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-gray-300">Status</span>
+            <span className={lunchBreak.enabled ? 'text-green-400' : 'text-gray-500'}>
+              {lunchBreak.enabled ? `${lunchBreak.start} - ${lunchBreak.end}` : 'Disabled'}
+            </span>
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            Customers won&apos;t be able to book during your lunch break.
+          </p>
+        </div>
+
+        {/* Buffer Time */}
+        <div className="bg-brand-900 rounded-xl p-6 border border-brand-700">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <Car className="h-5 w-5 text-blue-400" />
+              <h2 className="text-xl font-bold text-gray-100">Buffer Time</h2>
+            </div>
+            <button
+              onClick={() => {
+                setTempBuffer(bufferMinutes);
+                setShowBufferModal(true);
+              }}
+              className="text-teal-400 text-sm font-medium hover:text-teal-300 transition-colors"
+            >
+              Edit
+            </button>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-gray-300">Between appointments</span>
+            <span className="text-gray-100">{bufferMinutes} minutes</span>
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            Time reserved between appointments for travel and preparation.
+          </p>
+        </div>
+
         {/* Working Hours Modal */}
         <AnimatePresence>
           {showHoursModal && (
@@ -388,6 +486,178 @@ export default function DetailerAccountPage() {
                     className="flex-1 px-4 py-2 bg-accent-DEFAULT hover:bg-accent-hover text-white rounded-lg transition-colors"
                   >
                     Save Hours
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Lunch Break Modal */}
+        <AnimatePresence>
+          {showLunchModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+              onClick={() => setShowLunchModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-brand-950 border border-brand-800 rounded-2xl w-full max-w-md overflow-hidden"
+                onClick={e => e.stopPropagation()}
+              >
+                {/* Modal Header */}
+                <div className="p-4 border-b border-brand-800 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Coffee className="h-5 w-5 text-amber-400" />
+                    <h3 className="font-bold text-white text-lg">Lunch Break Settings</h3>
+                  </div>
+                  <button
+                    onClick={() => setShowLunchModal(false)}
+                    className="p-2 hover:bg-brand-800 rounded-full transition-colors"
+                  >
+                    <X className="h-5 w-5 text-brand-400" />
+                  </button>
+                </div>
+
+                {/* Modal Content */}
+                <div className="p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-white font-medium">Enable Lunch Break</span>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={tempLunch.enabled}
+                        onChange={(e) => setTempLunch(prev => ({ ...prev, enabled: e.target.checked }))}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-brand-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent-DEFAULT rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-DEFAULT"></div>
+                    </label>
+                  </div>
+
+                  {tempLunch.enabled && (
+                    <div className="space-y-3 pt-2">
+                      <div>
+                        <label className="block text-sm text-brand-400 mb-1">Start Time</label>
+                        <input
+                          type="time"
+                          value={tempLunch.start}
+                          onChange={(e) => setTempLunch(prev => ({ ...prev, start: e.target.value }))}
+                          className="w-full px-3 py-2 bg-brand-800 border border-brand-700 rounded-lg text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-brand-400 mb-1">End Time</label>
+                        <input
+                          type="time"
+                          value={tempLunch.end}
+                          onChange={(e) => setTempLunch(prev => ({ ...prev, end: e.target.value }))}
+                          className="w-full px-3 py-2 bg-brand-800 border border-brand-700 rounded-lg text-white"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="text-xs text-gray-500">
+                    When enabled, customers won&apos;t be able to book appointments during your lunch break.
+                  </p>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="p-4 border-t border-brand-800 flex gap-3">
+                  <button
+                    onClick={() => setShowLunchModal(false)}
+                    className="flex-1 px-4 py-2 bg-brand-800 hover:bg-brand-700 text-white rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveLunch}
+                    className="flex-1 px-4 py-2 bg-accent-DEFAULT hover:bg-accent-hover text-white rounded-lg transition-colors"
+                  >
+                    Save
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Buffer Time Modal */}
+        <AnimatePresence>
+          {showBufferModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+              onClick={() => setShowBufferModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-brand-950 border border-brand-800 rounded-2xl w-full max-w-md overflow-hidden"
+                onClick={e => e.stopPropagation()}
+              >
+                {/* Modal Header */}
+                <div className="p-4 border-b border-brand-800 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Car className="h-5 w-5 text-blue-400" />
+                    <h3 className="font-bold text-white text-lg">Buffer Time Settings</h3>
+                  </div>
+                  <button
+                    onClick={() => setShowBufferModal(false)}
+                    className="p-2 hover:bg-brand-800 rounded-full transition-colors"
+                  >
+                    <X className="h-5 w-5 text-brand-400" />
+                  </button>
+                </div>
+
+                {/* Modal Content */}
+                <div className="p-4 space-y-4">
+                  <div>
+                    <label className="block text-sm text-brand-400 mb-2">Minutes between appointments</label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[0, 15, 30, 45].map((mins) => (
+                        <button
+                          key={mins}
+                          onClick={() => setTempBuffer(mins)}
+                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            tempBuffer === mins
+                              ? 'bg-accent-DEFAULT text-white'
+                              : 'bg-brand-800 text-brand-300 hover:bg-brand-700'
+                          }`}
+                        >
+                          {mins} min
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-gray-500">
+                    This time will be reserved between appointments to allow for travel and preparation.
+                    Travel time is calculated automatically based on appointment locations.
+                  </p>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="p-4 border-t border-brand-800 flex gap-3">
+                  <button
+                    onClick={() => setShowBufferModal(false)}
+                    className="flex-1 px-4 py-2 bg-brand-800 hover:bg-brand-700 text-white rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveBuffer}
+                    className="flex-1 px-4 py-2 bg-accent-DEFAULT hover:bg-accent-hover text-white rounded-lg transition-colors"
+                  >
+                    Save
                   </button>
                 </div>
               </motion.div>

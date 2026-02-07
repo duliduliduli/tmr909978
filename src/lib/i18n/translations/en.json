@@ -281,6 +281,30 @@
     "redeemCoins": "Redeem",
     "coinsValue": "value"
   },
+  "todaysRoute": {
+    "arrived": "Arrived",
+    "reschedule": "Reschedule",
+    "markArrived": "Mark Arrived",
+    "message": "Message",
+    "call": "Call"
+  },
+  "reschedule": {
+    "title": "Reschedule Appointment",
+    "limitReached": "Reschedule limit reached",
+    "maxReschedules": "This appointment has been rescheduled the maximum number of times (3).",
+    "remaining": "reschedule(s) remaining for this appointment",
+    "currentSchedule": "Currently scheduled for:",
+    "selectTime": "Select New Time",
+    "reason": "Reason for rescheduling (optional)",
+    "confirm": "Confirm Reschedule"
+  },
+  "missedAppointment": {
+    "title": "Missed Appointment",
+    "scheduledFor": "Was scheduled for",
+    "reschedule": "Reschedule",
+    "message": "Message",
+    "call": "Call"
+  },
   "common": {
     "loading": "Loading...",
     "error": "Error",

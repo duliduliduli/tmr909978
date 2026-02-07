@@ -8,6 +8,7 @@ import { useTranslation } from "@/lib/i18n";
 import { motion, AnimatePresence } from "framer-motion";
 import { AccountDropdown } from "@/components/auth/AccountDropdown";
 import { MessagesInbox } from "@/components/messages/MessagesInbox";
+import { AccountSwitcher } from "@/components/AccountSwitcher";
 
 const navItemKeys = [
   { key: "home", labelKey: "nav.home", icon: Home, href: "/home" },
@@ -28,7 +29,9 @@ function cx(...c: Array<string | false | undefined>) {
 export function AppShell({ children, title, fullWidth = false }: { children: React.ReactNode; title: string; fullWidth?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { role, setRole, showMessages, setShowMessages } = useAppStore();
+  const { role, setRole, showMessages, setShowMessages, getUnreadCount, getCurrentAccount } = useAppStore();
+  const unreadCount = getUnreadCount();
+  const currentAccount = getCurrentAccount();
   const { t } = useTranslation();
 
   const base = role === "detailer" ? "/detailer" : "/customer";
@@ -89,37 +92,8 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
           </nav>
 
           <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-brand-800/50 bg-brand-900">
-            <div className="text-xs uppercase tracking-wider text-brand-500 font-semibold mb-3">{t('appShell.switchMode')}</div>
-            <div className="flex bg-brand-950 p-1 rounded-xl border border-brand-800">
-              <button
-                onClick={() => switchRole("customer")}
-                className={cx(
-                  "flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-300",
-                  role === "customer"
-                    ? "bg-brand-800 text-white shadow-lg shadow-black/20"
-                    : "text-brand-500 hover:text-brand-300"
-                )}
-              >
-                {t('appShell.customer')}
-              </button>
-              <button
-                onClick={() => switchRole("detailer")}
-                className={cx(
-                  "flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-300",
-                  role === "detailer"
-                    ? "bg-brand-800 text-white shadow-lg shadow-black/20"
-                    : "text-brand-500 hover:text-brand-300"
-                )}
-              >
-                {t('appShell.detailer')}
-              </button>
-            </div>
-            <button
-              onClick={() => useAppStore.getState().switchToTestAccount()}
-              className="mt-2 w-full text-xs bg-green-500/20 text-green-400 border border-green-500/30 rounded-lg px-3 py-1.5 hover:bg-green-500/30 transition-colors"
-            >
-              {t('appShell.switchTestAccount')}
-            </button>
+            <div className="text-xs uppercase tracking-wider text-brand-500 font-semibold mb-3">Account</div>
+            <AccountSwitcher />
           </div>
         </aside>
 
@@ -133,9 +107,11 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
                 className="relative p-2.5 rounded-full bg-brand-900 border border-brand-800 hover:border-brand-700 transition-colors"
               >
                 <MessageCircle className="h-5 w-5 text-brand-300" />
-                <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center border-2 border-brand-950">
-                  <span className="text-xs text-white font-bold">3</span>
-                </div>
+                {unreadCount > 0 && (
+                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center border-2 border-brand-950">
+                    <span className="text-xs text-white font-bold">{unreadCount}</span>
+                  </div>
+                )}
               </button>
               <div className="bg-brand-900 border border-brand-800 rounded-full px-4 py-1.5 flex items-center gap-2">
                 <div className={cx(
@@ -185,17 +161,13 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
               className="relative p-2 rounded-full bg-brand-900 border border-brand-800"
             >
               <MessageCircle className="h-4 w-4 text-brand-300" />
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center border-2 border-brand-950">
-                <span className="text-[10px] text-white font-bold">3</span>
-              </div>
+              {unreadCount > 0 && (
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center border-2 border-brand-950">
+                  <span className="text-[10px] text-white font-bold">{unreadCount}</span>
+                </div>
+              )}
             </button>
-            <button
-              onClick={() => switchRole(role === "customer" ? "detailer" : "customer")}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-900 border border-brand-800 text-xs font-medium text-brand-300"
-            >
-              <div className={cx("w-2 h-2 rounded-full", role === 'customer' ? 'bg-accent-DEFAULT' : 'bg-purple-500')} />
-              {role === "customer" ? t('appShell.customer') : t('appShell.detailer')}
-            </button>
+            <AccountSwitcher compact />
           </div>
         </header>
 

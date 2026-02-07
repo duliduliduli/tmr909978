@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import type { FeatureCollection, Feature, Point } from 'geojson';
 import { mockDetailers } from '@/lib/mockData';
+import { apiRateLimit, checkRateLimit } from '@/lib/rateLimit';
 
 // Map detailer IDs to their profile images
 const detailerImages: Record<string, string> = {
@@ -12,8 +13,14 @@ const detailerImages: Record<string, string> = {
   'det_6': '/images/detailers/detailer-7.jpg',
 };
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const ip = request.headers.get("x-forwarded-for") || "anonymous";
+    const { success } = await checkRateLimit(apiRateLimit, ip);
+    if (!success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     // Convert mock detailers to GeoJSON FeatureCollection
     const features: Feature<Point>[] = mockDetailers
       .filter(detailer => detailer.location.lat && detailer.location.lng)

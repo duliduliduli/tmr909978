@@ -84,7 +84,8 @@ export function CustomerAccount() {
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [loading, setLoading] = useState(true);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const { favoriteDetailers, removeFavoriteDetailer } = useAppStore();
+  const { getMyFavorites, removeFavoriteDetailer } = useAppStore();
+  const favoriteDetailers = getMyFavorites();
   const [showVehicleForm, setShowVehicleForm] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [vehicleFormData, setVehicleFormData] = useState({

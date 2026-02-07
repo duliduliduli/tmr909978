@@ -1,5 +1,10 @@
+const { withSentryConfig } = require("@sentry/nextjs");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    serverActions: true,
+  },
   env: {
     NEXT_PUBLIC_MAPBOX_TOKEN: process.env.NEXT_PUBLIC_MAPBOX_TOKEN,
     NEXT_PUBLIC_MAPBOX_STYLE: process.env.NEXT_PUBLIC_MAPBOX_STYLE,
@@ -27,4 +32,9 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig
+module.exports = withSentryConfig(nextConfig, {
+  // Suppresses source map uploading logs during build
+  silent: true,
+  org: "tumaro",
+  project: "javascript-nextjs",
+});

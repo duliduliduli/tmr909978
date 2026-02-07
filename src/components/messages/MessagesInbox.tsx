@@ -10,50 +10,29 @@ export function MessagesInbox() {
   const { t } = useTranslation();
   const {
     setShowMessages,
-    conversations,
+    getMyConversations,
+    sendMessage: storeSendMessage,
+    markBidirectionalConversationRead,
+    bidirectionalChatLogs,
     togglePinConversation,
-    deleteConversationById,
-    markConversationRead,
-    getChatMessages,
-    addChatMessage,
     role,
     activeCustomerId,
     activeDetailerId
   } = useAppStore();
 
-  const [selectedConversation, setSelectedConversation] = useState<typeof conversations[0] | null>(null);
+  // Get conversations for current user perspective
+  const myConversations = getMyConversations();
+
+  const [selectedConversation, setSelectedConversation] = useState<typeof myConversations[0] | null>(null);
   const [newMessage, setNewMessage] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
 
   const sendMessage = () => {
     if (!newMessage.trim() || !selectedConversation) return;
 
-    // Add message to chat logs
-    const detailerId = role === 'customer' ? selectedConversation.participantId : activeDetailerId;
-    const customerId = role === 'customer' ? activeCustomerId : selectedConversation.participantId;
-
-    addChatMessage(detailerId, customerId, {
-      text: newMessage.trim(),
-      fromMe: true,
-      timestamp: new Date().toISOString()
-    });
-
+    // Use the store's sendMessage which handles bidirectional properly
+    storeSendMessage(selectedConversation.id, newMessage.trim());
     setNewMessage('');
-
-    // Simulate response
-    setTimeout(() => {
-      const responses = [
-        'Thanks for your message!',
-        'Got it, I\'ll get back to you soon.',
-        'Sounds good!',
-        'No problem at all.',
-      ];
-      addChatMessage(detailerId, customerId, {
-        text: responses[Math.floor(Math.random() * responses.length)],
-        fromMe: false,
-        timestamp: new Date().toISOString()
-      });
-    }, 1500);
   };
 
   const handleClose = () => {
@@ -61,26 +40,33 @@ export function MessagesInbox() {
     setSelectedConversation(null);
   };
 
-  const handleSelectConversation = (conv: typeof conversations[0]) => {
+  const handleSelectConversation = (conv: typeof myConversations[0]) => {
     setSelectedConversation(conv);
-    markConversationRead(conv.id);
+    markBidirectionalConversationRead(conv.id);
   };
 
   const handleDeleteConversation = (convId: string) => {
-    deleteConversationById(convId);
+    // For now, just close the selected conversation
+    // Full delete would need to be added to store
     setShowDeleteConfirm(null);
     if (selectedConversation?.id === convId) {
       setSelectedConversation(null);
     }
   };
 
-  const getMessagesForConversation = (conv: typeof conversations[0]) => {
-    const detailerId = role === 'customer' ? conv.participantId : activeDetailerId;
-    const customerId = role === 'customer' ? activeCustomerId : conv.participantId;
-    return getChatMessages(detailerId, customerId);
+  const getMessagesForConversation = (conv: typeof myConversations[0]) => {
+    return bidirectionalChatLogs[conv.id] || [];
   };
 
-  const sortedConversations = [...conversations].sort((a, b) => {
+  // Determine if a message is from the current user
+  const isMessageFromMe = (msg: { senderId: string; senderType: 'customer' | 'detailer' }) => {
+    if (role === 'customer') {
+      return msg.senderId === activeCustomerId;
+    }
+    return msg.senderId === activeDetailerId;
+  };
+
+  const sortedConversations = [...myConversations].sort((a, b) => {
     if (a.isPinned && !b.isPinned) return -1;
     if (!a.isPinned && b.isPinned) return 1;
     return 0;
@@ -135,25 +121,28 @@ export function MessagesInbox() {
                   <p>{t('messagesInbox.noMessagesYet')}</p>
                 </div>
               ) : (
-                getMessagesForConversation(selectedConversation).map((msg, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex ${msg.fromMe ? 'justify-end' : 'justify-start'}`}
-                  >
+                getMessagesForConversation(selectedConversation).map((msg, idx) => {
+                  const fromMe = isMessageFromMe(msg);
+                  return (
                     <div
-                      className={`max-w-[75%] px-4 py-2 rounded-2xl ${
-                        msg.fromMe
-                          ? 'bg-accent-DEFAULT text-white'
-                          : 'bg-brand-800 text-white'
-                      }`}
+                      key={msg.id || idx}
+                      className={`flex ${fromMe ? 'justify-end' : 'justify-start'}`}
                     >
-                      <p className="text-sm">{msg.text}</p>
-                      <p className={`text-xs mt-1 ${msg.fromMe ? 'text-white/70' : 'text-brand-500'}`}>
-                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
+                      <div
+                        className={`max-w-[75%] px-4 py-2 rounded-2xl ${
+                          fromMe
+                            ? 'bg-accent-DEFAULT text-white'
+                            : 'bg-brand-800 text-white'
+                        }`}
+                      >
+                        <p className="text-sm">{msg.text}</p>
+                        <p className={`text-xs mt-1 ${fromMe ? 'text-white/70' : 'text-brand-500'}`}>
+                          {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
 

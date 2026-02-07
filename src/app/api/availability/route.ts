@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { apiRateLimit, checkRateLimit } from '@/lib/rateLimit';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -12,6 +13,12 @@ interface TimeSlot {
 
 export async function GET(request: NextRequest) {
   try {
+    const ip = request.headers.get("x-forwarded-for") || "anonymous";
+    const { success } = await checkRateLimit(apiRateLimit, ip);
+    if (!success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const { searchParams } = new URL(request.url);
     const providerId = searchParams.get('providerId');
     const dateStr = searchParams.get('date');

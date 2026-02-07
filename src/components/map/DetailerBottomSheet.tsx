@@ -67,7 +67,7 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
   const [sortBy, setSortBy] = useState<SortOption>('distance');
   const [selectedDetailer, setSelectedDetailer] = useState<Detailer | null>(null);
   const [viewState, setViewState] = useState<ViewState>('list');
-  const { favoriteDetailers, toggleFavoriteDetailer, isFavoriteDetailer, getActiveServicesByDetailer, addChatMessage, getChatMessages, activeCustomerId } = useAppStore();
+  const { favoriteDetailers, toggleFavoriteDetailer, isFavoriteDetailer, getActiveServicesByDetailer, sendMessage: storeSendMessage, startConversation, bidirectionalChatLogs, activeCustomerId } = useAppStore();
   const [sheetHeights, setSheetHeights] = useState(getSheetHeights());
   const [chatMessage, setChatMessage] = useState('');
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
@@ -283,34 +283,19 @@ export function DetailerBottomSheet({ isVisible, onClose, userLocation, selected
   const handleSendMessage = () => {
     if (!chatMessage.trim() || !selectedDetailer) return;
 
-    // Add message to global store
-    addChatMessage(selectedDetailer.id, activeCustomerId, {
-      text: chatMessage.trim(),
-      fromMe: true,
-      timestamp: new Date().toISOString()
-    });
-
+    // Start or get conversation and send message using bidirectional system
+    const conversationId = startConversation(selectedDetailer.id);
+    storeSendMessage(conversationId, chatMessage.trim());
     setChatMessage('');
-
-    // Simulate detailer response after 1-2 seconds
-    setTimeout(() => {
-      const responses = [
-        "Thanks for reaching out! I'll get back to you shortly.",
-        "Hi! I'm available for service. What can I help you with?",
-        "Hello! I'd be happy to detail your vehicle. When would work best?",
-        "Great to hear from you! Let me know what services you're interested in."
-      ];
-      addChatMessage(selectedDetailer.id, activeCustomerId, {
-        text: responses[Math.floor(Math.random() * responses.length)],
-        fromMe: false,
-        timestamp: new Date().toISOString()
-      });
-    }, 1000 + Math.random() * 1000);
   };
 
-  // Get chat messages from global store
-  const currentChatMessages = selectedDetailer
-    ? getChatMessages(selectedDetailer.id, activeCustomerId)
+  // Get chat messages from bidirectional store
+  const conversationId = selectedDetailer ? `${selectedDetailer.id}_${activeCustomerId}` : '';
+  const currentChatMessages = conversationId
+    ? (bidirectionalChatLogs[conversationId] || []).map(msg => ({
+        ...msg,
+        fromMe: msg.senderId === activeCustomerId
+      }))
     : [];
 
   if (!isVisible) return null;

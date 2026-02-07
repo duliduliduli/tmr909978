@@ -6,6 +6,10 @@ import { MapControls } from './MapControls';
 import { TodaysRoutePanel } from './TodaysRoutePanel';
 import { useAppStore } from '@/lib/store';
 import { Navigation } from 'lucide-react';
+import { useDetailerLocationTracking } from '@/hooks/useDetailerLocationTracking';
+import { useMissedAppointmentDetection } from '@/hooks/useMissedAppointmentDetection';
+import { MissedAppointmentAlert } from '@/components/appointment/MissedAppointmentAlert';
+import { RescheduleModal } from '@/components/appointment/RescheduleModal';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './tumaroMap.css';
 
@@ -54,6 +58,20 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
   const [showRoute, setShowRoute] = useState(false);
   const [etaMinutes, setEtaMinutes] = useState<number[]>([]);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
+  const [rescheduleAppointment, setRescheduleAppointment] = useState<typeof todaysAppointments[0] | null>(null);
+  const [expandedChatId, setExpandedChatId] = useState<string | null>(null);
+
+  // Location tracking for auto-arrival detection
+  const { isTracking } = useDetailerLocationTracking({
+    appointments: todaysAppointments,
+    enabled: showRoute && todaysAppointments.length > 0,
+  });
+
+  // Missed appointment detection
+  const { missedAppointments, dismissMissed } = useMissedAppointmentDetection({
+    appointments: todaysAppointments,
+    enabled: todaysAppointments.length > 0,
+  });
 
   // Initialize map
   useEffect(() => {
@@ -619,6 +637,39 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
         isCollapsed={isPanelCollapsed}
         onToggleCollapse={() => setIsPanelCollapsed(!isPanelCollapsed)}
       />
+
+      {/* Missed Appointment Alert */}
+      {missedAppointments.length > 0 && (
+        <MissedAppointmentAlert
+          appointment={missedAppointments[0]}
+          onReschedule={() => {
+            setRescheduleAppointment(missedAppointments[0]);
+            dismissMissed(missedAppointments[0].id);
+          }}
+          onMessage={() => {
+            setExpandedChatId(missedAppointments[0].id);
+            dismissMissed(missedAppointments[0].id);
+          }}
+          onCall={() => {
+            window.location.href = `tel:${missedAppointments[0].phone}`;
+            dismissMissed(missedAppointments[0].id);
+          }}
+          onDismiss={() => dismissMissed(missedAppointments[0].id)}
+        />
+      )}
+
+      {/* Reschedule Modal */}
+      {rescheduleAppointment && (
+        <RescheduleModal
+          appointment={rescheduleAppointment}
+          isOpen={true}
+          onClose={() => setRescheduleAppointment(null)}
+          onReschedule={(newDate, newTime) => {
+            console.log(`Rescheduled to ${newDate} at ${newTime}`);
+            setRescheduleAppointment(null);
+          }}
+        />
+      )}
     </div>
   );
 }

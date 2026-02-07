@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { paymentRateLimit, checkRateLimit } from '@/lib/rateLimit';
 
 // GET /api/coins/business?providerId=xxx - Get business coin configuration
 export async function GET(request: NextRequest) {
   try {
+    const ip = request.headers.get("x-forwarded-for") || "anonymous";
+    const { success } = await checkRateLimit(paymentRateLimit, ip);
+    if (!success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const { searchParams } = new URL(request.url);
     const providerId = searchParams.get('providerId');
 
@@ -94,6 +101,12 @@ export async function GET(request: NextRequest) {
 // POST /api/coins/business - Create or update business coin
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get("x-forwarded-for") || "anonymous";
+    const { success } = await checkRateLimit(paymentRateLimit, ip);
+    if (!success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const body = await request.json();
     const {
       providerId,
@@ -189,6 +202,12 @@ export async function POST(request: NextRequest) {
 // DELETE /api/coins/business - Delete business coin
 export async function DELETE(request: NextRequest) {
   try {
+    const ip = request.headers.get("x-forwarded-for") || "anonymous";
+    const { success } = await checkRateLimit(paymentRateLimit, ip);
+    if (!success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const { searchParams } = new URL(request.url);
     const providerId = searchParams.get('providerId');
 

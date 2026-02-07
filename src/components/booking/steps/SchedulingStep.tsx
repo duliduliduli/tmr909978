@@ -1,14 +1,15 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, AlertCircle, Coffee, Car, CalendarX } from 'lucide-react';
 import { BookingData } from '../BookingWizard';
+import { useAppStore } from '@/lib/store';
 
 interface TimeSlot {
   startTime: string;
   endTime: string;
-  duration: number;
   available: boolean;
+  reason?: 'lunch' | 'booked' | 'travel' | 'closed' | 'buffer' | null;
 }
 
 interface SchedulingStepProps {
@@ -30,6 +31,8 @@ export function SchedulingStep({
   setIsLoading,
   setError
 }: SchedulingStepProps) {
+  const { calculateAvailableSlots, getActiveServicesByDetailer } = useAppStore();
+
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('');
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
@@ -66,24 +69,44 @@ export function SchedulingStep({
     setCalendar(days);
   };
 
-  const fetchAvailableSlots = async () => {
+  const fetchAvailableSlots = () => {
     if (!bookingData.providerId || !selectedDate) return;
-    
+
     setIsLoading(true);
     try {
-      const params = new URLSearchParams({
-        providerId: bookingData.providerId,
-        date: new Date(selectedDate).toISOString(),
-        ...(bookingData.serviceId && { serviceId: bookingData.serviceId })
-      });
+      // Calculate total service duration from selected vehicles/services
+      let totalDuration = 60; // Default 60 minutes if no service selected
 
-      const response = await fetch(`/api/availability?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch availability');
-      
-      const data = await response.json();
-      setAvailableSlots(data.availableSlots || []);
-      
-      if (data.availableSlots.length === 0) {
+      if (bookingData.vehicles.length > 0) {
+        const services = getActiveServicesByDetailer(bookingData.providerId);
+        totalDuration = bookingData.vehicles.reduce((total, vehicle) => {
+          const service = services.find(s => s.id === vehicle.serviceId);
+          return total + (service?.duration || 60);
+        }, 0);
+      } else if (bookingData.serviceId) {
+        // Legacy support: single service ID
+        const services = getActiveServicesByDetailer(bookingData.providerId);
+        const service = services.find(s => s.id === bookingData.serviceId);
+        totalDuration = service?.duration || 60;
+      }
+
+      // Get appointment location if available
+      const appointmentLocation = bookingData.serviceAddress ? {
+        lat: bookingData.serviceAddress.latitude,
+        lng: bookingData.serviceAddress.longitude
+      } : undefined;
+
+      // Use store's smart availability calculation
+      const slots = calculateAvailableSlots(
+        bookingData.providerId,
+        selectedDate,
+        totalDuration,
+        appointmentLocation
+      );
+
+      setAvailableSlots(slots);
+
+      if (slots.length === 0) {
         setError('No available time slots for this date. Please choose another date.');
       }
     } catch (error: any) {
@@ -108,7 +131,9 @@ export function SchedulingStep({
 
   const handleTimeSlotSelect = (startTime: string) => {
     setSelectedTimeSlot(startTime);
-    updateBookingData({ scheduledStartTime: startTime });
+    // Combine date and time for full datetime string
+    const fullDateTime = `${selectedDate}T${startTime}:00`;
+    updateBookingData({ scheduledStartTime: fullDateTime });
   };
 
   const formatDate = (date: Date) => {
@@ -252,30 +277,98 @@ export function SchedulingStep({
             </div>
           ) : availableSlots.length > 0 ? (
             <div className="grid grid-cols-3 gap-3">
-              {availableSlots.map((slot) => (
-                <button
-                  key={slot.startTime}
-                  onClick={() => handleTimeSlotSelect(slot.startTime)}
-                  disabled={!slot.available}
-                  className={`
-                    p-3 text-sm font-medium rounded-lg border transition-all
-                    ${slot.startTime === selectedTimeSlot
-                      ? 'bg-teal-600 text-white border-teal-600'
-                      : slot.available
-                      ? 'bg-white text-gray-900 border-gray-300 hover:border-teal-500 hover:bg-teal-50'
-                      : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                    }
-                  `}
-                >
-                  {formatTime(slot.startTime)}
-                </button>
-              ))}
+              {availableSlots.map((slot) => {
+                const getReasonIcon = () => {
+                  if (slot.available) return null;
+                  switch (slot.reason) {
+                    case 'lunch':
+                      return <Coffee className="h-3 w-3" />;
+                    case 'booked':
+                      return <CalendarX className="h-3 w-3" />;
+                    case 'travel':
+                      return <Car className="h-3 w-3" />;
+                    default:
+                      return null;
+                  }
+                };
+
+                const getReasonTooltip = () => {
+                  switch (slot.reason) {
+                    case 'lunch':
+                      return 'Lunch break';
+                    case 'booked':
+                      return 'Already booked';
+                    case 'travel':
+                      return 'Travel time needed';
+                    case 'closed':
+                      return 'Closed';
+                    default:
+                      return 'Unavailable';
+                  }
+                };
+
+                return (
+                  <button
+                    key={slot.startTime}
+                    onClick={() => handleTimeSlotSelect(slot.startTime)}
+                    disabled={!slot.available}
+                    title={!slot.available ? getReasonTooltip() : undefined}
+                    className={`
+                      p-3 text-sm font-medium rounded-lg border transition-all relative
+                      ${slot.startTime === selectedTimeSlot
+                        ? 'bg-teal-600 text-white border-teal-600'
+                        : slot.available
+                        ? 'bg-white text-gray-900 border-gray-300 hover:border-teal-500 hover:bg-teal-50'
+                        : slot.reason === 'lunch'
+                        ? 'bg-amber-50 text-amber-400 border-amber-200 cursor-not-allowed'
+                        : slot.reason === 'booked'
+                        ? 'bg-red-50 text-red-400 border-red-200 cursor-not-allowed'
+                        : slot.reason === 'travel'
+                        ? 'bg-blue-50 text-blue-400 border-blue-200 cursor-not-allowed'
+                        : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                      }
+                    `}
+                  >
+                    <span className="flex items-center justify-center gap-1">
+                      {formatTime(slot.startTime)}
+                      {!slot.available && getReasonIcon()}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-8">
               <AlertCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
               <p className="text-gray-500">No available time slots for this date.</p>
               <p className="text-sm text-gray-400 mt-1">Please choose another date.</p>
+            </div>
+          )}
+
+          {/* Legend for unavailable slot reasons */}
+          {availableSlots.length > 0 && availableSlots.some(s => !s.available) && (
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <p className="text-xs text-gray-500 mb-2">Unavailable slots:</p>
+              <div className="flex flex-wrap gap-3 text-xs">
+                {availableSlots.some(s => s.reason === 'booked') && (
+                  <div className="flex items-center gap-1 text-red-500">
+                    <CalendarX className="h-3 w-3" />
+                    <span>Already booked</span>
+                  </div>
+                )}
+                {availableSlots.some(s => s.reason === 'lunch') && (
+                  <div className="flex items-center gap-1 text-amber-500">
+                    <Coffee className="h-3 w-3" />
+                    <span>Lunch break</span>
+                  </div>
+                )}
+                {availableSlots.some(s => s.reason === 'travel') && (
+                  <div className="flex items-center gap-1 text-blue-500">
+                    <Car className="h-3 w-3" />
+                    <span>Travel time</span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

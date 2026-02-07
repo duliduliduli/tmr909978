@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { apiRateLimit, checkRateLimit } from '@/lib/rateLimit';
 
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const ip = request.headers.get("x-forwarded-for") || "anonymous";
+    const { success } = await checkRateLimit(apiRateLimit, ip);
+    if (!success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const { id } = params;
 
     await prisma.savedAddress.delete({
@@ -27,6 +34,12 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const ip = request.headers.get("x-forwarded-for") || "anonymous";
+    const { success } = await checkRateLimit(apiRateLimit, ip);
+    if (!success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const { id } = params;
     const body = await request.json();
     const { label, address, latitude, longitude, city, state, postalCode } = body;

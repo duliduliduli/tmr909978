@@ -281,6 +281,30 @@
     "redeemCoins": "Canjear",
     "coinsValue": "valor"
   },
+  "todaysRoute": {
+    "arrived": "Llegó",
+    "reschedule": "Reprogramar",
+    "markArrived": "Marcar Llegada",
+    "message": "Mensaje",
+    "call": "Llamar"
+  },
+  "reschedule": {
+    "title": "Reprogramar Cita",
+    "limitReached": "Límite de reprogramación alcanzado",
+    "maxReschedules": "Esta cita ha sido reprogramada el número máximo de veces (3).",
+    "remaining": "reprogramación(es) restante(s) para esta cita",
+    "currentSchedule": "Actualmente programada para:",
+    "selectTime": "Seleccionar Nuevo Horario",
+    "reason": "Razón para reprogramar (opcional)",
+    "confirm": "Confirmar Reprogramación"
+  },
+  "missedAppointment": {
+    "title": "Cita Perdida",
+    "scheduledFor": "Estaba programada para",
+    "reschedule": "Reprogramar",
+    "message": "Mensaje",
+    "call": "Llamar"
+  },
   "common": {
     "loading": "Cargando...",
     "error": "Error",

@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,159 +7,390 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ===== USER & PROFILE MODELS =====
-
 model User {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Auth fields
-  email         String  @unique
-  passwordHash  String?
-  emailVerified Boolean @default(false)
-  
-  // Basic profile
-  firstName String
-  lastName  String
-  phone     String?
-  avatar    String?
-  
-  // Account status
-  isActive    Boolean @default(true)
-  lastLoginAt DateTime?
-  
-  // Stripe customer ID for payments
-  stripeCustomerId String? @unique
-  
-  // Relationships
-  customerProfile CustomerProfile?
-  providerProfile ProviderProfile?
-  bookingsAsCustomer Booking[] @relation("CustomerBookings")
-  reviewsGiven       Review[]  @relation("ReviewsGiven")
-  reviewsReceived    Review[]  @relation("ReviewsReceived")
-  
+  id                 String           @id @default(cuid())
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  email              String           @unique
+  passwordHash       String?
+  emailVerified      Boolean          @default(false)
+  firstName          String
+  lastName           String
+  phone              String?
+  avatar             String?
+  isActive           Boolean          @default(true)
+  lastLoginAt        DateTime?
+  stripeCustomerId   String?          @unique
+  bookingsAsCustomer Booking[]        @relation("CustomerBookings")
+  customerProfile    CustomerProfile?
+  providerProfile    ProviderProfile?
+  reviewsReceived    Review[]         @relation("ReviewsReceived")
+  reviewsGiven       Review[]         @relation("ReviewsGiven")
+
   @@map("users")
 }
 
 model CustomerProfile {
-  id     String @id @default(cuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Address info
+  id                String                @id @default(cuid())
+  userId            String                @unique
   defaultAddress    String?
   defaultLatitude   Float?
   defaultLongitude  Float?
   defaultCity       String?
   defaultState      String?
   defaultPostalCode String?
-  
-  // Preferences
-  preferredServices String[] // Array of service IDs
+  preferredServices String[]
   notes             String?
-  
-  // Booking history metrics
-  totalBookings     Int @default(0)
-  cancelledBookings Int @default(0)
+  totalBookings     Int                   @default(0)
+  cancelledBookings Int                   @default(0)
   avgRating         Float?
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Relationships
-  coinBalances    CustomerCoinBalance[]
-  coinTransactions CoinTransaction[]
-  savedAddresses  SavedAddress[]
-  
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  coinTransactions  CoinTransaction[]
+  coinBalances      CustomerCoinBalance[]
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  savedAddresses    SavedAddress[]
+
   @@map("customer_profiles")
 }
 
 model ProviderProfile {
-  id     String @id @default(cuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Business info
+  id                  String             @id @default(cuid())
+  userId              String             @unique
   businessName        String
   businessDescription String?
   businessPhone       String?
   businessEmail       String?
   businessAddress     String?
-  
-  // Service coverage area
-  serviceRadius       Float   @default(25.0) // miles
+  serviceRadius       Float              @default(25.0)
   baseLatitude        Float?
   baseLongitude       Float?
-  serviceCities       String[] // Array of city names
-  
-  // Stripe Connect account for payments
-  stripeAccountId     String? @unique
-  stripeOnboarded     Boolean @default(false)
-  
-  // Business verification
-  isVerified          Boolean @default(false)
+  serviceCities       String[]
+  stripeAccountId     String?            @unique
+  stripeOnboarded     Boolean            @default(false)
+  isVerified          Boolean            @default(false)
   verifiedAt          DateTime?
   businessLicense     String?
   insurance           String?
-  
-  // Performance metrics  
-  totalBookings       Int     @default(0)
-  completedBookings   Int     @default(0)
-  cancelledBookings   Int     @default(0)
+  totalBookings       Int                @default(0)
+  completedBookings   Int                @default(0)
+  cancelledBookings   Int                @default(0)
   avgRating           Float?
-  responseTime        Int?    // avg minutes to accept
-  
-  // Availability settings
-  isAcceptingBookings Boolean @default(true)
-  autoAcceptBookings  Boolean @default(false)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Relationships
-  services          Service[]
-  availabilityRules AvailabilityRule[]
-  bookings          Booking[]
-  businessCoin      BusinessCoin?
-  serviceAreas      ServiceArea[]
+  responseTime        Int?
+  isAcceptingBookings Boolean            @default(true)
+  autoAcceptBookings  Boolean            @default(false)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  availabilityRules   AvailabilityRule[]
+  bookings            Booking[]
+  businessCoin        BusinessCoin?
+  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serviceAreas        ServiceArea[]
+  services            Service[]
 
   @@map("provider_profiles")
 }
 
-// ===== SERVICE MODELS =====
-
 model Service {
-  id          String @id @default(cuid())
-  providerId  String
-  provider    ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  
-  // Service details
-  name        String
-  description String?
-  category    ServiceCategory
-  
-  // Pricing
-  basePrice   Float   // Base price in cents
-  priceType   PriceType
-  
-  // Duration and logistics
-  estimatedDuration Int // minutes
-  requiresWater     Boolean @default(false)
-  requiresPower     Boolean @default(false)
-  isActive          Boolean @default(true)
-  
-  // Add-ons and variations
-  addOns      Json? // Flexible pricing add-ons
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Relationships
-  bookings Booking[]
+  id                String          @id @default(cuid())
+  providerId        String
+  name              String
+  description       String?
+  category          ServiceCategory
+  basePrice         Float
+  priceType         PriceType
+  estimatedDuration Int
+  requiresWater     Boolean         @default(false)
+  requiresPower     Boolean         @default(false)
+  isActive          Boolean         @default(true)
+  addOns            Json?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  bookings          Booking[]
+  provider          ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
   @@index([providerId])
   @@map("services")
+}
+
+model AvailabilityRule {
+  id            String           @id @default(cuid())
+  providerId    String
+  ruleType      AvailabilityType
+  dayOfWeek     Int?
+  startTime     String
+  endTime       String
+  startDate     DateTime?
+  endDate       DateTime?
+  bufferMinutes Int              @default(0)
+  isBreakTime   Boolean          @default(false)
+  maxConcurrent Int              @default(1)
+  isActive      Boolean          @default(true)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  provider      ProviderProfile  @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@map("availability_rules")
+}
+
+model Booking {
+  id                    String            @id @default(cuid())
+  bookingNumber         String            @unique
+  customerId            String
+  providerId            String
+  serviceId             String
+  status                BookingStatus     @default(DRAFT)
+  currentState          String
+  scheduledStartTime    DateTime
+  scheduledEndTime      DateTime
+  actualStartTime       DateTime?
+  actualEndTime         DateTime?
+  serviceAddress        String
+  serviceLatitude       Float
+  serviceLongitude      Float
+  serviceCity           String?
+  serviceState          String?
+  servicePostalCode     String?
+  baseAmount            Float
+  addOnsAmount          Float?
+  taxAmount             Float?
+  tipAmount             Float?
+  totalAmount           Float
+  platformFee           Float?
+  stripePaymentIntentId String?           @unique
+  stripeTransferId      String?
+  paymentMethod         String?
+  coinsRedeemed         Int?
+  coinDiscount          Float?
+  coinId                String?
+  vehicleInfo           Json?
+  specialInstructions   String?
+  addOnServices         Json?
+  customerNotes         String?
+  providerNotes         String?
+  completionPhotos      String[]
+  customerSignature     String?
+  cancellationReason    String?
+  cancellationFee       Float?
+  cancelledAt           DateTime?
+  cancelledBy           CancelledBy?
+  disputeStatus         DisputeStatus?
+  refundAmount          Float?
+  refundedAt            DateTime?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  events                BookingEvent[]
+  customer              User              @relation("CustomerBookings", fields: [customerId], references: [id])
+  provider              ProviderProfile   @relation(fields: [providerId], references: [id])
+  service               Service           @relation(fields: [serviceId], references: [id])
+  coinTransactions      CoinTransaction[]
+  review                Review?
+
+  @@index([customerId])
+  @@index([providerId])
+  @@index([status])
+  @@index([scheduledStartTime])
+  @@map("bookings")
+}
+
+model BookingEvent {
+  id          String   @id @default(cuid())
+  bookingId   String
+  eventType   String
+  fromStatus  String?
+  toStatus    String?
+  triggeredBy String?
+  triggeredAt DateTime @default(now())
+  metadata    Json?
+  notes       String?
+  ipAddress   String?
+  userAgent   String?
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId, triggeredAt])
+  @@map("booking_events")
+}
+
+model Review {
+  id                    String    @id @default(cuid())
+  bookingId             String    @unique
+  reviewerId            String
+  revieweeId            String
+  rating                Int
+  title                 String?
+  comment               String?
+  qualityRating         Int?
+  communicationRating   Int?
+  timelinessRating      Int?
+  professionalismRating Int?
+  photos                String[]
+  isPublic              Boolean   @default(true)
+  isVerified            Boolean   @default(false)
+  responseText          String?
+  respondedAt           DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  booking               Booking   @relation(fields: [bookingId], references: [id])
+  reviewee              User      @relation("ReviewsReceived", fields: [revieweeId], references: [id])
+  reviewer              User      @relation("ReviewsGiven", fields: [reviewerId], references: [id])
+
+  @@map("reviews")
+}
+
+model ServiceArea {
+  id              String          @id @default(cuid())
+  providerId      String
+  centerLat       Float
+  centerLng       Float
+  radiusMiles     Float
+  boundaryGeoJSON Json?
+  cities          String[]
+  states          String[]
+  postalCodes     String[]
+  isActive        Boolean         @default(true)
+  provider        ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@map("service_areas")
+}
+
+model PromotionCode {
+  id                 String       @id @default(cuid())
+  code               String       @unique
+  discountType       DiscountType
+  discountAmount     Float
+  maxUses            Int?
+  usedCount          Int          @default(0)
+  maxUsesPerUser     Int?
+  validFrom          DateTime
+  validUntil         DateTime?
+  isActive           Boolean      @default(true)
+  minOrderAmount     Float?
+  applicableServices String[]
+  newCustomersOnly   Boolean      @default(false)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@map("promotion_codes")
+}
+
+model BusinessCoin {
+  id                      String                @id @default(cuid())
+  providerId              String                @unique
+  name                    String
+  displayName             String
+  description             String?
+  iconUrl                 String?
+  primaryColor            String                @default("#3B82F6")
+  earnRate                Float                 @default(1.0)
+  minimumEarnAmount       Float                 @default(0.0)
+  redemptionValue         Float                 @default(0.01)
+  minimumRedemption       Int                   @default(100)
+  maxRedemptionPerBooking Float?
+  isActive                Boolean               @default(true)
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+  provider                ProviderProfile       @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  promotions              CoinPromotion[]
+  transactions            CoinTransaction[]
+  customerBalances        CustomerCoinBalance[]
+
+  @@map("business_coins")
+}
+
+model CustomerCoinBalance {
+  id             String          @id @default(cuid())
+  customerId     String
+  coinId         String
+  balance        Int             @default(0)
+  totalEarned    Int             @default(0)
+  totalRedeemed  Int             @default(0)
+  lastEarnedAt   DateTime?
+  lastRedeemedAt DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  coin           BusinessCoin    @relation(fields: [coinId], references: [id], onDelete: Cascade)
+  customer       CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, coinId])
+  @@map("customer_coin_balances")
+}
+
+model CoinTransaction {
+  id              String              @id @default(cuid())
+  coinId          String
+  customerId      String
+  bookingId       String?
+  type            CoinTransactionType
+  amount          Int
+  description     String?
+  dollarAmount    Float?
+  previousBalance Int
+  newBalance      Int
+  createdAt       DateTime            @default(now())
+  booking         Booking?            @relation(fields: [bookingId], references: [id])
+  coin            BusinessCoin        @relation(fields: [coinId], references: [id], onDelete: Cascade)
+  customer        CustomerProfile     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("coin_transactions")
+}
+
+model CoinPromotion {
+  id                 String       @id @default(cuid())
+  coinId             String
+  title              String
+  description        String?
+  requiredCoins      Int
+  discountAmount     Float
+  maxRedemptions     Int?
+  usedCount          Int          @default(0)
+  maxPerCustomer     Int?         @default(1)
+  validFrom          DateTime
+  validUntil         DateTime?
+  isActive           Boolean      @default(true)
+  minOrderAmount     Float?
+  applicableServices String[]
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  coin               BusinessCoin @relation(fields: [coinId], references: [id], onDelete: Cascade)
+
+  @@map("coin_promotions")
+}
+
+model BookingAnalytics {
+  id                 String   @id @default(cuid())
+  date               DateTime @unique @db.Date
+  totalBookings      Int      @default(0)
+  confirmedBookings  Int      @default(0)
+  cancelledBookings  Int      @default(0)
+  completedBookings  Int      @default(0)
+  totalRevenue       Float    @default(0)
+  platformRevenue    Float    @default(0)
+  avgOrderValue      Float    @default(0)
+  avgRating          Float?
+  newCustomers       Int      @default(0)
+  returningCustomers Int      @default(0)
+  cityBreakdown      Json?
+  serviceBreakdown   Json?
+
+  @@map("booking_analytics")
+}
+
+model SavedAddress {
+  id         String          @id @default(cuid())
+  customerId String
+  label      String
+  address    String
+  latitude   Float
+  longitude  Float
+  city       String?
+  state      String?
+  postalCode String?
+  sortOrder  Int             @default(0)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  customer   CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("saved_addresses")
 }
 
 enum ServiceCategory {
@@ -176,164 +404,34 @@ enum ServiceCategory {
 }
 
 enum PriceType {
-  FIXED        // Fixed price
-  PER_HOUR     // Hourly rate
-  PER_VEHICLE  // Per vehicle type
-  CUSTOM       // Custom quote required
-}
-
-// ===== AVAILABILITY MODELS =====
-
-model AvailabilityRule {
-  id         String @id @default(cuid())
-  providerId String
-  provider   ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  
-  // Rule type and recurrence
-  ruleType    AvailabilityType
-  dayOfWeek   Int? // 0=Sunday, 1=Monday, etc. (for weekly rules)
-  
-  // Time range  
-  startTime   String // Format: "HH:MM" (24-hour)
-  endTime     String // Format: "HH:MM" (24-hour)
-  
-  // Date range (for specific date rules)
-  startDate   DateTime?
-  endDate     DateTime?
-  
-  // Buffer and breaks
-  bufferMinutes    Int @default(0)  // Buffer between bookings
-  isBreakTime      Boolean @default(false)
-  maxConcurrent    Int @default(1)  // Max simultaneous bookings
-  
-  isActive Boolean @default(true)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  @@map("availability_rules")
+  FIXED
+  PER_HOUR
+  PER_VEHICLE
+  CUSTOM
 }
 
 enum AvailabilityType {
-  WEEKLY_RECURRING  // Repeats weekly
-  SPECIFIC_DATE     // One-time availability
-  BLACKOUT_DATE     // Unavailable date
-  HOLIDAY           // Holiday schedule
-}
-
-// ===== BOOKING MODELS =====
-
-model Booking {
-  id                String        @id @default(cuid())
-  bookingNumber     String        @unique // Human-readable booking ID
-  
-  // Relationships
-  customerId        String
-  customer          User          @relation("CustomerBookings", fields: [customerId], references: [id])
-  providerId        String
-  provider          ProviderProfile @relation(fields: [providerId], references: [id])
-  serviceId         String
-  service           Service       @relation(fields: [serviceId], references: [id])
-  
-  // Booking status and state
-  status            BookingStatus @default(DRAFT)
-  currentState      String        // Current state in state machine
-  
-  // Scheduling
-  scheduledStartTime DateTime
-  scheduledEndTime   DateTime
-  actualStartTime    DateTime?
-  actualEndTime      DateTime?
-  
-  // Location
-  serviceAddress     String
-  serviceLatitude    Float
-  serviceLongitude   Float
-  serviceCity        String?
-  serviceState       String?
-  servicePostalCode  String?
-  
-  // Pricing
-  baseAmount         Float         // Service base price in cents
-  addOnsAmount       Float?        // Additional services in cents
-  taxAmount          Float?        // Tax in cents
-  tipAmount          Float?        // Tip in cents
-  totalAmount        Float         // Total charge in cents
-  platformFee        Float?        // Platform commission in cents
-  
-  // Payment tracking
-  stripePaymentIntentId String?    @unique
-  stripeTransferId      String?    
-  paymentMethod         String?    // last4 of card, etc.
-  
-  // Coin redemption
-  coinsRedeemed         Int?       // Number of coins redeemed
-  coinDiscount          Float?     // Dollar amount discounted via coins
-  coinId                String?    // Which business coin was used
-  
-  // Service details
-  vehicleInfo        Json?         // Vehicle details (make, model, etc.)
-  specialInstructions String?
-  addOnServices      Json?         // Selected add-ons
-  
-  // Communication
-  customerNotes      String?
-  providerNotes      String?
-  
-  // Completion and feedback
-  completionPhotos   String[]      // URLs to before/after photos
-  customerSignature  String?       // Digital signature URL
-  
-  // Cancellation
-  cancellationReason String?
-  cancellationFee    Float?
-  cancelledAt        DateTime?
-  cancelledBy        CancelledBy?
-  
-  // Dispute and refund
-  disputeStatus      DisputeStatus?
-  refundAmount       Float?
-  refundedAt         DateTime?
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Relationships
-  events  BookingEvent[]
-  review  Review?
-  coinTransactions CoinTransaction[]
-
-  @@index([customerId])
-  @@index([providerId])
-  @@index([status])
-  @@index([scheduledStartTime])
-  @@map("bookings")
+  WEEKLY_RECURRING
+  SPECIFIC_DATE
+  BLACKOUT_DATE
+  HOLIDAY
 }
 
 enum BookingStatus {
-  // Initial states
-  DRAFT                 // Customer building booking
-  QUOTE_REQUESTED       // Custom quote needed
-  QUOTE_PROVIDED        // Provider sent quote
-  
-  // Payment states
-  PENDING_PAYMENT       // Awaiting customer payment
-  PAYMENT_FAILED        // Payment declined
-  
-  // Confirmed states
-  CONFIRMED             // Paid and scheduled
-  PROVIDER_ASSIGNED     // Provider accepted
-  
-  // Service states
-  IN_PROGRESS           // Provider on-site/working
-  COMPLETED             // Service finished
-  
-  // Resolution states  
-  CANCELLED             // Cancelled by either party
-  NO_SHOW_CUSTOMER      // Customer didn't show
-  NO_SHOW_PROVIDER      // Provider didn't show
-  DISPUTED              // In dispute resolution
-  REFUNDED              // Refund processed
+  DRAFT
+  QUOTE_REQUESTED
+  QUOTE_PROVIDED
+  PENDING_PAYMENT
+  PAYMENT_FAILED
+  CONFIRMED
+  PROVIDER_ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW_CUSTOMER
+  NO_SHOW_PROVIDER
+  DISPUTED
+  REFUNDED
 }
 
 enum CancelledBy {
@@ -352,249 +450,10 @@ enum DisputeStatus {
   RESOLVED_PARTIAL
 }
 
-// ===== AUDIT TRAIL =====
-
-model BookingEvent {
-  id        String   @id @default(cuid())
-  bookingId String
-  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  
-  // Event details
-  eventType     String    // State transition, payment, note, etc.
-  fromStatus    String?   // Previous status
-  toStatus      String?   // New status  
-  
-  // Actor and timing
-  triggeredBy   String?   // User ID who triggered
-  triggeredAt   DateTime  @default(now())
-  
-  // Event data
-  metadata      Json?     // Additional event data
-  notes         String?   // Human-readable notes
-  
-  // System tracking
-  ipAddress     String?
-  userAgent     String?
-  
-  @@map("booking_events")
-  @@index([bookingId, triggeredAt])
-}
-
-// ===== REVIEW SYSTEM =====
-
-model Review {
-  id         String @id @default(cuid())
-  bookingId  String @unique
-  booking    Booking @relation(fields: [bookingId], references: [id])
-  
-  // Reviewer and reviewee
-  reviewerId   String
-  reviewer     User   @relation("ReviewsGiven", fields: [reviewerId], references: [id])
-  revieweeId   String  
-  reviewee     User   @relation("ReviewsReceived", fields: [revieweeId], references: [id])
-  
-  // Review content
-  rating       Int      // 1-5 stars
-  title        String?
-  comment      String?
-  
-  // Review categories (for detailed feedback)
-  qualityRating      Int? // 1-5
-  communicationRating Int? // 1-5  
-  timelinessRating   Int? // 1-5
-  professionalismRating Int? // 1-5
-  
-  // Photos
-  photos       String[] // URLs to review photos
-  
-  // Status
-  isPublic     Boolean @default(true)
-  isVerified   Boolean @default(false) // Platform verified
-  
-  // Response (for provider replies)
-  responseText String?
-  respondedAt  DateTime?
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  @@map("reviews")
-}
-
-// ===== GEOGRAPHIC & OPERATIONAL =====
-
-model ServiceArea {
-  id           String @id @default(cuid())
-  providerId   String
-  provider     ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
-
-  // Geographic boundaries
-  centerLat    Float
-  centerLng    Float
-  radiusMiles  Float
-  
-  // Polygon boundaries (for complex service areas)
-  boundaryGeoJSON Json?
-  
-  // Cities/regions
-  cities       String[]
-  states       String[]
-  postalCodes  String[]
-  
-  // Service restrictions
-  isActive     Boolean @default(true)
-  
-  @@map("service_areas")
-}
-
-// ===== PRICING & PROMOTIONS =====
-
-model PromotionCode {
-  id              String @id @default(cuid())
-  code            String @unique
-  
-  // Discount details
-  discountType    DiscountType
-  discountAmount  Float        // Percentage or fixed amount
-  
-  // Usage limits
-  maxUses         Int?         // Max total uses
-  usedCount       Int @default(0)
-  maxUsesPerUser  Int?         // Max uses per customer
-  
-  // Validity
-  validFrom       DateTime
-  validUntil      DateTime?
-  isActive        Boolean @default(true)
-  
-  // Conditions
-  minOrderAmount  Float?       // Minimum order value
-  applicableServices String[]  // Service category restrictions
-  newCustomersOnly Boolean @default(false)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  @@map("promotion_codes")
-}
-
 enum DiscountType {
   PERCENTAGE
-  FIXED_AMOUNT  
+  FIXED_AMOUNT
   FREE_SERVICE
-}
-
-// ===== BUSINESS LOYALTY COINS =====
-
-model BusinessCoin {
-  id                String @id @default(cuid())
-  providerId        String
-  provider          ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  
-  // Coin branding
-  name              String          // e.g., "Alex's AutoCoins"
-  displayName       String          // e.g., "AutoCoins"
-  description       String?
-  iconUrl           String?         // Uploaded coin image
-  primaryColor      String @default("#3B82F6")
-  
-  // Earning settings
-  earnRate          Float @default(1.0)   // Coins per dollar spent
-  minimumEarnAmount Float @default(0.0)   // Min $ to earn coins
-  
-  // Redemption settings
-  redemptionValue   Float @default(0.01)  // Dollar value per coin
-  minimumRedemption Int @default(100)     // Min coins to redeem
-  maxRedemptionPerBooking Float?          // Max $ discount per booking
-  
-  // Status
-  isActive          Boolean @default(true)
-  
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
-  // Relationships
-  customerBalances  CustomerCoinBalance[]
-  transactions      CoinTransaction[]
-  promotions        CoinPromotion[]
-  
-  @@unique([providerId])
-  @@map("business_coins")
-}
-
-model CustomerCoinBalance {
-  id           String @id @default(cuid())
-  customerId   String
-  customer     CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  coinId       String
-  coin         BusinessCoin @relation(fields: [coinId], references: [id], onDelete: Cascade)
-  
-  balance      Int @default(0)     // Current coin balance
-  totalEarned  Int @default(0)     // Lifetime coins earned
-  totalRedeemed Int @default(0)    // Lifetime coins redeemed
-  
-  lastEarnedAt   DateTime?
-  lastRedeemedAt DateTime?
-  
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
-  @@unique([customerId, coinId])
-  @@map("customer_coin_balances")
-}
-
-model CoinTransaction {
-  id          String @id @default(cuid())
-  coinId      String
-  coin        BusinessCoin @relation(fields: [coinId], references: [id], onDelete: Cascade)
-  customerId  String
-  customer    CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  bookingId   String?
-  booking     Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
-  
-  type        CoinTransactionType
-  amount      Int                    // Positive for earned, negative for redeemed
-  description String?                // e.g., "Earned from Premium Wash"
-  
-  // Metadata
-  dollarAmount  Float?               // Associated transaction value
-  previousBalance Int               // Balance before this transaction
-  newBalance     Int                // Balance after this transaction
-  
-  createdAt   DateTime @default(now())
-  
-  @@map("coin_transactions")
-}
-
-model CoinPromotion {
-  id              String @id @default(cuid())
-  coinId          String
-  coin            BusinessCoin @relation(fields: [coinId], references: [id], onDelete: Cascade)
-  
-  // Promotion details
-  title           String
-  description     String?
-  requiredCoins   Int              // Coins needed to redeem
-  discountAmount  Float            // Dollar discount amount
-  
-  // Usage limits
-  maxRedemptions  Int?             // Total redemption limit
-  usedCount       Int @default(0)
-  maxPerCustomer  Int? @default(1) // Per customer limit
-  
-  // Validity
-  validFrom       DateTime
-  validUntil      DateTime?
-  isActive        Boolean @default(true)
-  
-  // Conditions
-  minOrderAmount  Float?           // Min booking value
-  applicableServices String[]      // Service restrictions
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  @@map("coin_promotions")
 }
 
 enum CoinTransactionType {
@@ -603,59 +462,4 @@ enum CoinTransactionType {
   EXPIRED
   BONUS
   ADJUSTMENT
-}
-
-// ===== ANALYTICS & REPORTING =====
-
-model BookingAnalytics {
-  id               String @id @default(cuid())
-  date             DateTime @db.Date
-  
-  // Volume metrics
-  totalBookings    Int @default(0)
-  confirmedBookings Int @default(0)
-  cancelledBookings Int @default(0)
-  completedBookings Int @default(0)
-  
-  // Revenue metrics
-  totalRevenue     Float @default(0)
-  platformRevenue  Float @default(0)
-  avgOrderValue    Float @default(0)
-  
-  // Performance metrics
-  avgRating        Float?
-  newCustomers     Int @default(0)
-  returningCustomers Int @default(0)
-  
-  // Geographic breakdown
-  cityBreakdown    Json? // City-wise metrics
-  serviceBreakdown Json? // Service-wise metrics
-  
-  @@unique([date])
-  @@map("booking_analytics")
-}
-
-// ===== SAVED ADDRESSES =====
-
-model SavedAddress {
-  id          String @id @default(cuid())
-  customerId  String
-  customer    CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  
-  // Address info
-  label       String          // "Home", "Work", or custom label
-  address     String          // Full address string
-  latitude    Float
-  longitude   Float
-  city        String?
-  state       String?
-  postalCode  String?
-  
-  // Order for display
-  sortOrder   Int @default(0)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  @@map("saved_addresses")
 }

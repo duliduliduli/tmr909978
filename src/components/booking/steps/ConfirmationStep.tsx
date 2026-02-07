@@ -90,6 +90,11 @@ export function ConfirmationStep({
             status: 'scheduled',
             bookedAt: new Date().toISOString(),
             notes: vehicle.specialNotes || undefined,
+            // Arrival tracking
+            isArrived: false,
+            rescheduleCount: 0,
+            // Missed tracking
+            isMissed: false,
           };
           addAppointment(appointment);
         });

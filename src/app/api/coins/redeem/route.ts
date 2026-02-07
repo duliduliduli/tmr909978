@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { paymentRateLimit, checkRateLimit } from '@/lib/rateLimit';
 
 // POST /api/coins/redeem - Redeem coins for discount
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get("x-forwarded-for") || "anonymous";
+    const { success } = await checkRateLimit(paymentRateLimit, ip);
+    if (!success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const body = await request.json();
     const { customerId, coinId, coinsToRedeem, bookingTotal, bookingId } = body;
 
@@ -138,6 +145,12 @@ export async function POST(request: NextRequest) {
 // GET /api/coins/redeem - Calculate potential redemption
 export async function GET(request: NextRequest) {
   try {
+    const ip = request.headers.get("x-forwarded-for") || "anonymous";
+    const { success } = await checkRateLimit(paymentRateLimit, ip);
+    if (!success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const { searchParams } = new URL(request.url);
     const customerId = searchParams.get('customerId');
     const coinId = searchParams.get('coinId');
