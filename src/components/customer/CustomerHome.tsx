@@ -1,34 +1,89 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, MapPin, Calendar, Star, Zap, Clock, Home, Briefcase, Plus, X } from "lucide-react";
+import { ChevronRight, Clock, Home, Briefcase, Plus, X, Tag, Coins, Percent } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "@/lib/i18n";
+import { useAppStore } from "@/lib/store";
+
+interface RecentBooking {
+  id: string;
+  bookingNumber: string;
+  status: string;
+  totalAmount: number;
+  scheduledStartTime: string;
+  service: { name: string; category: string | null };
+  provider: { businessName: string };
+}
+
+interface Promotion {
+  id: string;
+  type: 'coin' | 'code';
+  title: string;
+  description: string | null;
+  discountAmount: number;
+  validUntil: string | null;
+  // coin-specific
+  providerName?: string;
+  providerId?: string;
+  coinColor?: string;
+  coinDisplayName?: string;
+  requiredCoins?: number;
+  // code-specific
+  discountType?: string;
+  code?: string;
+  minOrderAmount?: number;
+  newCustomersOnly?: boolean;
+}
 
 export function CustomerHome() {
   const { t } = useTranslation();
+  const { activeCustomerId } = useAppStore();
   const [showAddressInput, setShowAddressInput] = useState(false);
   const [addressType, setAddressType] = useState<'home' | 'work' | 'favorite'>('home');
   const [addressValue, setAddressValue] = useState('');
-  const recentBookings = [
-    {
-      id: "1",
-      service: "Premium Wash & Wax",
-      detailer: "Alex Johnson",
-      date: "Dec 15, 2023",
-      status: "completed",
-      rating: 5,
-    },
-    {
-      id: "2", 
-      service: "Interior Deep Clean",
-      detailer: "Maria Garcia",
-      date: "Nov 28, 2023",
-      status: "completed",
-      rating: 5,
-    },
-  ];
+
+  // Real data state
+  const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
+  const [bookingsLoading, setBookingsLoading] = useState(true);
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [promosLoading, setPromosLoading] = useState(true);
+
+  // Fetch recent completed bookings
+  useEffect(() => {
+    if (!activeCustomerId) {
+      setBookingsLoading(false);
+      return;
+    }
+
+    fetch(`/api/bookings?customerId=${activeCustomerId}&status=COMPLETED&limit=3`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error('Failed to fetch');
+        const data = await res.json();
+        setRecentBookings(data.bookings || []);
+      })
+      .catch((err) => {
+        console.error('Error fetching recent bookings:', err);
+        setRecentBookings([]);
+      })
+      .finally(() => setBookingsLoading(false));
+  }, [activeCustomerId]);
+
+  // Fetch active promotions
+  useEffect(() => {
+    fetch('/api/promotions')
+      .then(async (res) => {
+        if (!res.ok) throw new Error('Failed to fetch');
+        const data = await res.json();
+        setPromotions(data.promotions || []);
+      })
+      .catch((err) => {
+        console.error('Error fetching promotions:', err);
+        setPromotions([]);
+      })
+      .finally(() => setPromosLoading(false));
+  }, []);
 
   const quickActions = [
     {
@@ -62,7 +117,7 @@ export function CustomerHome() {
 
   const saveAddress = async () => {
     if (!addressValue.trim()) return;
-    
+
     try {
       // Mock geocoding (in production, use Google Maps Geocoding API)
       const mockCoords = {
@@ -70,10 +125,10 @@ export function CustomerHome() {
         work: { lat: 34.0736, lng: -118.4004 }, // Beverly Hills
         favorite: { lat: 34.1481, lng: -118.1445 } // Pasadena
       };
-      
+
       const coords = mockCoords[addressType];
-      const customerId = "cust_1"; // Mock customer ID
-      
+      const customerId = activeCustomerId || "cust_1";
+
       const response = await fetch('/api/customer/addresses', {
         method: 'POST',
         headers: {
@@ -89,7 +144,7 @@ export function CustomerHome() {
           state: 'CA'
         })
       });
-      
+
       if (response.ok) {
         console.log(`${addressType} address saved successfully`);
       } else {
@@ -98,10 +153,28 @@ export function CustomerHome() {
     } catch (error) {
       console.error('Error saving address:', error);
     }
-    
+
     // Close overlay
     setShowAddressInput(false);
     setAddressValue('');
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const formatExpiry = (dateString: string | null) => {
+    if (!dateString) return null;
+    const d = new Date(dateString);
+    const now = new Date();
+    const daysLeft = Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    if (daysLeft <= 0) return null;
+    if (daysLeft <= 7) return `${daysLeft}d left`;
+    return `Expires ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
   };
 
   return (
@@ -145,19 +218,34 @@ export function CustomerHome() {
         </div>
       </div>
 
-      {/* Recent Bookings */}
+      {/* Recent Bookings — Real Data */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-white">{t('customerHome.recentServices')}</h2>
           <Link
-            href="/customer/bookings"
+            href="/customer/appointments"
             className="text-accent-DEFAULT text-sm font-medium hover:text-accent-hover transition-colors"
           >
             {t('customerHome.viewAll')}
           </Link>
         </div>
 
-        {recentBookings.length > 0 ? (
+        {bookingsLoading ? (
+          <div className="space-y-3">
+            {[1, 2].map((i) => (
+              <div key={i} className="p-4 rounded-xl bg-brand-900/50 border border-brand-800 animate-pulse">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-2 flex-1">
+                    <div className="h-4 w-40 bg-brand-800 rounded" />
+                    <div className="h-3 w-28 bg-brand-800 rounded" />
+                    <div className="h-3 w-20 bg-brand-800 rounded" />
+                  </div>
+                  <div className="h-6 w-20 bg-brand-800 rounded-full" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : recentBookings.length > 0 ? (
           <div className="space-y-3">
             {recentBookings.map((booking, index) => (
               <motion.div
@@ -169,18 +257,16 @@ export function CustomerHome() {
               >
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
-                    <h3 className="font-medium text-white">{booking.service}</h3>
-                    <p className="text-sm text-brand-400">{booking.detailer}</p>
-                    <p className="text-xs text-brand-500">{booking.date}</p>
+                    <h3 className="font-medium text-white">{booking.service.name}</h3>
+                    <p className="text-sm text-brand-400">{booking.provider.businessName}</p>
+                    <p className="text-xs text-brand-500">{formatDate(booking.scheduledStartTime)}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1">
-                      {[...Array(booking.rating)].map((_, i) => (
-                        <Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                      ))}
-                    </div>
+                    <span className="text-sm font-medium text-white">
+                      ${(booking.totalAmount / 100).toFixed(2)}
+                    </span>
                     <span className="px-2 py-1 rounded-full bg-green-500/20 text-green-400 text-xs">
-                      {booking.status}
+                      {booking.status.toLowerCase().replace('_', ' ')}
                     </span>
                   </div>
                 </div>
@@ -204,17 +290,117 @@ export function CustomerHome() {
         )}
       </div>
 
-      {/* Status Card */}
-      <div className="p-6 rounded-2xl bg-gradient-to-br from-accent-DEFAULT/20 to-blue-600/20 border border-accent-DEFAULT/30">
-        <div className="flex items-center gap-4">
-          <div className="h-12 w-12 rounded-full bg-accent-DEFAULT flex items-center justify-center">
-            <Star className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-white">{t('customerHome.premiumMember')}</h3>
-            <p className="text-sm text-accent-100">{t('customerHome.premiumBenefits')}</p>
-          </div>
+      {/* Deals & Promotions */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+            <Tag className="h-5 w-5 text-accent-DEFAULT" />
+            Deals & Promotions
+          </h2>
         </div>
+
+        {promosLoading ? (
+          <div className="space-y-3">
+            {[1, 2].map((i) => (
+              <div key={i} className="p-4 rounded-xl bg-brand-900/50 border border-brand-800 animate-pulse">
+                <div className="flex items-center gap-4">
+                  <div className="h-10 w-10 bg-brand-800 rounded-xl" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-32 bg-brand-800 rounded" />
+                    <div className="h-3 w-48 bg-brand-800 rounded" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : promotions.length > 0 ? (
+          <div className="space-y-3">
+            {promotions.map((promo, index) => (
+              <motion.div
+                key={promo.id}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                {promo.type === 'coin' ? (
+                  <Link
+                    href={`/customer/map`}
+                    className="block p-4 rounded-xl bg-brand-900/50 border border-brand-800 hover:bg-brand-800/80 transition-all group"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div
+                        className="h-10 w-10 rounded-xl flex items-center justify-center"
+                        style={{ backgroundColor: promo.coinColor || '#3B82F6' }}
+                      >
+                        <Coins className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-white group-hover:text-accent-DEFAULT transition-colors truncate">
+                          {promo.title}
+                        </h3>
+                        <p className="text-sm text-brand-400 truncate">
+                          {promo.providerName} {promo.description ? `— ${promo.description}` : ''}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs text-brand-500">
+                            {promo.requiredCoins} {promo.coinDisplayName} coins
+                          </span>
+                          {promo.validUntil && formatExpiry(promo.validUntil) && (
+                            <span className="text-xs text-amber-400">
+                              {formatExpiry(promo.validUntil)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-bold text-green-400">
+                          ${promo.discountAmount.toFixed(2)} off
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                ) : (
+                  <div className="p-4 rounded-xl bg-brand-900/50 border border-brand-800">
+                    <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 rounded-xl bg-purple-600 flex items-center justify-center">
+                        <Percent className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-white truncate">{promo.title}</h3>
+                        <p className="text-sm text-brand-400 truncate">{promo.description}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          {promo.newCustomersOnly && (
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">New customers</span>
+                          )}
+                          {promo.minOrderAmount && (
+                            <span className="text-xs text-brand-500">Min ${promo.minOrderAmount}</span>
+                          )}
+                          {promo.validUntil && formatExpiry(promo.validUntil) && (
+                            <span className="text-xs text-amber-400">
+                              {formatExpiry(promo.validUntil)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="px-2 py-1 rounded-lg bg-purple-500/20 text-purple-300 text-xs font-mono font-bold">
+                          {promo.code}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-6 space-y-2">
+            <div className="h-12 w-12 rounded-full bg-brand-800 flex items-center justify-center mx-auto">
+              <Tag className="h-6 w-6 text-brand-600" />
+            </div>
+            <p className="text-brand-400 text-sm">No promotions available right now</p>
+          </div>
+        )}
       </div>
 
       {/* Address Input Overlay */}
