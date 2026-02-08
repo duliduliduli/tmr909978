@@ -41,10 +41,11 @@ export function ConfirmationStep({
     setError(null);
 
     try {
-      const mockBookingId = bookingData.stripePaymentIntentId
-        ? bookingData.stripePaymentIntentId
-        : `TUM${Date.now()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-      setBookingId(mockBookingId);
+      // Use the real bookingId from DB if available, otherwise fallback
+      const realBookingId = bookingData.bookingId
+        || bookingData.stripePaymentIntentId
+        || `TUM${Date.now()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      setBookingId(realBookingId);
 
       // Create one appointment per vehicle
       if (bookingData.vehicles.length > 0 && bookingData.providerId) {
@@ -70,7 +71,7 @@ export function ConfirmationStep({
             : `${BODY_TYPE_LABELS[vehicle.bodyType]} #${index + 1}`;
 
           const appointment: Appointment = {
-            id: `${mockBookingId}_v${index}`,
+            id: `${realBookingId}_v${index}`,
             customerId: activeCustomerId,
             customerName: 'Customer',
             detailerId: bookingData.providerId!,
@@ -100,7 +101,7 @@ export function ConfirmationStep({
         });
       }
 
-      onComplete?.(mockBookingId);
+      onComplete?.(realBookingId);
     } catch (error: any) {
       setError('Failed to create booking. Please try again.');
     } finally {

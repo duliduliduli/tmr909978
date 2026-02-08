@@ -61,8 +61,8 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
   const [rescheduleAppointment, setRescheduleAppointment] = useState<typeof todaysAppointments[0] | null>(null);
   const [expandedChatId, setExpandedChatId] = useState<string | null>(null);
 
-  // Location tracking for auto-arrival detection
-  const { isTracking } = useDetailerLocationTracking({
+  // Location tracking for arrival detection (prompt-based)
+  const { isTracking, pendingArrivals, confirmArrival, dismissArrival } = useDetailerLocationTracking({
     appointments: todaysAppointments,
     enabled: showRoute && todaysAppointments.length > 0,
   });
@@ -636,6 +636,9 @@ export function DetailerMap({ className = '' }: DetailerMapProps) {
         onFitAllMarkers={fitAllMarkers}
         isCollapsed={isPanelCollapsed}
         onToggleCollapse={() => setIsPanelCollapsed(!isPanelCollapsed)}
+        pendingArrivals={pendingArrivals}
+        onConfirmArrival={confirmArrival}
+        onDismissArrival={dismissArrival}
       />
 
       {/* Missed Appointment Alert */}

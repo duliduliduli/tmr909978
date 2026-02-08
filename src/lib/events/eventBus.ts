@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 
 // ===== EVENT TYPES =====
 
-export type BookingEvent = 
+export type BookingEvent =
   | 'booking.created'
   | 'booking.confirmed'
   | 'booking.cancelled'
@@ -12,8 +12,14 @@ export type BookingEvent =
   | 'booking.started'
   | 'booking.completed'
   | 'booking.disputed'
+  | 'booking.customer_confirmed'
+  | 'booking.auto_confirmed'
   | 'payment.succeeded'
   | 'payment.failed'
+  | 'payment.refunded'
+  | 'payout.released'
+  | 'payout.blocked'
+  | 'payout.failed'
   | 'quote.requested'
   | 'quote.provided'
   | 'review.created';
@@ -64,9 +70,19 @@ class BookingEventBus extends EventEmitter {
     this.on('booking.completed', this.handleServiceCompleted.bind(this));
     this.on('booking.disputed', this.handleBookingDisputed.bind(this));
 
+    // Confirmation events
+    this.on('booking.customer_confirmed', this.handleCustomerConfirmed.bind(this));
+    this.on('booking.auto_confirmed', this.handleAutoConfirmed.bind(this));
+
     // Payment events
     this.on('payment.succeeded', this.handlePaymentSucceeded.bind(this));
     this.on('payment.failed', this.handlePaymentFailed.bind(this));
+    this.on('payment.refunded', this.handlePaymentRefunded.bind(this));
+
+    // Payout events
+    this.on('payout.released', this.handlePayoutReleased.bind(this));
+    this.on('payout.blocked', this.handlePayoutBlocked.bind(this));
+    this.on('payout.failed', this.handlePayoutFailed.bind(this));
 
     // Quote events
     this.on('quote.requested', this.handleQuoteRequested.bind(this));
@@ -218,6 +234,28 @@ class BookingEventBus extends EventEmitter {
     }
   }
 
+  private async handleCustomerConfirmed(payload: EventPayload) {
+    try {
+      if (!payload.bookingId) return;
+      console.log(`Customer confirmed: ${payload.bookingId}`);
+      await NotificationService.sendBookingNotification('service_awaiting_confirmation', payload.bookingId);
+      await this.logBookingAnalytics('customer_confirmed', payload);
+    } catch (error) {
+      console.error('Error handling customer confirmed event:', error);
+    }
+  }
+
+  private async handleAutoConfirmed(payload: EventPayload) {
+    try {
+      if (!payload.bookingId) return;
+      console.log(`Auto-confirmed: ${payload.bookingId}`);
+      await NotificationService.sendBookingNotification('auto_confirmed', payload.bookingId);
+      await this.logBookingAnalytics('auto_confirmed', payload);
+    } catch (error) {
+      console.error('Error handling auto confirmed event:', error);
+    }
+  }
+
   private async handlePaymentSucceeded(payload: EventPayload) {
     try {
       if (!payload.bookingId) return;
@@ -249,6 +287,50 @@ class BookingEventBus extends EventEmitter {
 
     } catch (error) {
       console.error('Error handling payment failed event:', error);
+    }
+  }
+
+  private async handlePaymentRefunded(payload: EventPayload) {
+    try {
+      if (!payload.bookingId) return;
+      console.log(`Payment refunded: ${payload.bookingId}`);
+      await NotificationService.sendBookingNotification('payment_refunded', payload.bookingId, payload.data);
+      await this.logPaymentAnalytics('payment_refunded', payload);
+    } catch (error) {
+      console.error('Error handling payment refunded event:', error);
+    }
+  }
+
+  private async handlePayoutReleased(payload: EventPayload) {
+    try {
+      if (!payload.bookingId) return;
+      console.log(`Payout released: ${payload.bookingId}`);
+      await NotificationService.sendBookingNotification('payout_released', payload.bookingId, payload.data);
+      await this.logPaymentAnalytics('payout_released', payload);
+    } catch (error) {
+      console.error('Error handling payout released event:', error);
+    }
+  }
+
+  private async handlePayoutBlocked(payload: EventPayload) {
+    try {
+      if (!payload.bookingId) return;
+      console.log(`Payout blocked: ${payload.bookingId}`);
+      await NotificationService.sendBookingNotification('dispute_opened', payload.bookingId, payload.data);
+      await this.logPaymentAnalytics('payout_blocked', payload);
+    } catch (error) {
+      console.error('Error handling payout blocked event:', error);
+    }
+  }
+
+  private async handlePayoutFailed(payload: EventPayload) {
+    try {
+      if (!payload.bookingId) return;
+      console.log(`Payout failed: ${payload.bookingId}`);
+      // Notify admin about payout failure
+      await this.logPaymentAnalytics('payout_failed', payload);
+    } catch (error) {
+      console.error('Error handling payout failed event:', error);
     }
   }
 

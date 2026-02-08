@@ -34,6 +34,13 @@ if (!STRIPE_WEBHOOK_SECRET && process.env.NODE_ENV === 'production') {
   console.warn('WARNING: STRIPE_WEBHOOK_SECRET is not set. Webhook signature verification will fail.');
 }
 
+// Payout configuration for delayed transfers
+export const PAYOUT_CONFIG = {
+  auto_confirm_hours: 48,       // Hours after completion before auto-confirm
+  dispute_window_hours: 48,     // Hours customer can dispute after completion
+  minimum_transfer_amount: 50,  // Minimum transfer in cents ($0.50)
+};
+
 // Platform account configuration
 export const PLATFORM_CONFIG = {
   business_name: 'Tumaro',

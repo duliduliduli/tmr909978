@@ -263,6 +263,7 @@ interface AppState {
   rescheduleAppointment: (appointmentId: string, newDate: string, newTime: string, reason?: string) => boolean;
   markAppointmentArrived: (appointmentId: string) => void;
   markAppointmentMissed: (appointmentId: string) => void;
+  unmarkAppointmentMissed: (appointmentId: string) => void;
   missedAppointmentAlerts: string[];
   dismissMissedAlert: (appointmentId: string) => void;
   addMissedAlert: (appointmentId: string) => void;
@@ -1245,6 +1246,14 @@ export const useAppStore = create<AppState>()(
             ? { ...apt, isMissed: true, missedAt: new Date().toISOString() }
             : apt
         ),
+      })),
+      unmarkAppointmentMissed: (appointmentId) => set((state) => ({
+        appointments: state.appointments.map(apt =>
+          apt.id === appointmentId
+            ? { ...apt, isMissed: false, missedAt: undefined, isArrived: true, arrivedAt: new Date().toISOString() }
+            : apt
+        ),
+        missedAppointmentAlerts: state.missedAppointmentAlerts.filter(id => id !== appointmentId),
       })),
       missedAppointmentAlerts: [],
       dismissMissedAlert: (appointmentId) => set((state) => ({

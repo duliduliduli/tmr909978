@@ -6,8 +6,6 @@ import { prisma } from '@/lib/prisma';
 export interface CreatePaymentIntentData {
   bookingId: string;
   amount: number; // in cents
-  applicationFee: number; // in cents
-  providerAccountId: string;
   customerId?: string;
   paymentMethodId?: string;
   metadata?: Record<string, string>;
@@ -31,10 +29,11 @@ export function calculatePricing(
 ) {
   const subtotal = baseAmount + addOnsAmount;
   const taxAmount = Math.round(subtotal * taxRate);
-  const totalBeforeFees = subtotal + taxAmount + tipAmount;
-  const platformFee = Math.round(totalBeforeFees * (STRIPE_CONNECT_CONFIG.application_fee_percentage / 100));
-  const totalAmount = totalBeforeFees;
-  const providerAmount = totalBeforeFees - platformFee;
+  const totalBeforeTip = subtotal + taxAmount;
+  const totalAmount = totalBeforeTip + tipAmount;
+  // Platform fee on subtotal+tax only — tip goes 100% to provider
+  const platformFee = Math.round(totalBeforeTip * (STRIPE_CONNECT_CONFIG.application_fee_percentage / 100));
+  const providerAmount = totalAmount - platformFee;
 
   return {
     baseAmount,
@@ -92,19 +91,17 @@ export async function createPaymentIntent(data: CreatePaymentIntentData) {
       });
     }
 
-    // Create payment intent
+    // Create payment intent — funds stay on platform account (separate charges pattern)
+    // Transfer to provider happens later via stripe.transfers.create()
     const paymentIntent = await stripe.paymentIntents.create({
       amount: data.amount,
       currency: PAYMENT_CONFIG.currency,
       customer: customerId,
-      application_fee_amount: data.applicationFee,
-      transfer_data: {
-        destination: data.providerAccountId
-      },
       automatic_payment_methods: PAYMENT_CONFIG.automatic_payment_methods,
       capture_method: PAYMENT_CONFIG.capture_method,
       confirmation_method: PAYMENT_CONFIG.confirmation_method,
       setup_future_usage: PAYMENT_CONFIG.setup_future_usage,
+      transfer_group: `booking_${data.bookingId}`,
       metadata: {
         booking_id: data.bookingId,
         customer_id: booking.customerId,
@@ -121,6 +118,17 @@ export async function createPaymentIntent(data: CreatePaymentIntentData) {
       where: { id: data.bookingId },
       data: {
         stripePaymentIntentId: paymentIntent.id
+      }
+    });
+
+    // Create payment record for tracking
+    await prisma.paymentRecord.create({
+      data: {
+        bookingId: data.bookingId,
+        stripePaymentIntentId: paymentIntent.id,
+        amount: data.amount,
+        currency: PAYMENT_CONFIG.currency,
+        status: paymentIntent.status,
       }
     });
 
@@ -202,13 +210,11 @@ export async function processPayment(data: ProcessPaymentData) {
 
     // Create payment intent if not exists
     let paymentIntentId = booking.stripePaymentIntentId;
-    
+
     if (!paymentIntentId) {
       const result = await createPaymentIntent({
         bookingId: data.bookingId,
         amount: pricing.totalAmount,
-        applicationFee: pricing.platformFee,
-        providerAccountId: booking.provider.stripeAccountId,
         paymentMethodId: data.paymentMethodId
       });
       paymentIntentId = result.paymentIntentId;
@@ -217,7 +223,6 @@ export async function processPayment(data: ProcessPaymentData) {
       if (data.tipAmount) {
         await stripe.paymentIntents.update(paymentIntentId, {
           amount: pricing.totalAmount,
-          application_fee_amount: pricing.platformFee
         });
       }
     }

@@ -15,6 +15,9 @@ interface UseDetailerLocationTrackingReturn {
   locationError: string | null;
   startTracking: () => void;
   stopTracking: () => void;
+  pendingArrivals: string[];
+  confirmArrival: (appointmentId: string) => void;
+  dismissArrival: (appointmentId: string) => void;
 }
 
 export function useDetailerLocationTracking({
@@ -24,23 +27,48 @@ export function useDetailerLocationTracking({
   const [isTracking, setIsTracking] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [pendingArrivals, setPendingArrivals] = useState<string[]>([]);
+  const [dismissedArrivals, setDismissedArrivals] = useState<Set<string>>(new Set());
   const watchIdRef = useRef<number | null>(null);
   const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const dismissTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   const { markAppointmentArrived, setUserLocation } = useAppStore();
+
+  const confirmArrival = useCallback((appointmentId: string) => {
+    markAppointmentArrived(appointmentId);
+    setPendingArrivals(prev => prev.filter(id => id !== appointmentId));
+  }, [markAppointmentArrived]);
+
+  const dismissArrival = useCallback((appointmentId: string) => {
+    setPendingArrivals(prev => prev.filter(id => id !== appointmentId));
+    setDismissedArrivals(prev => new Set([...prev, appointmentId]));
+    // Re-check after 5 minutes
+    const timer = setTimeout(() => {
+      setDismissedArrivals(prev => {
+        const next = new Set(prev);
+        next.delete(appointmentId);
+        return next;
+      });
+    }, 5 * 60 * 1000);
+    dismissTimersRef.current.set(appointmentId, timer);
+  }, []);
 
   // Check proximity to all active appointments
   const checkProximityToAppointments = useCallback((lat: number, lng: number) => {
     for (const apt of appointments) {
-      // Only check appointments that haven't been arrived at yet
       if (!apt.isArrived && apt.status !== 'completed' && apt.status !== 'cancelled') {
         if (isWithinArrivalRadius(lat, lng, apt.latitude, apt.longitude)) {
-          console.log(`[Location Tracking] Arrived at appointment ${apt.id}`);
-          markAppointmentArrived(apt.id);
+          // Add to pending instead of auto-marking
+          if (!dismissedArrivals.has(apt.id)) {
+            setPendingArrivals(prev =>
+              prev.includes(apt.id) ? prev : [...prev, apt.id]
+            );
+          }
         }
       }
     }
-  }, [appointments, markAppointmentArrived]);
+  }, [appointments, dismissedArrivals]);
 
   const handlePositionSuccess = useCallback((position: GeolocationPosition) => {
     const { latitude, longitude } = position.coords;
@@ -133,11 +161,22 @@ export function useDetailerLocationTracking({
     };
   }, [enabled, appointments.length, startTracking, stopTracking]);
 
+  // Clean up dismiss timers on unmount
+  useEffect(() => {
+    return () => {
+      dismissTimersRef.current.forEach(timer => clearTimeout(timer));
+      dismissTimersRef.current.clear();
+    };
+  }, []);
+
   return {
     isTracking,
     currentLocation,
     locationError,
     startTracking,
     stopTracking,
+    pendingArrivals,
+    confirmArrival,
+    dismissArrival,
   };
 }

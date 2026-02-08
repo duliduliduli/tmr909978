@@ -52,6 +52,9 @@ export interface BookingData {
   paymentMethodId?: string;
   tipAmount?: number;
   stripePaymentIntentId?: string;
+  // Stripe Connect fields
+  bookingId?: string;
+  clientSecret?: string;
   // Legacy fields kept for compatibility with existing step components
   serviceId?: string;
   vehicleInfo?: {
@@ -93,10 +96,54 @@ export function BookingWizard({
     setError(null);
   };
 
-  const nextStep = () => {
-    if (currentStep < STEPS.length - 1) {
-      setCurrentStep(prev => prev + 1);
+  const persistBooking = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const totalPrice = bookingData.totalPrice ||
+        bookingData.vehicles.reduce((sum, v) => sum + v.adjustedPrice, 0);
+
+      const res = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          providerId: bookingData.providerId,
+          serviceId: bookingData.vehicles[0]?.serviceId,
+          scheduledStartTime: bookingData.scheduledStartTime,
+          serviceAddress: bookingData.serviceAddress,
+          vehicles: bookingData.vehicles,
+          totalAmount: Math.round(totalPrice * 100), // cents
+          tipAmount: Math.round((bookingData.tipAmount || 0) * 100),
+          specialInstructions: bookingData.specialInstructions,
+        }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to create booking');
+      }
+
+      const { bookingId, clientSecret } = await res.json();
+      updateBookingData({ bookingId, clientSecret });
+      return true;
+    } catch (err: any) {
+      setError(err.message || 'Failed to create booking');
+      return false;
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const nextStep = async () => {
+    if (currentStep >= STEPS.length - 1) return;
+
+    // When moving from Address (step 2) to Payment (step 3), persist booking first
+    if (currentStep === 2 && !bookingData.bookingId) {
+      const ok = await persistBooking();
+      if (!ok) return;
+    }
+
+    setCurrentStep(prev => prev + 1);
   };
 
   const prevStep = () => {

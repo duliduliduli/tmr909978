@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { amount, tipAmount = 0, metadata = {} } = body;
+    const { amount, tipAmount = 0, bookingId, metadata = {} } = body;
 
     // Validate amount (in cents)
     if (!amount || typeof amount !== 'number' || amount < 50) {
@@ -39,10 +39,12 @@ export async function POST(request: NextRequest) {
       currency: PAYMENT_CONFIG.currency,
       automatic_payment_methods: PAYMENT_CONFIG.automatic_payment_methods,
       capture_method: PAYMENT_CONFIG.capture_method,
+      transfer_group: bookingId ? `booking_${bookingId}` : undefined,
       metadata: {
         ...metadata,
         tipAmount: String(tipAmount),
         subtotal: String(amount),
+        ...(bookingId ? { bookingId } : {}),
       },
     });
 

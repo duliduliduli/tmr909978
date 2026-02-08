@@ -2,14 +2,19 @@ import { prisma } from '@/lib/prisma';
 
 // ===== NOTIFICATION TYPES =====
 
-export type NotificationType = 
+export type NotificationType =
   | 'booking_confirmed'
   | 'booking_cancelled'
   | 'payment_succeeded'
   | 'payment_failed'
+  | 'payment_refunded'
   | 'provider_assigned'
   | 'service_started'
   | 'service_completed'
+  | 'service_awaiting_confirmation'
+  | 'auto_confirmed'
+  | 'payout_released'
+  | 'dispute_opened'
   | 'review_received'
   | 'quote_requested'
   | 'quote_provided'
@@ -58,6 +63,13 @@ const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTemplate> = {
     recipients: ['customer']
   },
 
+  payment_refunded: {
+    subject: 'Refund Processed - {{amount}}',
+    body: 'Your refund of {{amount}} for {{serviceName}} (Booking #{{bookingNumber}}) has been processed. It may take 5-10 business days to appear on your statement.',
+    channels: ['email', 'push'],
+    recipients: ['customer']
+  },
+
   provider_assigned: {
     subject: 'New Booking Assignment',
     body: 'You have a new booking request for {{serviceName}} on {{date}} at {{time}}.',
@@ -77,6 +89,34 @@ const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTemplate> = {
     body: 'Your {{serviceName}} has been completed. Please review your service experience.',
     channels: ['email', 'sms', 'push'],
     recipients: ['customer']
+  },
+
+  service_awaiting_confirmation: {
+    subject: 'Please Confirm Your Service - {{serviceName}}',
+    body: 'Your {{serviceName}} has been marked as completed. Please confirm you are satisfied within 48 hours, or the service will be automatically confirmed.',
+    channels: ['email', 'sms', 'push'],
+    recipients: ['customer']
+  },
+
+  auto_confirmed: {
+    subject: 'Service Auto-Confirmed - {{serviceName}}',
+    body: 'Your {{serviceName}} (Booking #{{bookingNumber}}) has been automatically confirmed after 48 hours. Payment has been released to the provider.',
+    channels: ['email', 'push'],
+    recipients: ['customer']
+  },
+
+  payout_released: {
+    subject: 'Payment Released - {{amount}}',
+    body: 'Your payout of {{amount}} for {{serviceName}} (Booking #{{bookingNumber}}) has been released to your account.',
+    channels: ['email', 'push'],
+    recipients: ['provider']
+  },
+
+  dispute_opened: {
+    subject: 'Dispute Opened - Booking #{{bookingNumber}}',
+    body: 'A dispute has been opened for {{serviceName}} (Booking #{{bookingNumber}}). Payout has been held pending resolution.',
+    channels: ['email', 'sms', 'push'],
+    recipients: ['provider', 'admin']
   },
 
   review_received: {

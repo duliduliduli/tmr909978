@@ -46,6 +46,7 @@ export function RescheduleModal({
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [unavailableDates, setUnavailableDates] = useState<Set<string>>(new Set());
 
   const remainingReschedules = APPOINTMENT_CONFIG.MAX_RESCHEDULES - appointment.rescheduleCount;
   const canReschedule = remainingReschedules > 0;
@@ -57,6 +58,7 @@ export function RescheduleModal({
       setSelectedTimeSlot('');
       setSelectedReason('');
       setError(null);
+      setUnavailableDates(new Set());
     }
   }, [isOpen, currentMonth]);
 
@@ -96,6 +98,7 @@ export function RescheduleModal({
       setAvailableSlots(data.availableSlots || []);
 
       if (data.availableSlots.length === 0) {
+        setUnavailableDates(prev => new Set([...prev, dateStr]));
         setError('No available time slots for this date. Please choose another date.');
       }
     } catch (err: any) {
@@ -132,7 +135,18 @@ export function RescheduleModal({
   const isDateDisabled = (date: Date) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return date < today;
+    if (date < today) return true;
+    const dateString = date.toISOString().split('T')[0];
+    return unavailableDates.has(dateString);
+  };
+
+  const getDateTooltip = (date: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (date < today) return 'Past date';
+    const dateString = date.toISOString().split('T')[0];
+    if (unavailableDates.has(dateString)) return 'Fully booked';
+    return '';
   };
 
   const isDateSelected = (date: Date) => {
@@ -214,13 +228,7 @@ export function RescheduleModal({
                   {t('reschedule.maxReschedules') || 'This appointment has been rescheduled the maximum number of times (3).'}
                 </p>
               </div>
-            ) : (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                <p className="text-sm text-amber-700">
-                  {t('reschedule.remaining') || `${remainingReschedules} reschedule${remainingReschedules !== 1 ? 's' : ''} remaining for this appointment`}
-                </p>
-              </div>
-            )}
+            ) : null}
 
             {/* Current Date/Time */}
             <div className="bg-gray-50 rounded-lg p-3">
@@ -243,7 +251,7 @@ export function RescheduleModal({
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <h4 className="text-sm font-medium">
+                    <h4 className="text-sm font-medium text-gray-900">
                       {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                     </h4>
                     <button
@@ -265,10 +273,11 @@ export function RescheduleModal({
                         key={index}
                         onClick={() => handleDateSelect(date)}
                         disabled={isDateDisabled(date)}
+                        title={getDateTooltip(date)}
                         className={`
                           p-1.5 text-xs rounded-lg transition-colors
                           ${!isCurrentMonth(date) ? 'text-gray-300' : 'text-gray-900'}
-                          ${isDateDisabled(date) ? 'cursor-not-allowed text-gray-300' : 'hover:bg-gray-100 cursor-pointer'}
+                          ${isDateDisabled(date) ? 'cursor-not-allowed bg-gray-100 text-gray-400' : 'hover:bg-gray-100 cursor-pointer'}
                           ${isDateSelected(date) ? 'bg-teal-600 text-white hover:bg-teal-700' : ''}
                         `}
                       >

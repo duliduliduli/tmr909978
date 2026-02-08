@@ -87,6 +87,8 @@ model ProviderProfile {
   user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   serviceAreas        ServiceArea[]
   services            Service[]
+  payoutRecords       PayoutRecord[]
+  providerStrikes     ProviderStrike[]
 
   @@map("provider_profiles")
 }
@@ -177,6 +179,17 @@ model Booking {
   disputeStatus         DisputeStatus?
   refundAmount          Float?
   refundedAt            DateTime?
+  // Lifecycle timestamps for delayed payout
+  autoConfirmAt         DateTime?
+  providerArrivedAt     DateTime?
+  providerCompletedAt   DateTime?
+  customerConfirmedAt   DateTime?
+  disputeOpenedAt       DateTime?
+  // Provider payment breakdown (in cents)
+  providerGross         Int?
+  providerNet           Int?
+  // Stripe charge ID (needed for separate charges + transfers)
+  stripeChargeId        String?           @unique
   createdAt             DateTime          @default(now())
   updatedAt             DateTime          @updatedAt
   events                BookingEvent[]
@@ -185,6 +198,10 @@ model Booking {
   service               Service           @relation(fields: [serviceId], references: [id])
   coinTransactions      CoinTransaction[]
   review                Review?
+  paymentRecords        PaymentRecord[]
+  payoutRecords         PayoutRecord[]
+  disputeCases          DisputeCase[]
+  providerStrikes       ProviderStrike[]
 
   @@index([customerId])
   @@index([providerId])
@@ -391,6 +408,112 @@ model SavedAddress {
   customer   CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@map("saved_addresses")
+}
+
+model PaymentRecord {
+  id                    String   @id @default(cuid())
+  bookingId             String
+  stripePaymentIntentId String
+  stripeChargeId        String?
+  amount                Int      // in cents
+  currency              String   @default("usd")
+  status                String   // requires_payment_method, succeeded, canceled, etc.
+  failureCode           String?
+  failureMessage        String?
+  metadata              Json?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  booking               Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+  @@index([stripePaymentIntentId])
+  @@map("payment_records")
+}
+
+model PayoutRecord {
+  id               String          @id @default(cuid())
+  bookingId        String
+  providerId       String
+  stripeTransferId String?         @unique
+  amount           Int             // in cents
+  platformFee      Int             // in cents
+  currency         String          @default("usd")
+  status           PayoutStatus    @default(PENDING_RELEASE)
+  scheduledFor     DateTime?
+  releasedAt       DateTime?
+  failureReason    String?
+  metadata         Json?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  booking          Booking         @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  provider         ProviderProfile @relation(fields: [providerId], references: [id])
+
+  @@index([bookingId])
+  @@index([providerId])
+  @@index([status])
+  @@map("payout_records")
+}
+
+model DisputeCase {
+  id              String        @id @default(cuid())
+  bookingId       String
+  openedBy        String
+  openedByRole    CancelledBy
+  reasonCode      String
+  description     String
+  evidenceJson    Json?
+  resolution      DisputeStatus @default(UNDER_REVIEW)
+  resolutionNotes String?
+  refundAmount    Int?
+  resolvedAt      DateTime?
+  resolvedBy      String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  booking         Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+  @@map("dispute_cases")
+}
+
+model ProviderStrike {
+  id         String          @id @default(cuid())
+  providerId String
+  bookingId  String?
+  type       String
+  points     Int             @default(1)
+  reason     String?
+  expiresAt  DateTime
+  isActive   Boolean         @default(true)
+  createdAt  DateTime        @default(now())
+
+  provider   ProviderProfile @relation(fields: [providerId], references: [id])
+  booking    Booking?        @relation(fields: [bookingId], references: [id])
+
+  @@index([providerId])
+  @@index([expiresAt])
+  @@map("provider_strikes")
+}
+
+model WebhookEvent {
+  id            String   @id @default(cuid())
+  stripeEventId String   @unique
+  type          String
+  processedAt   DateTime @default(now())
+  payload       Json?
+
+  @@index([stripeEventId])
+  @@map("webhook_events")
+}
+
+enum PayoutStatus {
+  PENDING_RELEASE
+  RELEASED
+  BLOCKED_DISPUTE
+  FAILED
+  REVERSED
 }
 
 enum ServiceCategory {

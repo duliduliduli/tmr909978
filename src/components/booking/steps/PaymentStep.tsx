@@ -50,10 +50,24 @@ export function PaymentStep(props: PaymentStepProps) {
   const formatPrice = (cents: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
 
-  // Create or update PaymentIntent whenever finalTotal changes
+  // Use clientSecret from persisted booking, or fall back to create-intent
   useEffect(() => {
     if (finalTotal < 50) return; // Stripe minimum
 
+    // If booking was already persisted with a clientSecret, use it directly
+    if (bookingData.clientSecret && !clientSecret) {
+      setClientSecret(bookingData.clientSecret);
+      setPaymentIntentId(bookingData.stripePaymentIntentId || null);
+      setIntentLoading(false);
+      return;
+    }
+
+    // Already have a secret (e.g. from booking persistence) — skip re-fetch
+    if (clientSecret) {
+      return;
+    }
+
+    // Fallback: create intent via legacy route
     const controller = new AbortController();
     setIntentLoading(true);
 
@@ -63,6 +77,7 @@ export function PaymentStep(props: PaymentStepProps) {
       body: JSON.stringify({
         amount: totalBeforeTip,
         tipAmount: tipCents,
+        bookingId: bookingData.bookingId,
         metadata: {
           vehicleCount: String(bookingData.vehicles.length),
           providerId: bookingData.providerId ?? '',

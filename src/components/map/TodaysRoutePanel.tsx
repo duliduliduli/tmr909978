@@ -17,28 +17,34 @@ interface TodaysRoutePanelProps {
   onFitAllMarkers?: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  pendingArrivals?: string[];
+  onConfirmArrival?: (appointmentId: string) => void;
+  onDismissArrival?: (appointmentId: string) => void;
 }
 
-export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, onJobClick, onFitAllMarkers, isCollapsed = false, onToggleCollapse }: TodaysRoutePanelProps) {
+export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, onJobClick, onFitAllMarkers, isCollapsed = false, onToggleCollapse, pendingArrivals = [], onConfirmArrival, onDismissArrival }: TodaysRoutePanelProps) {
   const [expandedChatId, setExpandedChatId] = useState<string | null>(null);
   const [chatInput, setChatInput] = useState('');
   const [rescheduleAppointment, setRescheduleAppointment] = useState<Appointment | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const { t } = useTranslation();
-  const { activeDetailerId, addChatMessage, getChatMessages, markAppointmentArrived } = useAppStore();
+  const { activeDetailerId, addChatMessage, getChatMessages, markAppointmentArrived, unmarkAppointmentMissed } = useAppStore();
 
   const totalEarnings = appointments.reduce((sum, apt) => sum + apt.price, 0);
 
-  const formatTimeRemaining = (scheduledDate: string, scheduledTime: string) => {
-    const appointmentTime = new Date(`${scheduledDate} ${scheduledTime}`);
+  const getTimeStatus = (apt: Appointment) => {
+    if (apt.isMissed) return { label: 'Missed Wash', color: 'text-red-600' };
+    if (apt.isArrived) return { label: 'Arrived', color: 'text-green-600' };
+    const appointmentTime = new Date(`${apt.scheduledDate} ${apt.scheduledTime}`);
     const now = new Date();
     const diffMs = appointmentTime.getTime() - now.getTime();
-    if (diffMs <= 0) return 'Now';
+    if (diffMs <= 0) return { label: 'Past Wash', color: 'text-amber-600' };
     const hours = Math.floor(diffMs / (1000 * 60 * 60));
     const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    if (hours > 0) return `${hours}h ${minutes}m`;
-    return `${minutes}m`;
+    const timeStr = hours > 0 ? `in ${hours}h ${minutes}m` : `in ${minutes}m`;
+    return { label: timeStr, color: 'text-orange-600' };
   };
 
   const getMessages = (apt: Appointment) => {
@@ -175,16 +181,22 @@ export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, on
                         <div className="flex items-center gap-2">
                           <div
                             className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
-                            style={{ backgroundColor: apt.isArrived ? '#10B981' : '#B7E892' }}
+                            style={{ backgroundColor: apt.isMissed ? '#EF4444' : apt.isArrived ? '#10B981' : '#B7E892' }}
                           >
                             {apt.isArrived ? (
                               <Check className="h-4 w-4 text-white" />
+                            ) : apt.isMissed ? (
+                              <X className="h-4 w-4 text-white" />
                             ) : (
                               <span className="text-gray-800">{index + 1}</span>
                             )}
                           </div>
                           <span className="font-semibold text-gray-900">{apt.serviceName}</span>
-                          {apt.isArrived && (
+                          {apt.isMissed ? (
+                            <span className="px-2 py-0.5 bg-red-100 text-red-700 text-[10px] rounded-full font-medium">
+                              Missed
+                            </span>
+                          ) : apt.isArrived && (
                             <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] rounded-full font-medium">
                               {t('todaysRoute.arrived') || 'Arrived'}
                             </span>
@@ -192,8 +204,8 @@ export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, on
                         </div>
                         <div className="text-right">
                           <div className="text-sm font-medium text-gray-900">{apt.scheduledTime}</div>
-                          <div className="text-xs text-orange-600 font-medium">
-                            in {formatTimeRemaining(apt.scheduledDate, apt.scheduledTime)}
+                          <div className={`text-xs font-medium ${getTimeStatus(apt).color}`}>
+                            {getTimeStatus(apt).label}
                           </div>
                         </div>
                       </div>
@@ -260,7 +272,18 @@ export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, on
                         <Calendar className="h-3.5 w-3.5" />
                         {t('todaysRoute.reschedule') || 'Reschedule'}
                       </button>
-                      {!apt.isArrived && (
+                      {apt.isMissed ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            unmarkAppointmentMissed(apt.id);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-xs font-medium hover:bg-green-100 transition-colors"
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          I Did Complete It
+                        </button>
+                      ) : !apt.isArrived && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -274,15 +297,48 @@ export function TodaysRoutePanel({ isOpen, onClose, appointments, etaMinutes, on
                       )}
                     </div>
 
+                    {/* Arrival Proximity Prompt */}
+                    {pendingArrivals.includes(apt.id) && (
+                      <div className="mx-5 mb-3 p-3 bg-teal-50 border border-teal-200 rounded-lg">
+                        <p className="text-xs font-medium text-teal-800 mb-2">
+                          You&apos;ve arrived at {apt.customerName}&apos;s location. Mark as arrived?
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onConfirmArrival?.(apt.id);
+                            }}
+                            className="flex-1 px-3 py-1.5 bg-teal-600 text-white rounded-lg text-xs font-medium hover:bg-teal-700 transition-colors"
+                          >
+                            Mark Arrived
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDismissArrival?.(apt.id);
+                            }}
+                            className="flex-1 px-3 py-1.5 bg-white text-teal-700 border border-teal-300 rounded-lg text-xs font-medium hover:bg-teal-50 transition-colors"
+                          >
+                            Not Yet
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Inline Chat */}
                     <AnimatePresence>
                       {expandedChatId === apt.id && (
                         <motion.div
+                          ref={chatContainerRef}
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: 'auto', opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
                           transition={{ duration: 0.2 }}
                           className="overflow-hidden"
+                          onAnimationComplete={() => {
+                            chatContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                          }}
                         >
                           <div className="px-5 pb-4 bg-gray-50 border-t border-gray-100">
                             {/* Messages */}
