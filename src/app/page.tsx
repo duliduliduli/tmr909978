@@ -28,18 +28,18 @@ export default function HomePage() {
               {/* Language Switch - Only on landing page */}
               <LanguageSwitch />
             </div>
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-4">
               <Link
-                href="/login"
-                className="text-sm font-medium text-brand-300 hover:text-white transition-colors hidden sm:block"
+                href="/sign-in"
+                className="text-sm font-medium text-brand-300 hover:text-white transition-colors"
               >
                 {t('landing.signIn')}
               </Link>
               <Link
-                href="/customer/home"
+                href="/sign-up"
                 className="group relative inline-flex items-center justify-center overflow-hidden rounded-xl bg-accent-DEFAULT px-6 py-2.5 text-sm font-bold text-white shadow-[0_0_20px_rgba(56,189,248,0.3)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_rgba(56,189,248,0.5)]"
               >
-                <span className="z-10">{t('landing.launchApp')}</span>
+                <span className="z-10">Sign Up</span>
               </Link>
             </div>
           </div>
