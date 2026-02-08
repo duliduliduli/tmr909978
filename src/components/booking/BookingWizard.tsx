@@ -8,7 +8,7 @@ import { AddressStepEnhanced as AddressStep } from './steps/AddressStepEnhanced'
 import { PaymentStep } from './steps/PaymentStep';
 import { ConfirmationStep } from './steps/ConfirmationStep';
 import { BookingProgress } from './BookingProgress';
-import type { BodyType } from '@/lib/store';
+import { useAppStore, type BodyType } from '@/lib/store';
 import { useTranslation } from '@/lib/i18n';
 
 interface BookingWizardProps {
@@ -103,10 +103,13 @@ export function BookingWizard({
       const totalPrice = bookingData.totalPrice ||
         bookingData.vehicles.reduce((sum, v) => sum + v.adjustedPrice, 0);
 
+      const { activeCustomerId } = useAppStore.getState();
+
       const res = await fetch('/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          customerId: activeCustomerId,
           providerId: bookingData.providerId,
           serviceId: bookingData.vehicles[0]?.serviceId,
           scheduledStartTime: bookingData.scheduledStartTime,

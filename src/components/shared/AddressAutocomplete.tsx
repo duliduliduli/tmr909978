@@ -187,7 +187,7 @@ export function AddressAutocomplete({
           onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
           placeholder={placeholder}
           disabled={disabled}
-          className={`w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+          className={`w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
             disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
           } ${className}`}
         />
