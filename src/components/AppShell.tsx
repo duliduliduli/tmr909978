@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { Home, Map, Wallet, User, HelpCircle, ChevronRight, Calendar, MessageCircle } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Home, Map, Wallet, User, HelpCircle, Calendar, MessageCircle } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { useTranslation } from "@/lib/i18n";
 import { motion, AnimatePresence } from "framer-motion";
-import { AccountDropdown } from "@/components/auth/AccountDropdown";
 import { MessagesInbox } from "@/components/messages/MessagesInbox";
-import { AccountSwitcher } from "@/components/AccountSwitcher";
+import { UserMenu } from "@/components/UserMenu";
 
 const navItemKeys = [
   { key: "home", labelKey: "nav.home", icon: Home, href: "/home" },
@@ -28,20 +27,11 @@ function cx(...c: Array<string | false | undefined>) {
 
 export function AppShell({ children, title, fullWidth = false }: { children: React.ReactNode; title: string; fullWidth?: boolean }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const { role, setRole, showMessages, setShowMessages, getUnreadCount, getCurrentAccount } = useAppStore();
+  const { role, showMessages, setShowMessages, getUnreadCount } = useAppStore();
   const unreadCount = getUnreadCount();
-  const currentAccount = getCurrentAccount();
   const { t } = useTranslation();
 
   const base = role === "detailer" ? "/detailer" : "/customer";
-
-  function switchRole(nextRole: "customer" | "detailer") {
-    setRole(nextRole);
-    const nextBase = nextRole === "detailer" ? "/detailer" : "/customer";
-    const tab = pathname.split("/").slice(-1)[0] || "home";
-    router.push(`${nextBase}/${tab}`);
-  }
 
   const isActive = (tabHref: string) => pathname.includes(tabHref);
 
@@ -93,7 +83,7 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
 
           <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-brand-800/50 bg-brand-900">
             <div className="text-xs uppercase tracking-wider text-brand-500 font-semibold mb-3">Account</div>
-            <AccountSwitcher />
+            <UserMenu />
           </div>
         </aside>
 
@@ -167,7 +157,7 @@ export function AppShell({ children, title, fullWidth = false }: { children: Rea
                 </div>
               )}
             </button>
-            <AccountSwitcher compact />
+            <UserMenu compact />
           </div>
         </header>
 

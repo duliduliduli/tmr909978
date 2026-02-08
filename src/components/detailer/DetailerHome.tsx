@@ -8,7 +8,7 @@ import { useTranslation } from "@/lib/i18n";
 
 export function DetailerHome() {
   const { t } = useTranslation();
-  const { activeDetailerId, getQRCodeByDetailer } = useAppStore();
+  const { activeDetailerId, getQRCodeByDetailer, authUser } = useAppStore();
   const todaysAppointments = useAppStore.getState().getTodaysAppointments(activeDetailerId);
   const [showOnMap, setShowOnMap] = useState(true);
   const [showQRModal, setShowQRModal] = useState(false);
@@ -30,7 +30,7 @@ export function DetailerHome() {
         className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-accent-600 to-blue-700 p-8 shadow-2xl shadow-accent/10"
       >
         <div className="relative z-10 text-white">
-          <h1 className="text-3xl font-bold mb-2">{t('detailerHome.goodMorning')}, Alex!</h1>
+          <h1 className="text-3xl font-bold mb-2">{t('detailerHome.goodMorning')}, {authUser?.firstName || 'there'}!</h1>
           <p className="text-blue-100 mb-8 max-w-md text-lg">
             {todaysAppointments.length} {todaysAppointments.length !== 1 ? t('detailerHome.appointmentsRemainingPlural') : t('detailerHome.appointmentsRemaining')} {t('detailerHome.remainingToday')}.
           </p>

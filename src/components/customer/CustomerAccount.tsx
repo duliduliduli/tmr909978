@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, Edit3, Trash2, Plus, Home, Briefcase, Star, Car, X, HelpCircle, MessageCircle, FileText, Mail, Check, User, Camera } from "lucide-react";
-import { mockCustomers, type Vehicle } from "@/lib/mockData";
+import { type Vehicle } from "@/lib/mockData";
 import { useAppStore } from "@/lib/store";
 import { useTranslation } from "@/lib/i18n";
+import { useUser } from "@clerk/nextjs";
 
 interface SavedAddress {
   id: string;
@@ -81,10 +82,11 @@ type EditingField = 'name' | 'email' | 'phone' | null;
 
 export function CustomerAccount() {
   const { t } = useTranslation();
+  const { user } = useUser();
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [loading, setLoading] = useState(true);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const { getMyFavorites, removeFavoriteDetailer } = useAppStore();
+  const { getMyFavorites, removeFavoriteDetailer, authUser, activeCustomerId } = useAppStore();
   const favoriteDetailers = getMyFavorites();
   const [showVehicleForm, setShowVehicleForm] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
@@ -98,11 +100,21 @@ export function CustomerAccount() {
     isLuxury: false
   });
 
-  // Profile fields
-  const [customerName, setCustomerName] = useState('John Smith');
-  const [customerEmail, setCustomerEmail] = useState('customer@test.com');
-  const [customerPhone, setCustomerPhone] = useState('(555) 123-4567');
+  // Profile fields — populated from Clerk user data
+  const [customerName, setCustomerName] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
   const [profileImage, setProfileImage] = useState<string | null>(null);
+
+  // Sync profile fields from Clerk user
+  useEffect(() => {
+    if (user) {
+      setCustomerName(`${user.firstName || ''} ${user.lastName || ''}`.trim());
+      setCustomerEmail(user.primaryEmailAddress?.emailAddress || '');
+      setCustomerPhone(user.primaryPhoneNumber?.phoneNumber || '');
+      setProfileImage(user.imageUrl || null);
+    }
+  }, [user]);
 
   // Editing states
   const [editingField, setEditingField] = useState<EditingField>(null);
@@ -127,18 +139,11 @@ export function CustomerAccount() {
   };
 
   useEffect(() => {
-    fetchAddresses();
-    loadVehicles();
-  }, []);
-
-  const loadVehicles = () => {
-    // Load mock vehicles for customer
-    const customer = mockCustomers.find(c => c.id === "cust_1");
-    if (customer) {
-      setVehicles(customer.vehicles);
+    if (activeCustomerId) {
+      fetchAddresses();
     }
     setLoading(false);
-  };
+  }, [activeCustomerId]);
 
   const openVehicleForm = (vehicle?: Vehicle) => {
     if (vehicle) {
@@ -202,7 +207,8 @@ export function CustomerAccount() {
 
   const fetchAddresses = async () => {
     try {
-      const customerId = "cust_1"; // Mock customer ID
+      const customerId = activeCustomerId;
+      if (!customerId) return;
       const response = await fetch(`/api/customer/addresses?customerId=${customerId}`);
       if (response.ok) {
         const data = await response.json();

@@ -193,6 +193,18 @@ export interface AccountProfile {
   businessName?: string;
 }
 
+// Authenticated user from Clerk + DB sync
+export interface AuthUser {
+  userId: string;
+  customerProfileId: string | null;
+  providerProfileId: string | null;
+  firstName: string;
+  lastName: string;
+  email: string;
+  avatar: string | null;
+  phone: string | null;
+}
+
 // Availability slot result
 export interface AvailabilitySlot {
   startTime: string;  // "HH:MM" format
@@ -235,7 +247,10 @@ interface AppState {
   activeDetailerId: string;
   setActiveCustomerId: (id: string) => void;
   setActiveDetailerId: (id: string) => void;
-  switchToTestAccount: () => void;
+  // Auth
+  authUser: AuthUser | null;
+  setAuthUser: (user: AuthUser) => void;
+  clearAuthUser: () => void;
   // Chat persistence
   chatLogs: Record<string, ChatMessage[]>; // keyed by "{detailerId}_{customerId}"
   addChatMessage: (detailerId: string, customerId: string, message: ChatMessage) => void;
@@ -346,14 +361,6 @@ interface AppState {
   ) => AvailabilitySlot[];
 }
 
-// Helper to get date strings relative to today
-const getRelativeDate = (daysOffset: number): string => {
-  const d = new Date();
-  d.setDate(d.getDate() + daysOffset);
-  return d.toISOString().split('T')[0];
-};
-const todayStr = getRelativeDate(0);
-
 // ============================================
 // Default Working Hours Configurations
 // ============================================
@@ -374,196 +381,16 @@ const DEFAULT_LUNCH_BREAK: LunchBreak = {
   end: '13:00',
 };
 
-// Pre-seeded account profiles
-const INITIAL_ACCOUNTS: AccountProfile[] = [
-  // Customers
-  { id: 'cust_1', type: 'customer', name: 'John Smith', email: 'john.smith@test.com', phone: '(555) 111-2233', profileImage: '/images/customers/customer-1.webp' },
-  { id: 'cust_2', type: 'customer', name: 'Maria Garcia', email: 'maria.garcia@test.com', phone: '(555) 444-5566', profileImage: '/images/customers/customer-2.webp' },
-  { id: 'cust_3', type: 'customer', name: 'David Park', email: 'david.park@test.com', phone: '(555) 777-8899', profileImage: '/images/customers/customer-3.webp' },
-  // Detailers
-  { id: 'det_1', type: 'detailer', name: 'Alex Johnson', email: 'alex@premiumautospa.com', phone: '(555) 123-4567', businessName: 'Premium Auto Spa', profileImage: '/images/detailers/detailer-1.webp' },
-  { id: 'det_2', type: 'detailer', name: 'Sarah Wilson', email: 'sarah@elitedetailing.com', phone: '(555) 234-5678', businessName: 'Elite Detailing Co', profileImage: '/images/detailers/detailer-2.jpg' },
-  { id: 'det_3', type: 'detailer', name: 'Carlos Martinez', email: 'carlos@premiumautocare.com', phone: '(555) 345-6789', businessName: 'Premium Auto Care', profileImage: '/images/detailers/detailer-3.jpg' },
-  { id: 'det_4', type: 'detailer', name: 'Mike Chen', email: 'mike@speedyclean.com', phone: '(555) 456-7890', businessName: 'Speedy Clean', profileImage: '/images/detailers/detailer-4.jpg' },
-  { id: 'det_5', type: 'detailer', name: 'Jessica Brown', email: 'jessica@luxuryautospa.com', phone: '(555) 567-8901', businessName: 'Luxury Auto Spa', profileImage: '/images/detailers/detailer-5.jpg' },
-  { id: 'det_6', type: 'detailer', name: 'Emma Thompson', email: 'emma@testdrivedetail.com', phone: '(555) 678-9012', businessName: 'Test Drive Detailing', profileImage: '/images/detailers/detailer-6.jpg' },
-];
+// Accounts are now populated from real auth — no more mock data
+const INITIAL_ACCOUNTS: AccountProfile[] = [];
 
-// Detailer availability configurations with varied hours
-const INITIAL_DETAILER_CONFIGS: DetailerAvailabilityConfig[] = [
-  {
-    detailerId: 'det_1',
-    workingHours: DEFAULT_WORKING_HOURS,
-    lunchBreak: DEFAULT_LUNCH_BREAK,
-    bufferMinutes: 15,
-    travelSpeedMph: 25,
-  },
-  {
-    detailerId: 'det_2',
-    workingHours: {
-      ...DEFAULT_WORKING_HOURS,
-      monday: { open: '07:00', close: '19:00', closed: false },
-      tuesday: { open: '07:00', close: '19:00', closed: false },
-      wednesday: { open: '07:00', close: '19:00', closed: false },
-      thursday: { open: '07:00', close: '19:00', closed: false },
-      friday: { open: '07:00', close: '19:00', closed: false },
-      saturday: { open: '08:00', close: '18:00', closed: false },
-    },
-    lunchBreak: { enabled: true, start: '12:30', end: '13:00' },
-    bufferMinutes: 15,
-    travelSpeedMph: 25,
-  },
-  {
-    detailerId: 'det_3',
-    workingHours: {
-      ...DEFAULT_WORKING_HOURS,
-      monday: { open: '09:00', close: '17:00', closed: false },
-      tuesday: { open: '09:00', close: '17:00', closed: false },
-      wednesday: { open: '09:00', close: '17:00', closed: false },
-      thursday: { open: '09:00', close: '17:00', closed: false },
-      friday: { open: '09:00', close: '17:00', closed: false },
-      saturday: { open: '10:00', close: '15:00', closed: false },
-    },
-    lunchBreak: DEFAULT_LUNCH_BREAK,
-    bufferMinutes: 15,
-    travelSpeedMph: 25,
-  },
-  {
-    detailerId: 'det_4',
-    workingHours: {
-      monday: { open: '08:00', close: '20:00', closed: false },
-      tuesday: { open: '08:00', close: '20:00', closed: false },
-      wednesday: { open: '08:00', close: '20:00', closed: false },
-      thursday: { open: '08:00', close: '20:00', closed: false },
-      friday: { open: '08:00', close: '20:00', closed: false },
-      saturday: { open: '08:00', close: '20:00', closed: false },
-      sunday: { open: '10:00', close: '18:00', closed: false },
-    },
-    lunchBreak: { enabled: true, start: '12:00', end: '12:30' },
-    bufferMinutes: 10,
-    travelSpeedMph: 30,
-  },
-  {
-    detailerId: 'det_5',
-    workingHours: {
-      monday: { open: '10:00', close: '18:00', closed: true },
-      tuesday: { open: '10:00', close: '18:00', closed: false },
-      wednesday: { open: '10:00', close: '18:00', closed: false },
-      thursday: { open: '10:00', close: '18:00', closed: false },
-      friday: { open: '10:00', close: '18:00', closed: false },
-      saturday: { open: '09:00', close: '17:00', closed: false },
-      sunday: { open: '10:00', close: '16:00', closed: true },
-    },
-    lunchBreak: { enabled: true, start: '13:00', end: '14:00' },
-    bufferMinutes: 20,
-    travelSpeedMph: 25,
-  },
-  {
-    detailerId: 'det_6',
-    workingHours: {
-      ...DEFAULT_WORKING_HOURS,
-      saturday: { open: '09:00', close: '17:00', closed: true },
-    },
-    lunchBreak: DEFAULT_LUNCH_BREAK,
-    bufferMinutes: 15,
-    travelSpeedMph: 25,
-  },
-];
+const INITIAL_DETAILER_CONFIGS: DetailerAvailabilityConfig[] = [];
 
-// Pre-seeded bidirectional conversations
-const INITIAL_BIDIRECTIONAL_CONVERSATIONS: BidirectionalConversation[] = [
-  {
-    id: 'det_1_cust_1',
-    detailerId: 'det_1',
-    customerId: 'cust_1',
-    detailerName: 'Premium Auto Spa',
-    customerName: 'John Smith',
-    detailerImage: '/images/detailers/detailer-1.webp',
-    customerImage: '/images/customers/customer-1.webp',
-    lastMessage: 'Great! I\'ve confirmed your appointment. See you tomorrow!',
-    lastMessageTime: '2 hours ago',
-    detailerUnread: 0,
-    customerUnread: 0,
-    isPinnedByDetailer: false,
-    isPinnedByCustomer: true,
-  },
-  {
-    id: 'det_1_cust_2',
-    detailerId: 'det_1',
-    customerId: 'cust_2',
-    detailerName: 'Premium Auto Spa',
-    customerName: 'Maria Garcia',
-    detailerImage: '/images/detailers/detailer-1.webp',
-    customerImage: '/images/customers/customer-2.webp',
-    lastMessage: 'Yes, I can do the ceramic coating next week!',
-    lastMessageTime: '1 day ago',
-    detailerUnread: 1,
-    customerUnread: 0,
-    isPinnedByDetailer: false,
-    isPinnedByCustomer: false,
-  },
-  {
-    id: 'det_2_cust_1',
-    detailerId: 'det_2',
-    customerId: 'cust_1',
-    detailerName: 'Elite Detailing Co',
-    customerName: 'John Smith',
-    detailerImage: '/images/detailers/detailer-2.jpg',
-    customerImage: '/images/customers/customer-1.webp',
-    lastMessage: 'Thanks for your business! Hope to see you again soon.',
-    lastMessageTime: '3 days ago',
-    detailerUnread: 0,
-    customerUnread: 0,
-    isPinnedByDetailer: false,
-    isPinnedByCustomer: false,
-  },
-  {
-    id: 'det_3_cust_3',
-    detailerId: 'det_3',
-    customerId: 'cust_3',
-    detailerName: 'Premium Auto Care',
-    customerName: 'David Park',
-    detailerImage: '/images/detailers/detailer-3.jpg',
-    customerImage: '/images/customers/customer-3.webp',
-    lastMessage: 'Hi David! Welcome to Premium Auto Care. How can I help you?',
-    lastMessageTime: '5 hours ago',
-    detailerUnread: 0,
-    customerUnread: 1,
-    isPinnedByDetailer: true,
-    isPinnedByCustomer: false,
-  },
-];
+const INITIAL_BIDIRECTIONAL_CONVERSATIONS: BidirectionalConversation[] = [];
 
-// Pre-seeded bidirectional chat logs
-const INITIAL_BIDIRECTIONAL_CHAT_LOGS: Record<string, BidirectionalChatMessage[]> = {
-  'det_1_cust_1': [
-    { id: 'msg_1', text: 'Hi! When can you come detail my Tesla?', senderId: 'cust_1', senderType: 'customer', timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), read: true },
-    { id: 'msg_2', text: 'Hi John! I have availability tomorrow at 10 AM. Would that work?', senderId: 'det_1', senderType: 'detailer', timestamp: new Date(Date.now() - 3.5 * 60 * 60 * 1000).toISOString(), read: true },
-    { id: 'msg_3', text: 'Perfect! Book me in.', senderId: 'cust_1', senderType: 'customer', timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), read: true },
-    { id: 'msg_4', text: 'Great! I\'ve confirmed your appointment. See you tomorrow!', senderId: 'det_1', senderType: 'detailer', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), read: true },
-  ],
-  'det_1_cust_2': [
-    { id: 'msg_5', text: 'Do you do ceramic coating?', senderId: 'cust_2', senderType: 'customer', timestamp: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(), read: true },
-    { id: 'msg_6', text: 'Yes! It\'s $300 and takes about 4 hours.', senderId: 'det_1', senderType: 'detailer', timestamp: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(), read: true },
-    { id: 'msg_7', text: 'Can I book for next week?', senderId: 'cust_2', senderType: 'customer', timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), read: false },
-    { id: 'msg_8', text: 'Yes, I can do the ceramic coating next week!', senderId: 'det_1', senderType: 'detailer', timestamp: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString(), read: true },
-  ],
-  'det_2_cust_1': [
-    { id: 'msg_9', text: 'Thanks for the great detail yesterday!', senderId: 'cust_1', senderType: 'customer', timestamp: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(), read: true },
-    { id: 'msg_10', text: 'Thanks for your business! Hope to see you again soon.', senderId: 'det_2', senderType: 'detailer', timestamp: new Date(Date.now() - 71 * 60 * 60 * 1000).toISOString(), read: true },
-  ],
-  'det_3_cust_3': [
-    { id: 'msg_11', text: 'Hi, I\'m new to the area. What services do you offer?', senderId: 'cust_3', senderType: 'customer', timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), read: true },
-    { id: 'msg_12', text: 'Hi David! Welcome to Premium Auto Care. How can I help you?', senderId: 'det_3', senderType: 'detailer', timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), read: false },
-  ],
-};
+const INITIAL_BIDIRECTIONAL_CHAT_LOGS: Record<string, BidirectionalChatMessage[]> = {};
 
-// Initial favorites by customer
-const INITIAL_FAVORITES_BY_CUSTOMER: Record<string, string[]> = {
-  'cust_1': ['det_1', 'det_2'],
-  'cust_2': ['det_1'],
-  'cust_3': ['det_3', 'det_4'],
-};
+const INITIAL_FAVORITES_BY_CUSTOMER: Record<string, string[]> = {};
 
 // ============================================
 // Availability Calculation Helpers
@@ -614,13 +441,22 @@ export const useAppStore = create<AppState>()(
     (set) => ({
       role: "customer",
       setRole: (role) => set({ role }),
-      activeCustomerId: "cust_1",
-      activeDetailerId: "det_1",
+      activeCustomerId: "",
+      activeDetailerId: "",
       setActiveCustomerId: (id) => set({ activeCustomerId: id }),
       setActiveDetailerId: (id) => set({ activeDetailerId: id }),
-      switchToTestAccount: () => set((state) => ({
-        activeCustomerId: state.activeCustomerId === "cust_1" ? "cust_2" : "cust_1"
+      // Auth
+      authUser: null,
+      setAuthUser: (user) => set((state) => ({
+        authUser: user,
+        activeCustomerId: user.customerProfileId || state.activeCustomerId,
+        activeDetailerId: user.providerProfileId || state.activeDetailerId,
       })),
+      clearAuthUser: () => set({
+        authUser: null,
+        activeCustomerId: "",
+        activeDetailerId: "",
+      }),
       // Chat persistence
       chatLogs: {},
       addChatMessage: (detailerId, customerId, message) => set((state) => {
@@ -642,38 +478,7 @@ export const useAppStore = create<AppState>()(
         return { chatLogs: rest };
       }),
       // Conversation management
-      conversations: [
-        {
-          id: 'conv_1',
-          participantId: 'det_1',
-          participantName: 'Mobile Shine Pro',
-          participantImage: '/images/detailers/detailer-1.webp',
-          lastMessage: 'Your appointment is confirmed for tomorrow!',
-          lastMessageTime: '2 hours ago',
-          unread: 2,
-          isPinned: true,
-        },
-        {
-          id: 'conv_2',
-          participantId: 'det_2',
-          participantName: 'Premium Auto Care',
-          participantImage: '/images/detailers/detailer-3.jpg',
-          lastMessage: 'Thanks for your business! Hope to see you again soon.',
-          lastMessageTime: '1 day ago',
-          unread: 0,
-          isPinned: false,
-        },
-        {
-          id: 'conv_3',
-          participantId: 'det_3',
-          participantName: 'Elite Detail Works',
-          participantImage: '/images/detailers/detailer-4.jpg',
-          lastMessage: 'We have a special promotion this week!',
-          lastMessageTime: '3 days ago',
-          unread: 1,
-          isPinned: false,
-        },
-      ],
+      conversations: [],
       getConversations: (userId, role) => {
         const state = useAppStore.getState();
         if (!userId) return state.conversations;
@@ -698,461 +503,8 @@ export const useAppStore = create<AppState>()(
       mapViewState: null,
       setMapViewState: (mapViewState) => set({ mapViewState }),
       // Appointments storage
-      appointments: [
-        // Today's appointments for detailer "det_1" (Premium Auto Spa)
-        {
-          id: "apt_today_1",
-          customerId: "cust_1",
-          customerName: "John Smith",
-          detailerId: "det_1",
-          detailerName: "Alex Johnson",
-          businessName: "Premium Auto Spa",
-          serviceId: "s1",
-          serviceName: "Basic Wash",
-          serviceDescription: "Exterior wash & dry",
-          price: 25,
-          scheduledDate: todayStr,
-          scheduledTime: "10:00 AM",
-          duration: 30,
-          address: "123 Main St, Los Angeles, CA 90012",
-          latitude: 34.0522,
-          longitude: -118.2437,
-          phone: "(555) 111-2233",
-          status: "confirmed" as const,
-          bookedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          notes: "White Tesla Model 3, parked in driveway",
-          isArrived: false,
-          rescheduleCount: 0,
-          isMissed: false,
-        },
-        {
-          id: "apt_today_2",
-          customerId: "cust_2",
-          customerName: "Maria Garcia",
-          detailerId: "det_1",
-          detailerName: "Alex Johnson",
-          businessName: "Premium Auto Spa",
-          serviceId: "s2",
-          serviceName: "Full Detail",
-          serviceDescription: "Interior & exterior detail",
-          price: 120,
-          scheduledDate: todayStr,
-          scheduledTime: "11:30 AM",
-          duration: 180,
-          address: "456 Wilshire Blvd, Beverly Hills, CA 90212",
-          latitude: 34.0656,
-          longitude: -118.3976,
-          phone: "(555) 444-5566",
-          status: "confirmed" as const,
-          bookedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-          notes: "Black BMW X5, garage code is 4421",
-          isArrived: false,
-          rescheduleCount: 0,
-          isMissed: false,
-        },
-        {
-          id: "apt_today_3",
-          customerId: "cust_3",
-          customerName: "David Park",
-          detailerId: "det_1",
-          detailerName: "Alex Johnson",
-          businessName: "Premium Auto Spa",
-          serviceId: "s3",
-          serviceName: "Paint Correction",
-          serviceDescription: "Paint correction & ceramic coating",
-          price: 300,
-          scheduledDate: todayStr,
-          scheduledTime: "1:00 PM",
-          duration: 240,
-          address: "789 Sunset Blvd, West Hollywood, CA 90069",
-          latitude: 34.0901,
-          longitude: -118.3868,
-          phone: "(555) 777-8899",
-          status: "scheduled" as const,
-          bookedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          notes: "Red Porsche 911, please be extra careful with the paint",
-          isArrived: false,
-          rescheduleCount: 0,
-          isMissed: false,
-        },
-        {
-          id: "apt_today_4",
-          customerId: "cust_4",
-          customerName: "Lisa Chen",
-          detailerId: "det_1",
-          detailerName: "Alex Johnson",
-          businessName: "Premium Auto Spa",
-          serviceId: "s1",
-          serviceName: "Basic Wash",
-          serviceDescription: "Exterior wash & dry",
-          price: 25,
-          scheduledDate: todayStr,
-          scheduledTime: "2:30 PM",
-          duration: 30,
-          address: "321 Melrose Ave, Los Angeles, CA 90048",
-          latitude: 34.0838,
-          longitude: -118.3614,
-          phone: "(555) 222-3344",
-          status: "confirmed" as const,
-          bookedAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-          isArrived: false,
-          rescheduleCount: 0,
-          isMissed: false,
-        },
-        {
-          id: "apt_today_5",
-          customerId: "cust_5",
-          customerName: "Ryan Mitchell",
-          detailerId: "det_1",
-          detailerName: "Alex Johnson",
-          businessName: "Premium Auto Spa",
-          serviceId: "s2",
-          serviceName: "Full Detail",
-          serviceDescription: "Interior & exterior detail",
-          price: 120,
-          scheduledDate: todayStr,
-          scheduledTime: "4:00 PM",
-          duration: 150,
-          address: "900 N La Cienega Blvd, West Hollywood, CA 90069",
-          latitude: 34.0855,
-          longitude: -118.3782,
-          phone: "(555) 333-4455",
-          status: "scheduled" as const,
-          bookedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-          notes: "Silver Mercedes GLE, apartment complex - buzz #204",
-          isArrived: false,
-          rescheduleCount: 0,
-          isMissed: false,
-        },
-        {
-          id: "apt_today_6",
-          customerId: "cust_6",
-          customerName: "Samantha Brooks",
-          detailerId: "det_1",
-          detailerName: "Alex Johnson",
-          businessName: "Premium Auto Spa",
-          serviceId: "s4",
-          serviceName: "Interior Clean",
-          serviceDescription: "Deep interior vacuum, wipe-down & conditioning",
-          price: 75,
-          scheduledDate: todayStr,
-          scheduledTime: "5:30 PM",
-          duration: 90,
-          address: "1420 N Highland Ave, Hollywood, CA 90028",
-          latitude: 34.0985,
-          longitude: -118.3385,
-          phone: "(555) 666-7788",
-          status: "confirmed" as const,
-          bookedAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-          notes: "Blue Range Rover Sport, pet hair removal needed",
-          isArrived: false,
-          rescheduleCount: 0,
-          isMissed: false,
-        },
-        {
-          id: "apt_today_7",
-          customerId: "cust_7",
-          customerName: "Trevor Nguyen",
-          detailerId: "det_1",
-          detailerName: "Alex Johnson",
-          businessName: "Premium Auto Spa",
-          serviceId: "s1",
-          serviceName: "Basic Wash",
-          serviceDescription: "Exterior wash & dry",
-          price: 25,
-          scheduledDate: todayStr,
-          scheduledTime: "7:00 PM",
-          duration: 30,
-          address: "2200 W Olympic Blvd, Los Angeles, CA 90006",
-          latitude: 34.0488,
-          longitude: -118.2811,
-          phone: "(555) 888-9900",
-          status: "scheduled" as const,
-          bookedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-          notes: "Gray Honda Civic, street parking near the coffee shop",
-          isArrived: false,
-          rescheduleCount: 0,
-          isMissed: false,
-        },
-        {
-          id: "apt_today_8",
-          customerId: "cust_8",
-          customerName: "Angela Rivera",
-          detailerId: "det_1",
-          detailerName: "Alex Johnson",
-          businessName: "Premium Auto Spa",
-          serviceId: "s2",
-          serviceName: "Full Detail",
-          serviceDescription: "Interior & exterior detail",
-          price: 120,
-          scheduledDate: todayStr,
-          scheduledTime: "8:30 PM",
-          duration: 180,
-          address: "3000 Los Feliz Blvd, Los Angeles, CA 90039",
-          latitude: 34.1189,
-          longitude: -118.2637,
-          phone: "(555) 112-2334",
-          status: "scheduled" as const,
-          bookedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-          notes: "White Audi Q7, please text on arrival",
-          isArrived: false,
-          rescheduleCount: 0,
-          isMissed: false,
-        },
-        // Upcoming appointments for det_1 (Premium Auto Spa) on future days
-        {
-          id: "apt_upcoming_det1_1",
-          customerId: "cust_2",
-          customerName: "Maria Garcia",
-          detailerId: "det_1",
-          detailerName: "Alex Johnson",
-          businessName: "Premium Auto Spa",
-          serviceId: "s2",
-          serviceName: "Full Detail",
-          serviceDescription: "Interior & exterior detail",
-          price: 120,
-          scheduledDate: getRelativeDate(1),
-          scheduledTime: "10:00 AM",
-          duration: 180,
-          address: "456 Wilshire Blvd, Beverly Hills, CA 90212",
-          latitude: 34.0656,
-          longitude: -118.3976,
-          phone: "(555) 444-5566",
-          status: "confirmed" as const,
-          bookedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          notes: "Black BMW X5, recurring weekly detail",
-          isArrived: false,
-          rescheduleCount: 0,
-          isMissed: false,
-        },
-        {
-          id: "apt_upcoming_det1_2",
-          customerId: "cust_3",
-          customerName: "David Park",
-          detailerId: "det_1",
-          detailerName: "Alex Johnson",
-          businessName: "Premium Auto Spa",
-          serviceId: "s1",
-          serviceName: "Basic Wash",
-          serviceDescription: "Exterior wash & dry",
-          price: 25,
-          scheduledDate: getRelativeDate(2),
-          scheduledTime: "9:00 AM",
-          duration: 30,
-          address: "789 Sunset Blvd, West Hollywood, CA 90069",
-          latitude: 34.0901,
-          longitude: -118.3868,
-          phone: "(555) 777-8899",
-          status: "scheduled" as const,
-          bookedAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-          notes: "Red Porsche 911",
-          isArrived: false,
-          rescheduleCount: 0,
-          isMissed: false,
-        },
-        {
-          id: "apt_upcoming_det1_3",
-          customerId: "cust_4",
-          customerName: "Lisa Chen",
-          detailerId: "det_1",
-          detailerName: "Alex Johnson",
-          businessName: "Premium Auto Spa",
-          serviceId: "s3",
-          serviceName: "Paint Correction",
-          serviceDescription: "Paint correction & ceramic coating",
-          price: 300,
-          scheduledDate: getRelativeDate(3),
-          scheduledTime: "11:00 AM",
-          duration: 240,
-          address: "321 Melrose Ave, Los Angeles, CA 90048",
-          latitude: 34.0838,
-          longitude: -118.3614,
-          phone: "(555) 222-3344",
-          status: "confirmed" as const,
-          bookedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          isArrived: false,
-          rescheduleCount: 0,
-          isMissed: false,
-        },
-        {
-          id: "apt_upcoming_det1_4",
-          customerId: "cust_5",
-          customerName: "Ryan Mitchell",
-          detailerId: "det_1",
-          detailerName: "Alex Johnson",
-          businessName: "Premium Auto Spa",
-          serviceId: "s2",
-          serviceName: "Full Detail",
-          serviceDescription: "Interior & exterior detail",
-          price: 120,
-          scheduledDate: getRelativeDate(5),
-          scheduledTime: "2:00 PM",
-          duration: 150,
-          address: "900 N La Cienega Blvd, West Hollywood, CA 90069",
-          latitude: 34.0855,
-          longitude: -118.3782,
-          phone: "(555) 333-4455",
-          status: "scheduled" as const,
-          bookedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-          notes: "Silver Mercedes GLE",
-          isArrived: false,
-          rescheduleCount: 0,
-          isMissed: false,
-        },
-        // Sample upcoming appointment (future day)
-        {
-          id: "apt_sample_1",
-          customerId: "cust_1",
-          customerName: "John Smith",
-          detailerId: "det_6",
-          detailerName: "Emma Thompson",
-          businessName: "Test Drive Detailing",
-          serviceId: "s12",
-          serviceName: "FREE Test Service",
-          serviceDescription: "Complimentary test service for functionality testing",
-          price: 0,
-          scheduledDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          scheduledTime: "2:00 PM",
-          duration: 30,
-          address: "123 Main St, Los Angeles, CA 90210",
-          latitude: 34.0522,
-          longitude: -118.2437,
-          phone: "(555) 789-0123",
-          status: "confirmed" as const,
-          bookedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-          notes: "This is a free test service to try out the app functionality",
-          isArrived: false,
-          rescheduleCount: 0,
-          isMissed: false,
-        },
-        // Sample past appointment
-        {
-          id: "apt_sample_2",
-          customerId: "cust_1",
-          customerName: "John Smith",
-          detailerId: "det_1",
-          detailerName: "Alex Johnson",
-          businessName: "Premium Auto Spa",
-          serviceId: "s2",
-          serviceName: "Full Detail",
-          serviceDescription: "Interior & exterior detail",
-          price: 120,
-          scheduledDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          scheduledTime: "10:00 AM",
-          duration: 180,
-          address: "456 Oak Avenue, Beverly Hills, CA 90210",
-          latitude: 34.0736,
-          longitude: -118.4004,
-          phone: "(555) 234-5678",
-          status: "completed" as const,
-          bookedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-          isArrived: false,
-          rescheduleCount: 0,
-          isMissed: false,
-        },
-        // Additional upcoming appointments
-        {
-          id: "apt_sample_3",
-          customerId: "cust_1",
-          customerName: "John Smith",
-          detailerId: "det_3",
-          detailerName: "Carlos Martinez",
-          businessName: "Premium Auto Care",
-          serviceId: "s5",
-          serviceName: "Express Wash",
-          serviceDescription: "Quick exterior wash and dry",
-          price: 35,
-          scheduledDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          scheduledTime: "9:30 AM",
-          duration: 45,
-          address: "789 Sunset Blvd, West Hollywood, CA 90069",
-          latitude: 34.0901,
-          longitude: -118.3868,
-          phone: "(555) 456-7890",
-          status: "scheduled" as const,
-          bookedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          notes: "Please use eco-friendly products if available",
-          isArrived: false,
-          rescheduleCount: 0,
-          isMissed: false,
-        },
-        {
-          id: "apt_sample_4",
-          customerId: "cust_1",
-          customerName: "John Smith",
-          detailerId: "det_2",
-          detailerName: "Sarah Wilson",
-          businessName: "Elite Detailing Co",
-          serviceId: "s8",
-          serviceName: "Interior Deep Clean",
-          serviceDescription: "Steam cleaning and conditioning",
-          price: 85,
-          scheduledDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          scheduledTime: "3:15 PM",
-          duration: 120,
-          address: "321 Melrose Ave, Los Angeles, CA 90048",
-          latitude: 34.0838,
-          longitude: -118.3614,
-          phone: "(555) 987-6543",
-          status: "confirmed" as const,
-          bookedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-          isArrived: false,
-          rescheduleCount: 0,
-          isMissed: false,
-        },
-        // Additional past appointments
-        {
-          id: "apt_sample_5",
-          customerId: "cust_1",
-          customerName: "John Smith",
-          detailerId: "det_4",
-          detailerName: "Mike Chen",
-          businessName: "Speedy Clean",
-          serviceId: "s3",
-          serviceName: "Basic Wash",
-          serviceDescription: "Standard exterior wash",
-          price: 25,
-          scheduledDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          scheduledTime: "11:45 AM",
-          duration: 30,
-          address: "555 Hollywood Blvd, Hollywood, CA 90028",
-          latitude: 34.1017,
-          longitude: -118.3409,
-          phone: "(555) 321-0987",
-          status: "completed" as const,
-          bookedAt: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString(),
-          notes: "Great service, very professional",
-          isArrived: false,
-          rescheduleCount: 0,
-          isMissed: false,
-        },
-        {
-          id: "apt_sample_6",
-          customerId: "cust_1",
-          customerName: "John Smith",
-          detailerId: "det_5",
-          detailerName: "Jessica Brown",
-          businessName: "Luxury Auto Spa",
-          serviceId: "s10",
-          serviceName: "Ceramic Coating",
-          serviceDescription: "Premium ceramic paint protection",
-          price: 350,
-          scheduledDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          scheduledTime: "1:00 PM",
-          duration: 240,
-          address: "888 Rodeo Drive, Beverly Hills, CA 90210",
-          latitude: 34.0700,
-          longitude: -118.4004,
-          phone: "(555) 654-3210",
-          status: "cancelled" as const,
-          bookedAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(),
-          notes: "Cancelled due to weather conditions",
-          isArrived: false,
-          rescheduleCount: 0,
-          isMissed: false,
-        }
-      ],
-      addAppointment: (appointment) => set((state) => ({ 
+      appointments: [],
+      addAppointment: (appointment) => set((state) => ({
         appointments: [...state.appointments, appointment] 
       })),
       updateAppointmentStatus: (appointmentId, status) => set((state) => ({
@@ -1319,39 +671,7 @@ export const useAppStore = create<AppState>()(
         return currentFavorites.includes(detailerId);
       },
       // Saved addresses implementation
-      savedAddresses: [
-        // Sample saved addresses
-        {
-          id: "addr_1",
-          customerId: "cust_1",
-          label: "Home",
-          street: "123 Main Street",
-          city: "Los Angeles",
-          state: "CA",
-          postalCode: "90210",
-          latitude: 34.0522,
-          longitude: -118.2437,
-          fullAddress: "123 Main Street, Los Angeles, CA 90210",
-          isDefault: true,
-          createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          lastUsed: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: "addr_2",
-          customerId: "cust_1",
-          label: "Work",
-          street: "456 Business Ave",
-          city: "Beverly Hills",
-          state: "CA",
-          postalCode: "90212",
-          latitude: 34.0669,
-          longitude: -118.3965,
-          fullAddress: "456 Business Ave, Beverly Hills, CA 90212",
-          isDefault: false,
-          createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-          lastUsed: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-        }
-      ],
+      savedAddresses: [],
       addSavedAddress: (address) => set((state) => {
         const newAddress: SavedAddress = {
           ...address,
@@ -1399,18 +719,7 @@ export const useAppStore = create<AppState>()(
         )
       })),
       // Ratings implementation
-      ratings: [
-        // Sample ratings for demo
-        {
-          id: "rating_1",
-          appointmentId: "apt_sample_2",
-          customerId: "cust_1",
-          detailerId: "det_1",
-          rating: 5,
-          comment: "Excellent service! Very professional and thorough.",
-          createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
-        }
-      ],
+      ratings: [],
       markAppointmentCompleted: (appointmentId) => set((state) => ({
         appointments: state.appointments.map(apt =>
           apt.id === appointmentId
@@ -1467,351 +776,7 @@ export const useAppStore = create<AppState>()(
         )
       })),
       // Service management implementation
-      services: [
-        // Test services for payment testing (one per detailer)
-        {
-          id: "svc_test_1",
-          detailerId: "det_1",
-          name: "Test Service",
-          description: "Free test service for payment testing - $0.00",
-          price: 0,
-          duration: 15,
-          category: "Test",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          bodyTypeMultipliers: { car: 1.0, van: 1.0, truck: 1.0, suv: 1.0 },
-          luxuryCareSurchargePercent: 0,
-        },
-        {
-          id: "svc_test_2",
-          detailerId: "det_2",
-          name: "Test Service",
-          description: "Free test service for payment testing - $0.00",
-          price: 0,
-          duration: 15,
-          category: "Test",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          bodyTypeMultipliers: { car: 1.0, van: 1.0, truck: 1.0, suv: 1.0 },
-          luxuryCareSurchargePercent: 0,
-        },
-        {
-          id: "svc_test_3",
-          detailerId: "det_3",
-          name: "Test Service",
-          description: "Free test service for payment testing - $0.00",
-          price: 0,
-          duration: 15,
-          category: "Test",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          bodyTypeMultipliers: { car: 1.0, van: 1.0, truck: 1.0, suv: 1.0 },
-          luxuryCareSurchargePercent: 0,
-        },
-        {
-          id: "svc_test_4",
-          detailerId: "det_4",
-          name: "Test Service",
-          description: "Free test service for payment testing - $0.00",
-          price: 0,
-          duration: 15,
-          category: "Test",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          bodyTypeMultipliers: { car: 1.0, van: 1.0, truck: 1.0, suv: 1.0 },
-          luxuryCareSurchargePercent: 0,
-        },
-        {
-          id: "svc_test_5",
-          detailerId: "det_5",
-          name: "Test Service",
-          description: "Free test service for payment testing - $0.00",
-          price: 0,
-          duration: 15,
-          category: "Test",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          bodyTypeMultipliers: { car: 1.0, van: 1.0, truck: 1.0, suv: 1.0 },
-          luxuryCareSurchargePercent: 0,
-        },
-        {
-          id: "svc_test_6",
-          detailerId: "det_6",
-          name: "Test Service",
-          description: "Free test service for payment testing - $0.00",
-          price: 0,
-          duration: 15,
-          category: "Test",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          bodyTypeMultipliers: { car: 1.0, van: 1.0, truck: 1.0, suv: 1.0 },
-          luxuryCareSurchargePercent: 0,
-        },
-        // Sample services for demo purposes
-        {
-          id: "svc_1",
-          detailerId: "det_1",
-          name: "Express Wash",
-          description: "Quick exterior wash and dry - perfect for maintaining your car's shine",
-          price: 25,
-          duration: 30,
-          category: "Exterior",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          bodyTypeMultipliers: { car: 1.0, van: 1.1, truck: 1.15, suv: 1.1 },
-          luxuryCareSurchargePercent: 20,
-        },
-        {
-          id: "svc_2",
-          detailerId: "det_1",
-          name: "Interior Deep Clean",
-          description: "Complete interior vacuum, wipe down, and sanitization",
-          price: 45,
-          duration: 60,
-          category: "Interior",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          bodyTypeMultipliers: { car: 1.0, van: 1.1, truck: 1.15, suv: 1.1 },
-          luxuryCareSurchargePercent: 20,
-        },
-        {
-          id: "svc_3",
-          detailerId: "det_1",
-          name: "Premium Package",
-          description: "Full exterior wash, interior deep clean, wax, and tire shine",
-          price: 85,
-          duration: 120,
-          category: "Premium",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          bodyTypeMultipliers: { car: 1.0, van: 1.1, truck: 1.15, suv: 1.1 },
-          luxuryCareSurchargePercent: 25,
-        },
-        // det_2 - Maria's Mobile Detail
-        {
-          id: "svc_4",
-          detailerId: "det_2",
-          name: "Interior Deep Clean",
-          description: "Full interior vacuum, steam clean, wipe down, and sanitization",
-          price: 40,
-          duration: 60,
-          category: "Interior",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          bodyTypeMultipliers: { car: 1.0, van: 1.15, truck: 1.2, suv: 1.1 },
-          luxuryCareSurchargePercent: 15,
-        },
-        {
-          id: "svc_5",
-          detailerId: "det_2",
-          name: "Paint Protection",
-          description: "Professional paint protection film and sealant application",
-          price: 95,
-          duration: 150,
-          category: "Premium",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          bodyTypeMultipliers: { car: 1.0, van: 1.2, truck: 1.25, suv: 1.15 },
-          luxuryCareSurchargePercent: 20,
-        },
-        {
-          id: "svc_6",
-          detailerId: "det_2",
-          name: "Express Wash",
-          description: "Quick exterior wash and hand dry",
-          price: 20,
-          duration: 25,
-          category: "Exterior",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          bodyTypeMultipliers: { car: 1.0, van: 1.1, truck: 1.15, suv: 1.1 },
-          luxuryCareSurchargePercent: 15,
-        },
-        // det_3 - Elite Auto Spa
-        {
-          id: "svc_7",
-          detailerId: "det_3",
-          name: "Full Service Detail",
-          description: "Complete interior and exterior detailing with clay bar treatment",
-          price: 75,
-          duration: 120,
-          category: "Premium",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          bodyTypeMultipliers: { car: 1.0, van: 1.15, truck: 1.2, suv: 1.1 },
-          luxuryCareSurchargePercent: 20,
-        },
-        {
-          id: "svc_8",
-          detailerId: "det_3",
-          name: "Wax & Polish",
-          description: "Hand wax and polish for a deep, lasting shine",
-          price: 55,
-          duration: 90,
-          category: "Exterior",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          bodyTypeMultipliers: { car: 1.0, van: 1.1, truck: 1.15, suv: 1.1 },
-          luxuryCareSurchargePercent: 15,
-        },
-        {
-          id: "svc_9",
-          detailerId: "det_3",
-          name: "Express Wash",
-          description: "Quick exterior wash and towel dry",
-          price: 22,
-          duration: 20,
-          category: "Exterior",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          bodyTypeMultipliers: { car: 1.0, van: 1.1, truck: 1.15, suv: 1.05 },
-          luxuryCareSurchargePercent: 10,
-        },
-        // det_4 - Quick Shine Mobile
-        {
-          id: "svc_10",
-          detailerId: "det_4",
-          name: "Express Wash",
-          description: "Fast exterior rinse, soap, and dry",
-          price: 15,
-          duration: 15,
-          category: "Exterior",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          bodyTypeMultipliers: { car: 1.0, van: 1.1, truck: 1.1, suv: 1.05 },
-          luxuryCareSurchargePercent: 10,
-        },
-        {
-          id: "svc_11",
-          detailerId: "det_4",
-          name: "Interior Vacuum",
-          description: "Thorough interior vacuum and wipe down of surfaces",
-          price: 20,
-          duration: 25,
-          category: "Interior",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          bodyTypeMultipliers: { car: 1.0, van: 1.15, truck: 1.15, suv: 1.1 },
-          luxuryCareSurchargePercent: 10,
-        },
-        {
-          id: "svc_12",
-          detailerId: "det_4",
-          name: "Basic Detail",
-          description: "Exterior wash plus interior vacuum and dash wipe",
-          price: 35,
-          duration: 45,
-          category: "Exterior",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          bodyTypeMultipliers: { car: 1.0, van: 1.1, truck: 1.15, suv: 1.1 },
-          luxuryCareSurchargePercent: 15,
-        },
-        // det_5 - Luxury Detail Co.
-        {
-          id: "svc_13",
-          detailerId: "det_5",
-          name: "Luxury Full Detail",
-          description: "White-glove full detail service for luxury and exotic vehicles",
-          price: 150,
-          duration: 180,
-          category: "Premium",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          bodyTypeMultipliers: { car: 1.0, van: 1.2, truck: 1.25, suv: 1.15 },
-          luxuryCareSurchargePercent: 30,
-        },
-        {
-          id: "svc_14",
-          detailerId: "det_5",
-          name: "Leather Treatment",
-          description: "Deep leather cleaning, conditioning, and UV protection",
-          price: 85,
-          duration: 90,
-          category: "Interior",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          bodyTypeMultipliers: { car: 1.0, van: 1.1, truck: 1.1, suv: 1.1 },
-          luxuryCareSurchargePercent: 25,
-        },
-        {
-          id: "svc_15",
-          detailerId: "det_5",
-          name: "Premium Wash",
-          description: "Hand wash with premium products and tire shine",
-          price: 45,
-          duration: 45,
-          category: "Exterior",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          bodyTypeMultipliers: { car: 1.0, van: 1.1, truck: 1.15, suv: 1.1 },
-          luxuryCareSurchargePercent: 20,
-        },
-        // det_6 - Test Drive Detailing (Emma Thompson)
-        {
-          id: "svc_16",
-          detailerId: "det_6",
-          name: "FREE Test Service",
-          description: "Complimentary test service for functionality testing",
-          price: 0,
-          duration: 30,
-          category: "Free",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          bodyTypeMultipliers: { car: 1.0, van: 1.0, truck: 1.0, suv: 1.0 },
-          luxuryCareSurchargePercent: 0,
-        },
-        {
-          id: "svc_17",
-          detailerId: "det_6",
-          name: "Basic Exterior Wash",
-          description: "Simple exterior wash and rinse",
-          price: 25,
-          duration: 45,
-          category: "Basic",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          bodyTypeMultipliers: { car: 1.0, van: 1.1, truck: 1.15, suv: 1.1 },
-          luxuryCareSurchargePercent: 15,
-        },
-        {
-          id: "svc_18",
-          detailerId: "det_6",
-          name: "Interior Vacuum",
-          description: "Full interior vacuum service",
-          price: 35,
-          duration: 60,
-          category: "Interior",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          bodyTypeMultipliers: { car: 1.0, van: 1.1, truck: 1.15, suv: 1.1 },
-          luxuryCareSurchargePercent: 15,
-        },
-      ],
+      services: [],
       addService: (service) => set((state) => {
         const newService: Service = {
           bodyTypeMultipliers: { ...DEFAULT_BODY_TYPE_MULTIPLIERS },
@@ -1904,8 +869,18 @@ export const useAppStore = create<AppState>()(
       },
       getCurrentAccount: () => {
         const state = useAppStore.getState();
-        const id = state.role === 'customer' ? state.activeCustomerId : state.activeDetailerId;
-        return state.accounts.find(a => a.id === id);
+        if (!state.authUser) return undefined;
+        const { authUser, role } = state;
+        return {
+          id: role === 'customer'
+            ? authUser.customerProfileId || authUser.userId
+            : authUser.providerProfileId || authUser.userId,
+          type: role === 'customer' ? 'customer' : 'detailer',
+          name: `${authUser.firstName} ${authUser.lastName}`.trim(),
+          email: authUser.email,
+          phone: authUser.phone || '',
+          profileImage: authUser.avatar || undefined,
+        } as AccountProfile;
       },
 
       // Detailer availability configurations
@@ -1973,18 +948,20 @@ export const useAppStore = create<AppState>()(
         const existing = state.bidirectionalConversations.find(c => c.id === conversationId);
         if (existing) return conversationId;
 
-        // Create new conversation
-        const detailer = state.accounts.find(a => a.id === detailerId);
-        const customer = state.accounts.find(a => a.id === customerId);
+        // Create new conversation — use authUser for customer info
+        const authUser = state.authUser;
+        const customerName = authUser
+          ? `${authUser.firstName} ${authUser.lastName}`.trim()
+          : 'Customer';
 
         const newConv: BidirectionalConversation = {
           id: conversationId,
           detailerId,
           customerId,
-          detailerName: detailer?.businessName || detailer?.name || 'Detailer',
-          customerName: customer?.name || 'Customer',
-          detailerImage: detailer?.profileImage,
-          customerImage: customer?.profileImage,
+          detailerName: 'Detailer',
+          customerName,
+          detailerImage: undefined,
+          customerImage: authUser?.avatar || undefined,
           lastMessage: '',
           lastMessageTime: '',
           detailerUnread: 0,
@@ -2150,41 +1127,26 @@ export const useAppStore = create<AppState>()(
       },
     }),
     {
-      name: "app_state_v15", // Bumped version for account system
+      name: "app_state_v16", // Bumped: real auth, no mock data
       merge: (persistedState: any, currentState: AppState) => {
         const merged = { ...currentState, ...persistedState };
 
-        // Refresh "today" appointment dates so they always match the current day
-        // This prevents stale persisted dates from hiding mock appointments
-        const now = new Date();
-        const freshToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        const todayIds = [
-          'apt_today_1', 'apt_today_2', 'apt_today_3', 'apt_today_4',
-          'apt_today_5', 'apt_today_6', 'apt_today_7', 'apt_today_8'
-        ];
-        merged.appointments = merged.appointments.map((apt: Appointment) => {
-          // Add default values for new reliability fields
-          const updatedApt = {
-            ...apt,
-            isArrived: apt.isArrived ?? false,
-            rescheduleCount: apt.rescheduleCount ?? 0,
-            isMissed: apt.isMissed ?? false,
-          };
-          if (todayIds.includes(apt.id)) {
-            return { ...updatedApt, scheduledDate: freshToday };
-          }
-          return updatedApt;
-        });
+        // Ensure reliability fields on appointments
+        merged.appointments = (merged.appointments || []).map((apt: Appointment) => ({
+          ...apt,
+          isArrived: apt.isArrived ?? false,
+          rescheduleCount: apt.rescheduleCount ?? 0,
+          isMissed: apt.isMissed ?? false,
+        }));
 
-        // Ensure missedAppointmentAlerts exists
         merged.missedAppointmentAlerts = merged.missedAppointmentAlerts ?? [];
 
-        // Ensure new account system state exists with fresh defaults
-        merged.accounts = INITIAL_ACCOUNTS;
-        merged.detailerConfigs = INITIAL_DETAILER_CONFIGS;
-        merged.favoritesByCustomer = merged.favoritesByCustomer ?? INITIAL_FAVORITES_BY_CUSTOMER;
-        merged.bidirectionalConversations = merged.bidirectionalConversations ?? INITIAL_BIDIRECTIONAL_CONVERSATIONS;
-        merged.bidirectionalChatLogs = merged.bidirectionalChatLogs ?? INITIAL_BIDIRECTIONAL_CHAT_LOGS;
+        // Clear stale mock data from previous versions
+        merged.accounts = [];
+        merged.detailerConfigs = merged.detailerConfigs ?? [];
+        merged.favoritesByCustomer = merged.favoritesByCustomer ?? {};
+        merged.bidirectionalConversations = merged.bidirectionalConversations ?? [];
+        merged.bidirectionalChatLogs = merged.bidirectionalChatLogs ?? {};
 
         return merged;
       },
