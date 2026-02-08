@@ -36,7 +36,13 @@ export default function HomePage() {
                 {t('landing.signIn')}
               </Link>
               <Link
-                href="/sign-up"
+                href="/sign-up?role=business"
+                className="text-sm font-medium text-brand-300 hover:text-white transition-colors border border-brand-700 rounded-xl px-5 py-2.5 hover:border-brand-500"
+              >
+                For Business
+              </Link>
+              <Link
+                href="/sign-up?role=customer"
                 className="group relative inline-flex items-center justify-center overflow-hidden rounded-xl bg-accent-DEFAULT px-6 py-2.5 text-sm font-bold text-white shadow-[0_0_20px_rgba(56,189,248,0.3)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_rgba(56,189,248,0.5)]"
               >
                 <span className="z-10">Sign Up</span>
@@ -68,14 +74,14 @@ export default function HomePage() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link
-                href="/customer/home"
+                href="/sign-up?role=customer"
                 className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white text-brand-950 font-bold text-lg shadow-xl shadow-white/10 hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"
               >
                 {t('landing.customerPortal')}
                 <ChevronRight className="h-5 w-5" />
               </Link>
               <Link
-                href="/detailer/home"
+                href="/sign-up?role=business"
                 className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-brand-900 border border-brand-700 text-white font-semibold text-lg hover:bg-brand-800 transition-all duration-300 flex items-center justify-center"
               >
                 {t('landing.businessPortal')}

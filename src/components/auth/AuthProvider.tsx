@@ -3,11 +3,13 @@
 import { useEffect, useRef } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useAppStore } from "@/lib/store";
+import { usePathname } from "next/navigation";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { isSignedIn, user, isLoaded } = useUser();
-  const { setAuthUser, clearAuthUser, authUser } = useAppStore();
+  const { setAuthUser, clearAuthUser, authUser, setRole } = useAppStore();
   const syncedRef = useRef<string | null>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -33,6 +35,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             avatar: data.avatar,
             phone: data.phone,
           });
+
+          // Auto-set role based on profile + current URL
+          if (data.providerProfileId && pathname.startsWith("/detailer")) {
+            setRole("detailer");
+          }
         })
         .catch((err) => {
           console.error("Auth sync error:", err);
@@ -43,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         clearAuthUser();
       }
     }
-  }, [isSignedIn, user, isLoaded, setAuthUser, clearAuthUser, authUser]);
+  }, [isSignedIn, user, isLoaded, setAuthUser, clearAuthUser, authUser, setRole, pathname]);
 
   return <>{children}</>;
 }

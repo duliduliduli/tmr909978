@@ -1,6 +1,7 @@
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 export async function POST() {
   const { userId: clerkUserId } = await auth();
@@ -23,6 +24,13 @@ export async function POST() {
     clerkUser.phoneNumbers.find(
       (p) => p.id === clerkUser.primaryPhoneNumberId
     )?.phoneNumber ?? null;
+
+  // Read sign-up role cookies
+  const cookieStore = await cookies();
+  const signupRole = cookieStore.get("tumaro_signup_role")?.value || null;
+  const businessName = cookieStore.get("tumaro_business_name")?.value
+    ? decodeURIComponent(cookieStore.get("tumaro_business_name")!.value)
+    : null;
 
   // Upsert User by clerkUserId
   const user = await prisma.user.upsert({
@@ -58,6 +66,16 @@ export async function POST() {
     });
   }
 
+  // Create ProviderProfile for business sign-ups
+  if (signupRole === "business" && !user.providerProfile) {
+    await prisma.providerProfile.create({
+      data: {
+        userId: user.id,
+        businessName: businessName || `${firstName}'s Detailing`,
+      },
+    });
+  }
+
   // Re-fetch to get fresh profile IDs
   const freshUser = await prisma.user.findUnique({
     where: { id: user.id },
@@ -67,7 +85,8 @@ export async function POST() {
     },
   });
 
-  return NextResponse.json({
+  // Build response and clear sign-up cookies
+  const response = NextResponse.json({
     userId: freshUser!.id,
     customerProfileId: freshUser!.customerProfile?.id ?? null,
     providerProfileId: freshUser!.providerProfile?.id ?? null,
@@ -77,4 +96,12 @@ export async function POST() {
     avatar,
     phone,
   });
+
+  // Clear sign-up cookies
+  if (signupRole) {
+    response.cookies.set("tumaro_signup_role", "", { maxAge: 0, path: "/" });
+    response.cookies.set("tumaro_business_name", "", { maxAge: 0, path: "/" });
+  }
+
+  return response;
 }
